@@ -4,6 +4,11 @@ Extract representative microbenchmarks.
 
 [![Build Status](https://travis-ci.org/IBM/chopstix.svg?branch=master)](https://travis-ci.org/IBM/chopstix)
 
+![GitHub](https://img.shields.io/github/license/IBM/chopstix.svg)
+![GitHub forks](https://img.shields.io/github/forks/IBM/chopstix.svg?style=social)
+![GitHub stars](https://img.shields.io/github/stars/IBM/chopstix.svg?style=social)
+![GitHub watchers](https://img.shields.io/github/watchers/IBM/chopstix.svg?style=social)
+
 ## Installation
 
 The following is a list of the minimal software requirements to be able to
