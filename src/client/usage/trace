@@ -1,0 +1,84 @@
+Usage: chop trace [-module <name>] -begin <addr> -end <addr>
+                  [<options>] <command> [<args>]
+       chop trace -active <time> -interval <time>
+                  [<options>] <command> [<args>]
+        
+Trace page accesses of a given command. The provided command 
+is executed and the memory and/or code pages being executed 
+are dumped to the provided path. You need to use the
+'chop-trace2mpt' post-processing script to convert the trace 
+to a MPT file. 
+
+There are 3 alternative tracing methods to select the portion
+of execution to be traced:
+
+a) Region of interest, if you know the start and ending addreses
+   of the region to be traced. E.g.:
+    
+   chop trace -begin 400 -end 800 ./foo bar baz
+
+   will trace starting at address 0x400 and ending at addres 0x800.
+   This process is repeated, and different traces are generated,
+   until a termination condition is met.
+
+b) Temporal-based sampling. The execution will be traced at the
+   specified interval regions. E.g.:
+
+   chop trace -active 5ms -interval 100ms ./foo bar baz
+
+   will wait for 100ms, then will be tracing for 5ms and repeat 
+   again. This process is repeated, and different traces are generated,
+   until a termination condition is met.
+
+c) Hybrid approach, where you want to do temporal-based sampling
+   but bounded by the region of interest. E.g.:
+   
+   chop trace -begin 400 -end 800 -active 5ms -interval 100ms ./foo bar baz
+
+    will wait for 100ms, then it will start tracing when address 0x400
+    is reached. Then, will trace for at least 5ms, and it will stop 
+    tracing when address 0x800 is reached.  This process is repeated, 
+    and different traces are generated, until a termination condition is met.
+
+Options:
+
+  -begin <addr>          Begin address of the region of interest in hex format.
+                         Address correspond to static image address of the modules
+                         being executed.
+  -end <addr>            End address of the region of interest in hex format.
+                         Address correspond to static image address of the modules
+                         being executed.
+  -module <name>         Name of module to trace. This is always mandatory for Z
+                         backend or if the module to trace is not the main
+                         module.
+  -active <time>         Time tracing is active. By default <time> is in seconds. 
+                         One can use time specifiers as following: d (days), h
+                         (hours), m(minutes), s(seconds), ms (milliseconds), 
+                         us(microseconds). This time also includes the time
+                         required to trace (dump to disk and other IO).
+  -interval <time>       Time between traces. By default <time> is in seconds. 
+                         One can use time specifiers as following: d (days), h
+                         (hours), m(minutes), s(seconds), ms (milliseconds), 
+                         us(microseconds). 
+  -prob <pct>            Probability that a given region is traced (default: 1)
+                         Valid values: floats between 0 and 1. 0: no region
+                         is going to be traced. 1: all region will be traced.
+  -group <num>           Group <num> region into one trace (default: 1).
+  -no-save               Disable data page content dumping. 
+  -no-code               Disable code page content dumping.
+  -trace-dir <path>      Path to directory where tracing data will be stored
+                         (default: trace_data).
+  -gzip                  Zip page contents.
+  -log-path <path>       Path to log file.
+  -log-level <level>     Set verbosity of the log file (default: info)
+                         Options are: debug,verbose,info,warn,error.
+  -max-pages <num>       Stop tracing after <num> pages have been extracted.
+  -max-traces <num>      Stop tracing after <num> traces have been extracted.
+  -access-only           Generate 'trace.bin' file in -trace-dir path. The
+                         binary file is a trace containind the addresses of
+                         the pages being accessed. It can be processed with 
+                         'chop-detrace' helper tool. (experimental)
+  -no-trace              Do no call tracing mechanisms. This debugging option is
+                         used for testing the detection of the regions of interests.
+                         (experimental)
+

@@ -1,0 +1,61 @@
+Usage: chop search [<options>]
+       chop search module [-name <name>] [-id <id>] [<options>]
+       chop search function [-name <name>] [-id <id>] [<options>]
+
+Search snippet paths using different strategies. The algorithm 
+will compile a list of all functions across all modules, functions 
+inside a given module, or one function in particular, that have 
+a minimum score (computed by the 'chop annotate' command).
+Inside these functions, the algorithm identifies loops and 
+searches for all possible execution paths inside the loop body.
+If a function does not contain any loop, the algorithm searches 
+for paths inside the function.
+
+By default the tool will try to search all(!) paths.
+It is advised to provide at least one termination condition to avoid
+long runtimes: -timeout, -target-count, -target-coverage.
+
+
+Options:
+  -data <path>   Path to database (default: chop.db)
+
+  -min <score>   Minimum score to consider a function
+                 for analysis. Functions below this score 
+                 are not analized (default: 1%).
+  -limit <num>   Only the first <num> functions sorted by score
+                 will be processed. 
+  -fullfunc      Analyze full function regardless of the loops
+                 present in the function. This option is 
+                 implicit if the function does not have any
+                 loop.
+  -id <id>       Id of the function/module to analyze.
+  -name <name>   Id of the function/module to analyze.      
+  -timeout <time>   Finish search after time. By default
+                    <time> is in seconds. One can use time
+                    specifiers as following: d (days), h
+                    (hours), m(minutes), s(seconds), ms
+                    (milliseconds), us(microseconds). 
+  -log <path>       Log search progress to file <path>.
+
+The algorithm uses a greedy path finding search that, given enough time,
+will find all possible paths, starting with the ones with the highest score.
+The path score is defined as the accumulated sum of all nodes/basic blocks
+inside the path. The score of each basic block is computed in the 'chop annotate'
+command.
+This heuristic can be tuned using the following options:
+
+  -reps <num>    Ignore the score of a basic block after it has been
+                 included <num> times inside a selected path.
+                 This way you can increase the coverage by exploring
+                 less optimal paths.
+                 By default infinite repetitions are allowed.
+
+  -cutoff <score>  Stop searching along a path if the score of the 
+  -ins <num>       last <num> instructions (default: 100) is below
+                   the provided cutoff <score>.
+                   By default there is no cutoff.
+
+These options control when to stop searching for snippets:
+
+  -target-count <num>        Terminate after finding <num> snippets
+  -target-coverage <score>   Terminate after covering <score>

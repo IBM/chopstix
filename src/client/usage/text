@@ -1,0 +1,17 @@
+Usage: chop text module [-name <name>] [-id <id>] [<options>]
+       chop text function [-name <name>] [-id <id>] [<options>]
+       chop text block [-id <id>] [<options>]
+       chop text path [-id <id>] [<options>]
+
+Display text, i.e. instructions for a given module, function,
+basic block or snippet path.
+
+Options:
+  -data <path>    Path to database file. (default: chop.db).
+  -name <name>    Name of module|function.
+  -id <id>        ID of module|function|snippet.
+  -out <path>     Write output to file <path>.
+  -fmt <fmt>      Text display format (default: text). Available formats:
+                     text      Just plain text.
+                     annotate  Text with annotation (i.e. score).
+                     mpt       Output as Microprobe test file (.mpt).

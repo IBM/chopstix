@@ -1,0 +1,99 @@
+#!/usr/bin/env sh
+#
+# ----------------------------------------------------------------------------
+#
+# Copyright 2019 IBM Corporation
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+# ----------------------------------------------------------------------------
+#
+
+#############################
+### ChopStiX setup script ###
+#############################
+
+set -e
+
+# Export environment variables
+export CHOPSTIX_SOURCE=@PROJECT_SOURCE_DIR@
+export CHOPSTIX_BUILD=@PROJECT_BINARY_DIR@
+export CHOPSTIX_INSTALL=@CMAKE_INSTALL_PREFIX@
+export CHOPSTIX_SHARE=$CHOPSTIX_INSTALL/share/chopstix
+export CHOPSTIX_VERSION=@CHOPSTIX_VERSION@
+
+# Setup path variable
+_chop_add_path() {
+    case "$PATH:" in
+        $CHOPSTIX_INSTALL/bin:$1:*) ;;
+        $CHOPSTIX_INSTALL/scripts:$1:*) ;;
+        $1:*) export PATH=$PATH
+            ;; 
+        *) export PATH=$1:$PATH
+            ;;
+    esac
+}
+_chop_add_path "$CHOPSTIX_INSTALL/bin"
+_chop_add_path "$CHOPSTIX_SHARE/scripts"
+unset -f _chop_add_path
+
+# Check for microprobe 
+set +e
+command -v mp_mpt2c >/dev/null 2>&1 
+error=$?
+set -e
+
+set +e
+command -v mp_mpt2c.py >/dev/null 2>&1
+error=$((error+$?))
+set -e
+
+WARNING=0
+if [ "$error" -eq 2 ]; then
+    echo ""
+    echo "Warning: Microprobe commands not found in current PATH."
+    echo "Warning: Setup Microprobe first if you want to convert the MPTs generated"
+    echo "Warning: to actual benchmarks. Refer to the url below for installation instructions:"
+    echo "Warning: https://github.ibm.com/MicroProbe/microprobe_private"
+    echo ""
+    WARNING=1
+else
+    export CHOPSTIX_HAS_MICROPROBE=1
+fi
+
+# Check for performance counter permissions and perf
+set +e
+command -v perf >/dev/null 2>&1 && perf record -o /dev/null -- "$(command -v sleep)" 1 >/dev/null 2>&1 
+error=$?
+set -e
+
+if [ "$error" -ne 0 ]; then
+    echo ""
+    echo "Warning: Unable to check Linux perf interface" 
+    echo "Warning: Make sure you have all the required permissions to access performance counters" 
+    echo "Warning: You might want to try 'perf' command"
+    echo ""
+    WARNING=1
+fi
+
+if [ "$WARNING" -eq 1 ]; then
+    echo ""
+    echo "ChopStiX environment setup complete! Fix the warnings for full functionality."
+    echo ""
+else
+    echo ""
+    echo "ChopStiX environment setup copmlete!"
+    echo ""
+fi
+
+set +e

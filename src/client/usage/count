@@ -1,0 +1,14 @@
+Usage: chop count [<options>]
+
+Annotate the static CFG with collected runtime samples.
+Count the total of sample in the database that belong
+to each instruction. The count for basic blocks, functions,
+and modules is the addition of the count for each instruction
+belonging to each particular block, function or module.
+This is a required step needed to be able to do the heuristic 
+based search ('chop search') based on the sampling afterwards.
+Later invocations of this command will override previous
+information.
+ 
+Options:
+  -data <path>   Path to database file (default: chop.db)

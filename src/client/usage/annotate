@@ -1,0 +1,20 @@
+Usage: chop annotate [<options>]
+
+Annotate with scores the CFG based on collected samples and 
+additional metrics. This step requires 'chop count' command first.
+Each instruction is annotated (a score is computed) with the 
+percentage of samples --with respect to the total number of samples 
+in the database-- in that particular instruction.
+Optionally, one can normalize these percentage
+based on the number of instructions in each basic block, functions
+and module. The normalization is based on number of instruction to
+avoid biased due basic block, function or module sizes (i.e. the
+chances of a big basic block to be sampled are proportional to the
+size of the basic block. With the normalization that bias is 
+minimized). Later invocations of this command will override previous
+information.
+
+Options:
+  -data <path>  Path to database file. (default: chop.db)
+  -normalize    Normalize annotation based on number of instructions
+                in a basic block. 

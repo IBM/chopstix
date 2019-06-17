@@ -1,0 +1,40 @@
+Usage: chop list <item> [<options>]
+ 
+Display info for a given statistic, i.e. collected samples.
+
+Common options:
+  -data <path>    Path to database (default: chop.db)
+  -limit <num>    Maximum number of results to show. This
+                  option takes preference over the rest.
+  -min <score>    Filter by minimum score. A score is added
+                  to modules, functions, blocks and paths 
+                  with the 'chop count && chop annotate'
+                  commands. Check these commands for further
+                  information.
+  -minsize <size> Filter results by minimum size allowed (only used
+                  for filtering functions by number of instruction).
+  -accum <accum>  Results are returned until the accumulated 
+                  score is reached. A score is added
+                  to modules, functions, blocks and paths 
+                  with the 'chop count && chop annotate'
+                  commands. Check these commands for further
+                  information.
+  -summary        Output a summary of the selected results.
+                  Not the actual results. 
+  -demangle       Demangle function names.
+  -pid <pid>      Show only samples for a given session. This
+                  option is only valid when listing samples.
+
+The following statistics are available:
+  sessions   A session is created each time you run 'chop sample'.
+             Displays the used command and collected samples.
+             The pid of the command is used to identify a session.
+  samples    List all samples.
+  modules    List all modules.
+  functions  List all functions. Requires to execute 'chop disasm'
+             first to populate the database.
+  blocks     List all basic blocks. Requires to execute 'chop disasm'
+             first to populate the database.
+  paths      List all paths (snippets). Requires to execute 'chop search'
+             first to populate the database. Check this command for
+             furhter information.

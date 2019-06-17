@@ -1,0 +1,55 @@
+#
+# ----------------------------------------------------------------------------
+#
+# Copyright 2019 IBM Corporation
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+# ----------------------------------------------------------------------------
+#
+To build the daxpy kernel run `make daxpy`.
+It is a simple kernel that performs floating point operations over a vector.
+It has two parameters:
+    TEST_SIZE : Size of the vector
+    TEST_ITER : Number of iterations
+
+In order to trace this benchmark you need to define the region of interest.
+The files test_x86 and test_sysz define the -begin and -end addresses for my
+setup on the respective machines.
+This is complier and architecture dependent.
+The find_region.sh will try to find the region for the `daxpy` function.
+
+    ./find_regions.sh <binary> <function>
+
+To then run the tracer simply use the run_example.sh script
+(this assumes that you have compiled and setup ChopStiX).
+
+    ./run_example.sh -begin 400 -end 600
+    ./run_example.sh $(< test_x86)
+
+These are other options:
+
+    -data   : Where to save the data
+    -save   : Save traced pages' content
+    -code   : Extract code as well
+    -active : Time active during tracing
+    -wait   : Time waiting between tracing intervals
+
+Once you have extracted the data, you can use it to generate test (.mpt) and
+state (.mps) files. Additionally you can use the `--code` option to prune the .mpt
+file and only incorporate extracted code pages.
+
+    ./create_mp.py -d data -t test.mpt -s state.mps -i invocation
+    ./create_mp.py -d data -t test.mpt -s state.mps -i invocation --code
+
+In the future these scripts will be integrated into the ChopStiX main workflow.

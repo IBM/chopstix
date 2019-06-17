@@ -1,0 +1,85 @@
+#!/usr/bin/env sh
+#
+# ----------------------------------------------------------------------------
+#
+# Copyright 2019 IBM Corporation
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+# ----------------------------------------------------------------------------
+#
+
+set -eu
+
+die() { echo "$*" >&2; exit 1; }
+
+if [ $# -lt 2 ]; then 
+    die "Usage: $0 <object> <symbol> [-cache]"
+fi
+
+cache=0
+if [ $# -eq 3 ]; then 
+    if [ "$3" != "-cache" ]; then     
+        die "Usage: $0 <object> <symbol> [-cache]"  
+    fi
+    cache=1
+fi
+
+obj=$1
+sym=$2
+
+if [ "$cache" -eq 1 ]; then
+    tmp="$obj.S"
+    tmp2="$obj.S.$sym"
+
+    if [ -f "$tmp2" ]; then
+        cat "$tmp2"
+        exit 0
+    fi
+
+    if [ ! -f "$tmp" ]; then
+        objdump -d "$obj" > "$tmp"
+    fi
+else
+    tmp=$(mktemp)
+    tmp2=$(mktemp)
+    objdump -d "$obj" > "$tmp"
+fi
+
+
+
+set +e
+readelf -Ws "$obj" | grep "$sym" | grep -q localentry
+localentry=$?
+set -e
+
+awk -v sym="<$sym>:" -v le=$localentry '
+$2 ~ sym {
+    flag=1;
+    gsub("^0*", "", $1);
+    if (!le) {
+        printf("-begin %x\n", strtonum("0x"$1) + 8);
+    } else {
+        printf("-begin %x\n", strtonum("0x"$1));
+    }
+}
+flag && $6 ~ "bc?lr" {
+    gsub(":", "", $1);
+    print "-end",$1;
+}
+/^$/ { flag=0; }
+' "$tmp" | tee "$tmp2"
+
+if [ $cache -eq 0 ]; then 
+    rm -f "$tmp" "$tmp2"
+fi

@@ -1,0 +1,66 @@
+#!/usr/bin/env sh
+
+set -e # Finish right after a non-zero return command
+set -u # Finish right after a undefined expression is used
+
+print_help() {
+    echo "Simple wrapper to call cmake
+
+Usage: ./configure [<options>]
+
+Options:
+  -h,--help            Display this help and exit
+  --prefix=PREFIX      Install to PREFIX
+  --enable-x86         Enable architecture support for x86/64
+  --enable-sysz        Enable architecture support for IBM System/Z
+  --enable-power       Enable architecture support for IBM POWER
+  --enable-powerle     Enable architecture support for IBM POWER (litte-endian)
+  --build-sqlite       Build custom version of sqlite3
+  --with-sqlite=PATH   Use sqlite3 installation in PATH
+  --with-perfmon=PATH  Use perfmon2 installation in PATH
+  --build-tests        Generate targets for testing
+  --build-examples     Generate targets for examples
+  --build-type=TYPE    Debug|Release|RelWithDebInfo (default: RelWithDebInfo)
+  --profile-cpu        Build with profiling support
+
+You can also use CMake directly. For more information see docs/installation.md.
+--enable-* options have the corresponding --disable-* ones.
+"
+    exit 0
+}
+
+cmake --version >/dev/null || { echo "You need to install CMake to build ChopStiX." ; exit 1; }
+
+PROJECT_DIR=`dirname "$0"`
+
+TEMP=$(getopt -o 'h' -l 'help,prefix:,enable-x86,enable-sysz,enable-power,enable-powerle,disable-x86,disable-sysz,disable-power,disable-powerle,build-sqlite,with-sqlite:,with-perfmon:,build-tests,build-examples,build-type:,profile-cpu' -n 'configure' -- "$@")
+
+eval set -- "$TEMP"
+
+BUILD_OPTIONS=""
+
+while true ; do
+    case "$1" in
+        -h|--help) print_help ; shift ;;
+        --prefix) BUILD_OPTIONS="$BUILD_OPTIONS -DCMAKE_INSTALL_PREFIX=$2" ; shift 2 ;;
+        --enable-x86) BUILD_OPTIONS="$BUILD_OPTIONS -DCHOPSTIX_X86_SUPPORT=ON" ; shift ;;
+        --disable-x86) BUILD_OPTIONS="$BUILD_OPTIONS -DCHOPSTIX_X86_SUPPORT=OFF" ; shift ;;
+        --enable-sysz) BUILD_OPTIONS="$BUILD_OPTIONS -DCHOPSTIX_SYSZ_SUPPORT=ON" ; shift ;;
+        --disable-sysz) BUILD_OPTIONS="$BUILD_OPTIONS -DCHOPSTIX_SYSZ_SUPPORT=OFF" ; shift ;;
+        --enable-power) BUILD_OPTIONS="$BUILD_OPTIONS -DCHOPSTIX_POWER_SUPPORT=ON" ; shift ;;
+        --disable-power) BUILD_OPTIONS="$BUILD_OPTIONS -DCHOPSTIX_POWER_SUPPORT=OFF" ; shift ;;
+        --enable-powerle) BUILD_OPTIONS="$BUILD_OPTIONS -DCHOPSTIX_POWERLE_SUPPORT=ON" ; shift ;;
+        --disable-powerle) BUILD_OPTIONS="$BUILD_OPTIONS -DCHOPSTIX_POWERLE_SUPPORT=OFF" ; shift ;;
+        --build-sqlite) BUILD_OPTIONS="$BUILD_OPTIONS -DCHOPSTIX_BUILD_SQLITE=ON" ; shift ;;
+        --with-sqlite) BUILD_OPTIONS="$BUILD_OPTIONS -DCHOPSTIX_SQLITE_PREFIX=$2" ; shift 2 ;;
+        --with-perfmon) BUILD_OPTIONS="$BUILD_OPTIONS -DCHOPSTIX_PERFMON_PREFIX=$2" ; shift 2 ;;
+        --build-tests) BUILD_OPTIONS="$BUILD_OPTIONS -DCHOPSTIX_BUILD_TESTS=ON" ; shift ;;
+        --build-examples) BUILD_OPTIONS="$BUILD_OPTIONS -DCHOPSTIX_BUILD_EXAMPLES=ON" ; shift ;;
+        --build-type) BUILD_OPTIONS="$BUILD_OPTIONS -DCMAKE_BUILD_TYPE=$2" ; shift 2 ;;
+        --profile-cpu) BUILD_OPTIONS="$BUILD_OPTIONS -DCHOPSTIX_PROFILE_CPU=ON" ; shift ;;
+        --) shift ; break ;;
+        *) echo "Internal error!" ; exit 1 ;;
+    esac
+done
+
+cmake $BUILD_OPTIONS $PROJECT_DIR

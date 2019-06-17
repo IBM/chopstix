@@ -1,0 +1,17 @@
+Usage: chop view function [-name <name>] [-id <id>] [<options>]
+       chop view path [-id <id>] [<options>]
+
+View CFG for a given function or snippet path in DOT format. 
+The output is generated in standard output. E.g:
+
+chop view function -name my_func | dot -T png > my_func.png
+
+Options:
+  -data <path>    Path to database file. (default: chop.db)
+  -name <name>    Name of function
+  -id <id>        ID of function|snippet
+  -out <path>     Write to file instead
+  -fmt <format>   Viewing format (default: compact)
+                    compact   Only shows basic blocks
+                    detail    Shows basic blocks and insns
+                   

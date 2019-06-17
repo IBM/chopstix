@@ -1,0 +1,15 @@
+Usage: chop [-version] [-help] <command> [<args>]
+
+The supported commands are:
+  help       See documentation
+  list       List collected statistics
+  text       Display assembly
+  sample     Sample application
+  disasm     Disassemble object files
+  count      Count samples per instruction
+  annotate   Annotate CFG
+  view       Display CFG or path as .dot file
+  search     Search for hottest paths
+  trace      Trace execution
+  
+See 'chop help <command>' for more information on a specific command.

@@ -1,0 +1,45 @@
+Usage: chop sample [<options>] [--] <command> [<args>]
+       chop sample [<options>] -pid <pid>
+
+Sample given <command> or <pid>.
+
+Options:
+  -data <path>        Path to database file (default: chop.db)
+  -events <list>      Comma-separated List of events to sample.
+                      See 'perf list' for a list of available events.
+                      Events must belong to a single PMC group.
+                      This behavior might change in the future.
+                      (default: task-clock)
+  -period <num>       Sampling period in terms of first event.
+                      A sample will be generated every <num>
+                      events.
+                      (default: 10000000) (every 10ms)
+  -freq <num>         Sampling frequency in terms of first event.
+                      The OS will try to generate <num> samples per
+                      second based on rate of events happening.
+                      This option, if specified, takes preference 
+                      over -period option.
+  -pid <pid>          Sample from a running process with PID.
+                      Requires a timeout value.
+  -timeout <time>     Stop sampling after <time>. By default
+                      <time> is in seconds. One can use time
+                      specifiers as following: d (days), h
+                      (hours), m(minutes), s(seconds), ms
+                      (milliseconds), us(microseconds). 
+
+Using this command you can sample (i.e. profile) the execution of
+an application. You can either sample an already running process,
+using the `-pid` flag, or launch a new process by providing the
+required command. Each sampling pass will create a new `session`.
+The session saves the used command, as well as the collected samples.
+To list all sessions run 'chop info sessions'.
+You can remove a given session by running 'chop drop -pid <pid>'. 
+
+The events you can sample depend on your target platform. The
+sampling pass is pased on `perf_event`. It is recommended to
+run 'perf list' to see a list of available events. The default
+event (task-clock) should be present on most platforms.
+ChopStiX will create an event group (PMC) and samples based on
+occurences of the first (i.e. leader) event. The sampling frequency/
+period is controled by the corresponding flags. Depending on the
+selected leader event you may need to adjust these parameters.

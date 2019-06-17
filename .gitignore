@@ -1,0 +1,6 @@
+.vimrc
+.vscode
+tags
+build*/
+!scripts/build
+*.swp
