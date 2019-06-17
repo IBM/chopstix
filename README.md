@@ -2,7 +2,7 @@
 
 Extract representative microbenchmarks.
 
-[![Build Status](https://travis-ci.org/rbertran/chopstix.svg?branch=master)](https://travis-ci.org/rbertran/chopstix)
+[![Build Status](https://travis-ci.org/IBM/chopstix.svg?branch=master)](https://travis-ci.org/IBM/chopstix)
 
 ## Installation
 
