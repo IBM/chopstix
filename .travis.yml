@@ -1,37 +1,37 @@
 language: cpp
 sudo: required
-cache: 
+cache:
     ccache: true
-    directories: 
-        - toolchain 
+    directories:
+        - toolchain
     timeout: 1000
 os:
     - linux
 dist:
-    - xenial 
+    - xenial
 compiler:
     - gcc
 notifications:
     email:
         recipients:
             - rbertra@us.ibm.com
-        on_success: change 
-        on_failure: always 
+        on_success: change
+        on_failure: always
 env:
     global:
         - CHOPSTIX_PERFMON_PREFIX=/tmp/libpfm
         - CHOPSTIX_BUILD_TESTS=ON
         - CTEST_OUTPUT_ON_FAILURE=1
     matrix:
-        - CHOPSTIX_POWER_SUPPORT=ON CHOPSTIX_BUILD_SQLITE=ON  
-        - CHOPSTIX_POWERLE_SUPPORT=ON CHOPSTIX_BUILD_SQLITE=ON 
-        - CHOPSTIX_SYSZ_SUPPORT=ON CHOPSTIX_BUILD_SQLITE=ON 
-        - CHOPSTIX_X86_SUPPORT=ON CHOPSTIX_BUILD_SQLITE=ON 
-        - CHOPSTIX_X86_SUPPORT=ON CHOPSTIX_BUILD_SQLITE=OFF 
+        - CHOPSTIX_POWER_SUPPORT=ON CHOPSTIX_BUILD_SQLITE=ON
+        - CHOPSTIX_POWERLE_SUPPORT=ON CHOPSTIX_BUILD_SQLITE=ON
+        - CHOPSTIX_SYSZ_SUPPORT=ON CHOPSTIX_BUILD_SQLITE=ON
+        - CHOPSTIX_X86_SUPPORT=ON CHOPSTIX_BUILD_SQLITE=ON
+        - CHOPSTIX_X86_SUPPORT=ON CHOPSTIX_BUILD_SQLITE=OFF
 before_install:
     - set -e
     - echo "Before install"
-    - sudo apt-get update 
+    - sudo apt-get update
     - sudo apt-get install cmake cmake-data shellcheck linux-tools-generic linux-tools-4.4.0-87-generic -y
     - shellcheck -x -s sh $(find . -name \*.sh) $(find . -name \*.sh.in) ./tools/chop-* ./test/drivers/* ./test/daxpy/*spec
     - env
