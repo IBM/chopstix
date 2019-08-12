@@ -28,6 +28,10 @@ To download and setup ChopStiX for installation follow these steps:
     git submodule sync 
     git submodule update --init --recursive
 
+If you download the repository contents directly from `github.com` as a 
+compressed zip file, you also have to download the external depencies
+and decompress them into the `./external` directory. 
+
 ### Support script
 
 We provide a support script that facilitates the installation process. If you
