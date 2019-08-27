@@ -57,7 +57,7 @@ while true ; do
     esac
 done
 
-[ -n "$trace" ] && die "Trace dir '$trace' does not exists"
+[ ! -d "$trace" ] && die "Trace dir '$trace' does not exists"
 [ -z "$output" ] && die "Error: No output path"
 
 if [ -z "$id" ]; then
