@@ -50,7 +50,12 @@ std::unique_ptr<TextFormat> get_format() {
     auto opt = Option::get("fmt").as_string("text");
     if (opt == "text") return format(new TextFormat());
     if (opt == "annotate") return format(new AnnotFormat());
-    if (opt == "mpt") return format(new MptFormat());
+    if (opt == "mpt") {
+        auto opt_arch = Option::get("arch");
+        CHECK_USAGE(text, opt_arch.is_set(), "No architecture specified");
+        auto arch = Arch::get_impl(opt_arch.as_string());
+        return format(new MptFormat(arch->get_endianess()));
+    }
     CHECK_USAGE(text, 0, "Unknown format '{}'", opt);
 }
 

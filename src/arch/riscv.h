@@ -14,6 +14,7 @@ struct ArchRiscV : public Arch {
     std::vector<std::string> prefix() const {
         return {"riscv64"};
     }
+    Endianess get_endianess() const {return Endianess::LITTLE;}
 
     void parse_inst(Instruction &) const;
 

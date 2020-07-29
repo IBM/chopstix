@@ -43,6 +43,11 @@ namespace chopstix {
 
 struct Instruction;
 
+enum class Endianess {
+    LITTLE,
+    BIG
+};
+
 struct Arch {
     using regbuf_type = long *;
     using impl_ptr = std::unique_ptr<Arch>;
@@ -55,6 +60,7 @@ struct Arch {
     virtual void parse_inst(Instruction &) const = 0;
     virtual std::string name() const = 0;
     virtual std::vector<std::string> prefix() const = 0;
+    virtual Endianess get_endianess() const = 0;
 
     virtual size_t regsize() const = 0;
     regbuf_type create_regs() const { return new long[regsize()]; }

@@ -52,12 +52,17 @@ struct AnnotFormat : TextFormat {
 };
 
 struct MptFormat : TextFormat {
+    MptFormat(Endianess endianess) : endianess(endianess) {}
+
     virtual std::ostream &header(std::ostream &os);
     virtual std::ostream &format(std::ostream &os, const Module &module);
     virtual std::ostream &format(std::ostream &os, const Function &func);
     virtual std::ostream &format(std::ostream &os, const BasicBlock &block);
     virtual std::ostream &format(std::ostream &os, const Instruction &inst);
     virtual std::ostream &format(std::ostream &os, const Path &path);
+
+private:
+    Endianess endianess;
 };
 
 };  // namespace chopstix

@@ -35,6 +35,7 @@ struct ArchPower : public Arch {
     std::vector<std::string> prefix() const {
         return {"powerpc64", "powerpc64le", "ppc64", "ppc64le"};
     }
+    Endianess get_endianess() const {return Endianess::LITTLE;}
 
     void parse_inst(Instruction &) const;
 
