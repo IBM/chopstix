@@ -36,6 +36,10 @@ if (CHOPSTIX_X86_SUPPORT)
     set (sources ${sources} x86.cpp)
 endif ()
 
+if (CHOPSTIX_RISCV_SUPPORT)
+    set (sources ${sources} riscv.cpp)
+endif ()
+
 add_chopstix_library(arch
     ${sources}
 )
