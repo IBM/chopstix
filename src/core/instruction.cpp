@@ -98,7 +98,7 @@ std::string Instruction::raw_be() const {
         be[i] = raw[raw.size() - 2 - i];
         be[i + 1] = raw[raw.size() - 1 - i];
     }
-    return std::move(be);
+    return be;
 }
 
 std::istream &Instruction::parse_line(std::istream &is) {

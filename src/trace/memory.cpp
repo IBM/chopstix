@@ -237,7 +237,7 @@ ssize_t readline(int fd, char *buf, size_t siz) {
 
 void Memory::update() {
     log::debug("Memory::update: Memory::update");
-    int fd = syscall(SYS_open, "/proc/self/maps", O_RDONLY);
+    int fd = syscall(SYS_openat, AT_FDCWD, "/proc/self/maps", O_RDONLY);
     check(fd != -1, "Unable to open maps");
     char line[1024];
     size_t n = 0;
