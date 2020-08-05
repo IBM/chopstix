@@ -42,6 +42,9 @@
 #ifdef CHOPSTIX_X86_SUPPORT
 #include "arch/x86.h"
 #endif
+#ifdef CHOPSTIX_RISCV_SUPPORT
+#include "arch/riscv.h"
+#endif
 
 using namespace chopstix;
 
@@ -82,6 +85,11 @@ Arch::impl_ptr Arch::get_impl(std::string name) {
 #ifdef CHOPSTIX_X86_SUPPORT
         if (anyof(name, {"x86", "amd"})) {
         return impl_ptr(new ArchX86());
+    } else
+#endif
+#ifdef CHOPSTIX_RISCV_SUPPORT
+        if (anyof(name, {"riscv", "riscv64"})) {
+        return impl_ptr(new ArchRiscV());
     } else
 #endif
     {

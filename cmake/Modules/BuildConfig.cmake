@@ -14,6 +14,7 @@ set_env (CHOPSTIX_POWER_SUPPORT OFF CACHE BOOL "Architecture support for PowerPC
 set_env (CHOPSTIX_POWERLE_SUPPORT OFF CACHE BOOL "Architecture support for PowerPC LE." )
 set_env (CHOPSTIX_SYSZ_SUPPORT OFF CACHE BOOL "Architecture support for zArch ." )
 set_env (CHOPSTIX_X86_SUPPORT OFF CACHE BOOL "Architecture support for x86." )
+set_env (CHOPSTIX_RISCV_SUPPORT OFF CACHE BOOL "Architecture support for RiscV." )
 
 set_env (CHOPSTIX_BUILD_SQLITE OFF CACHE BOOL "Generate build targets for sqlite3." )
 set_env (CHOPSTIX_SQLITE_PREFIX "" CACHE PATH "Path to sqlite3 installation.")
