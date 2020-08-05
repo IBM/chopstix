@@ -77,7 +77,7 @@ System::System() {
 
     sfmt::format(fname, sizeof(fname), "%s/_alt_stack", trace_path);
     int stack_fd =
-        syscall(SYS_open, fname, O_WRONLY | O_CREAT | O_TRUNC, PERM_664);
+        syscall(SYS_openat, AT_FDCWD,fname, O_WRONLY | O_CREAT | O_TRUNC, PERM_664);
     check(stack_fd != -1, "Unable to write file");
     int n = ::write(stack_fd, Memory::instance().alt_stack(),
                     sizeof(Memory::stack_type));
@@ -87,7 +87,7 @@ System::System() {
     raise(SIGUSR1);
 
     sfmt::format(fname, sizeof(fname), "%s/_restrict_map", trace_path);
-    int res_fd = syscall(SYS_open, fname, O_RDONLY);
+    int res_fd = syscall(SYS_openat, AT_FDCWD,fname, O_RDONLY);
     Memory::instance().restrict_map(res_fd);
     syscall(SYS_close, res_fd);
 
@@ -143,7 +143,7 @@ void System::record_segv(unsigned long addr) {
             char fname[PATH_MAX];
             sfmt::format(fname, sizeof(fname), "%s/_page_count.%d", trace_path,
                          trace_id);
-            int fd = syscall(SYS_open, fname, O_WRONLY | O_CREAT | O_TRUNC,
+            int fd = syscall(SYS_openat, AT_FDCWD,fname, O_WRONLY | O_CREAT | O_TRUNC,
                              PERM_664);
             check(fd != -1, "Unable to open %s", fname);
             int val = write(fd, (void *)&pagecount, sizeof(int));
@@ -165,7 +165,7 @@ void System::save_page(unsigned long page_addr) {
     sfmt::format(fname, sizeof(fname), "%s/page.%d.%x", trace_path, trace_id,
                  page_addr);
     log::debug("System::save_page: opening %s", fname);
-    int fd = syscall(SYS_open, fname, O_WRONLY | O_CREAT | O_TRUNC, PERM_664);
+    int fd = syscall(SYS_openat, AT_FDCWD,fname, O_WRONLY | O_CREAT | O_TRUNC, PERM_664);
     check(fd != -1, "Unable to save page at '%s'", fname);
     log::debug("System::save_page: writing to %s", fname);
     ssize_t w = ::write(fd, (void *)page_addr, pagesize);

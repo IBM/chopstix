@@ -47,7 +47,7 @@ TraceBuffer::~TraceBuffer() {
 void TraceBuffer::setup(const char *trace_root) {
     char fpath[PATH_MAX];
     sfmt::format(fpath, sizeof(fpath), "%s/trace.bin", trace_root);
-    fd_ = syscall(SYS_open, fpath, O_WRONLY | O_CREAT | O_TRUNC, PERM_664);
+    fd_ = syscall(SYS_openat, AT_FDCWD, fpath, O_WRONLY | O_CREAT | O_TRUNC, PERM_664);
 
     check(fd_ != -1, "Unable to open 'trace.bin'");
 }
