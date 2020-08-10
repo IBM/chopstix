@@ -164,8 +164,8 @@ std::string invert_mpt(std::string raw) {
 std::ostream &MptFormat::format(std::ostream &os, const Instruction &inst) {
     auto text = inst.text;
     std::replace(text.begin(), text.end(), '%', '$');
-    // TODO Check arch
-    fmt::print(os, "    0x{} ; {}\n", inst.raw_be(), text);
+    auto raw = (endianess == Endianess::LITTLE ? inst.raw : inst.raw_be());
+    fmt::print(os, "    0x{} ; {}\n", raw, text);
     return os;
 }
 

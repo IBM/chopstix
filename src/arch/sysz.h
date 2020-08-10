@@ -33,6 +33,7 @@ namespace chopstix {
 struct ArchZ : public Arch {
     std::string name() const { return "SystemZ"; }
     std::vector<std::string> prefix() const { return {"s390", "s360"}; }
+    Endianess get_endianess() const {return Endianess::LITTLE;}
 
     void parse_inst(Instruction &) const;
 

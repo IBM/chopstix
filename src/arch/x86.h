@@ -33,6 +33,7 @@ namespace chopstix {
 struct ArchX86 : public Arch {
     std::string name() const { return "x86"; }
     std::vector<std::string> prefix() const { return {"x86", "x86_64"}; }
+    Endianess get_endianess() const {return Endianess::LITTLE;}
 
     void parse_inst(Instruction &) const;
 

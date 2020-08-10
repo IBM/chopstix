@@ -15,3 +15,4 @@ Options:
                      text      Just plain text.
                      annotate  Text with annotation (i.e. score).
                      mpt       Output as Microprobe test file (.mpt).
+  -arch <arch>    Name of the Architecture to generate the mpt for
