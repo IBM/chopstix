@@ -39,6 +39,12 @@ add_chopstix_library(core
     path.cpp
     search.cpp
     location.cpp
+    tracer/preamble.cpp
+    tracer/prologue.cpp
+    tracer/regionofinterest.cpp
+    tracer/state.cpp
+    tracer/trace.cpp
+    tracer/tracer.cpp
 )
 
 target_link_libraries(cx-core
