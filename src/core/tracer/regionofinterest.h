@@ -26,4 +26,14 @@ class TracerRangedRegionOfInterestState : public TracerRegionOfInterestState {
     std::vector<long> &end;
 };
 
+class TracerTimedRegionOfInterestState : public TracerRegionOfInterestState {
+  public:
+    TracerTimedRegionOfInterestState(Tracer *tracer, double time) :
+        TracerRegionOfInterestState(tracer), time(time) {}
+
+    virtual void execute(Process &child);
+  private:
+    double time;
+};
+
 }

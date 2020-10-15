@@ -13,7 +13,6 @@ void TracerPreambleState::do_trace(Process &child) {
     tracer->start_trace();
     log::verbose("Preamble:: call start tracing routine on child");
     tracer->dyn_call("chopstix_start_trace");
-    child.syscall();
     change_state();
 }
 
@@ -42,6 +41,7 @@ void TracerRangedPreambleState::execute(Process &child) {
 
         if (tracer->should_trace()) {
             do_trace(child);
+            child.syscall();
         } else {
             tracer->set_breakpoint(start, false);
             tracer->set_breakpoint(end, true);

@@ -54,4 +54,15 @@ void TracerRangedRegionOfInterestState::handle_signal(Process &child,
     else TracerRegionOfInterestState::handle_signal(child, signal);
 }
 
+void TracerTimedRegionOfInterestState::execute(Process &child) {
+    log::verbose("TimedRegionOfInterest:: tracing for %s",
+                 std::to_string(time));
+    //The following timeout performs a wait, but it is for a specific signal
+    //(SIGSTOP). This potentially means that we might miss out on some other
+    //signals while we do so (e.g. syscalls, etc). An improvement might
+    //be removing the internat wait in Process::timeout?
+    child.timeout(time);
+    change_state();
+}
+
 }

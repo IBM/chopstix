@@ -78,7 +78,9 @@ int run_trace(int argc, char **argv) {
         roi = new TracerRangedRegionOfInterestState(tracer, addr_end);
         prologue = new TracerPrologueState(tracer);
     } else {
-        return 2;
+        preamble = new TracerTimedPreambleState(tracer, tidle);
+        roi = new TracerTimedRegionOfInterestState(tracer, tsample);
+        prologue = new TracerPrologueState(tracer);
     }
 
     preamble->set_next_state(roi);
