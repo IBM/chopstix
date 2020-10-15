@@ -65,12 +65,18 @@ int run_trace(int argc, char **argv) {
     checkx(!fs::exists(trace_path), "Output trace directory path '%s' already exists!", trace_path);
     fs::mkdir(trace_path);
 
-    Tracer tracer(trace_path);
+    Tracer *tracer;
+    if (getopt("prob").is_set()) {
+        tracer = new RandomizedTracer(trace_path, sample_freq);
+    } else {
+        tracer = new Tracer(trace_path);
+    }
+
     TracerState *preamble, *roi, *prologue;
     if (with_region) {
-        preamble = new TracerRangedPreambleState(&tracer, addr_begin, addr_end);
-        roi = new TracerRangedRegionOfInterestState(&tracer, addr_end);
-        prologue = new TracerPrologueState(&tracer);
+        preamble = new TracerRangedPreambleState(tracer, addr_begin, addr_end);
+        roi = new TracerRangedRegionOfInterestState(tracer, addr_end);
+        prologue = new TracerPrologueState(tracer);
     } else {
         return 2;
     }
@@ -79,7 +85,7 @@ int run_trace(int argc, char **argv) {
     roi->set_next_state(prologue);
     prologue->set_next_state(preamble);
 
-    tracer.start(preamble, argc, argv);
+    tracer->start(preamble, argc, argv);
 
     return 0;
 }

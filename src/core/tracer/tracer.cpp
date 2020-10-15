@@ -226,4 +226,8 @@ void Tracer::set_breakpoint(std::vector<long> address, bool state) {
     }
 }
 
+bool RandomizedTracer::should_trace() {
+    return ((random() + 0.0) / RAND_MAX) < probability;
+}
+
 }

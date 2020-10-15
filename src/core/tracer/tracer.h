@@ -16,7 +16,7 @@ class Tracer {
 
     void set_state(TracerState *state);
     void start_trace();
-    bool should_trace() {return false;}
+    virtual bool should_trace() {return false;}
     void save_page();
     void dyn_call(std::string symbol);
     void set_breakpoint(std::vector<long> address, bool state);
@@ -34,6 +34,16 @@ class Tracer {
     int trace_id = 0;
     std::string trace_path;
     bool running;
+};
+
+class RandomizedTracer : public Tracer {
+  public:
+    RandomizedTracer(std::string trace_path, double probability) :
+        Tracer(trace_path), probability(probability) {}
+
+    virtual bool should_trace();
+  private:
+    double probability;
 };
 
 }
