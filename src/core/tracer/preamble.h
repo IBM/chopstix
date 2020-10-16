@@ -13,6 +13,7 @@ class TracerPreambleState : public TracerState {
 
   protected:
     virtual void do_trace(Process &child);
+    virtual bool check_finished(Process &child);
 };
 
 class TracerTimedPreambleState : public TracerPreambleState {

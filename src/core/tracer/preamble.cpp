@@ -16,9 +16,27 @@ void TracerPreambleState::do_trace(Process &child) {
     change_state();
 }
 
+bool TracerPreambleState::check_finished(Process &child) {
+    if (child.active()) return false;
+
+    if (child.exited()) {
+        int status = child.exit_status();
+        if (status == 0) {
+            tracer->stop();
+            return true;
+        } else {
+            throw std::runtime_error("Child exited with non-zero status");
+        }
+    } else {
+        throw std::runtime_error("Child finished without exiting.");
+    }
+}
+
 void TracerTimedPreambleState::execute(Process &child) {
     child.timeout(time);
-    do_trace(child);
+    if (!check_finished(child) && tracer->should_trace()) {
+        do_trace(child);
+    }
 }
 
 void TracerRangedPreambleState::on_state_start() {
@@ -35,7 +53,7 @@ void TracerRangedPreambleState::execute(Process &child) {
     log::debug("RangedPreamble:: continuing to region start");
     child.cont();
     child.waitfor(SIGILL);
-    if (child.active()) {
+    if (!check_finished(child)) {
         long cur_pc = Arch::current()->get_pc(child.pid());
         log::debug("run_trace:: Stop at PC: %x", cur_pc);
 
@@ -49,17 +67,6 @@ void TracerRangedPreambleState::execute(Process &child) {
             child.waitfor(SIGILL);
             tracer->set_breakpoint(end, false);
             tracer->set_breakpoint(start, true);
-        }
-    } else {
-        if (child.exited()) {
-            int status = child.exit_status();
-            if (status == 0) {
-                tracer->stop();
-            } else {
-                throw std::runtime_error("Child exited with non-zero status");
-            }
-        } else {
-            throw std::runtime_error("Child finished without exiting.");
         }
     }
 }
