@@ -60,7 +60,7 @@ Options:
                          One can use time specifiers as following: d (days), h
                          (hours), m(minutes), s(seconds), ms (milliseconds), 
                          us(microseconds). 
-  -prob <pct>            Probability that a given region is traced (default: 1)
+  -prob <pct>            Probability that a given region is traced
                          Valid values: floats between 0 and 1. 0: no region
                          is going to be traced. 1: all region will be traced.
   -group <num>           Group <num> region into one trace (default: 1).
@@ -81,4 +81,7 @@ Options:
   -no-trace              Do no call tracing mechanisms. This debugging option is
                          used for testing the detection of the regions of interests.
                          (experimental)
-
+  -indices <list>        Trace the indicated executions (starting at 1). e.g.
+                         if tracing a region of interest defined by a starting
+                         address, and list=3,5 , it will generate a trace
+                         when that address is reached a third and fifth time.

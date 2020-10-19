@@ -230,4 +230,16 @@ bool RandomizedTracer::should_trace() {
     return ((random() + 0.0) / RAND_MAX) < probability;
 }
 
+bool IndexedTracer::should_trace() {
+    if (indices.size() <= current_index) return false;
+
+    current_execution++;
+    if (current_execution == indices[current_index]) {
+        current_index++;
+        return true;
+    } else {
+        return false;
+    }
+}
+
 }

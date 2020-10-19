@@ -60,6 +60,7 @@ int run_trace(int argc, char **argv) {
     int group_iter = getopt("group").as_int();
     auto addr_begin = getopt("begin").as_hex_vec();
     auto addr_end = getopt("end").as_hex_vec();
+    auto indices = getopt("indices").as_int_vec();
     bool with_region = addr_begin.size() > 0;
 
     checkx(!fs::exists(trace_path), "Output trace directory path '%s' already exists!", trace_path);
@@ -68,6 +69,9 @@ int run_trace(int argc, char **argv) {
     Tracer *tracer;
     if (getopt("prob").is_set()) {
         tracer = new RandomizedTracer(trace_path, sample_freq);
+    } else if(getopt("indices").is_set()) {
+        std::vector<unsigned int> vec(begin(indices), end(indices));
+        tracer = new IndexedTracer(trace_path, vec);
     } else {
         tracer = new Tracer(trace_path);
     }

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "../process.h"
+#include<vector>
 
 namespace chopstix {
 
@@ -44,6 +45,18 @@ class RandomizedTracer : public Tracer {
     virtual bool should_trace();
   private:
     double probability;
+};
+
+class IndexedTracer : public Tracer {
+  public:
+    IndexedTracer(std::string trace_path, std::vector<unsigned int> indices) :
+        Tracer(trace_path), indices(indices) {}
+
+    virtual bool should_trace();
+  private:
+    std::vector<unsigned int> indices;
+    unsigned int current_index = 0;
+    unsigned int current_execution = 0;
 };
 
 }
