@@ -9,7 +9,7 @@ class TracerState;
 
 class Tracer {
   public:
-    Tracer(std::string trace_path);
+    Tracer(std::string trace_path, bool dryrun);
     ~Tracer();
 
     void start(TracerState *initial_state, int argc, char **argv);
@@ -17,6 +17,7 @@ class Tracer {
 
     void set_state(TracerState *state);
     void start_trace();
+    void stop_trace();
     virtual bool should_trace() {return false;}
     void save_page();
     void dyn_call(std::string symbol);
@@ -35,12 +36,13 @@ class Tracer {
     int trace_id = 0;
     std::string trace_path;
     bool running;
+    bool tracing_enabled;
 };
 
 class RandomizedTracer : public Tracer {
   public:
-    RandomizedTracer(std::string trace_path, double probability) :
-        Tracer(trace_path), probability(probability) {}
+    RandomizedTracer(std::string trace_path, bool dryrun, double probability) :
+        Tracer(trace_path, dryrun), probability(probability) {}
 
     virtual bool should_trace();
   private:
@@ -49,8 +51,9 @@ class RandomizedTracer : public Tracer {
 
 class IndexedTracer : public Tracer {
   public:
-    IndexedTracer(std::string trace_path, std::vector<unsigned int> indices) :
-        Tracer(trace_path), indices(indices) {}
+    IndexedTracer(std::string trace_path, bool dryrun,
+                  std::vector<unsigned int> indices) :
+        Tracer(trace_path, dryrun), indices(indices) {}
 
     virtual bool should_trace();
   private:

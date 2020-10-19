@@ -52,7 +52,7 @@ int run_trace(int argc, char **argv) {
     bool drytrace = getopt("access-only").as_bool();
     std::string trace_path = getopt("trace-dir").as_string();
     double sample_freq = getopt("prob").as_float();
-    bool nolib = !getopt("trace").as_bool();
+    bool notrace = !getopt("trace").as_bool();
     double tidle = getopt("interval").as_time();
     double tsample = getopt("active").as_time();
     int max_traces = getopt("max-traces").as_int();
@@ -68,12 +68,12 @@ int run_trace(int argc, char **argv) {
 
     Tracer *tracer;
     if (getopt("prob").is_set()) {
-        tracer = new RandomizedTracer(trace_path, sample_freq);
+        tracer = new RandomizedTracer(trace_path, notrace, sample_freq);
     } else if(getopt("indices").is_set()) {
         std::vector<unsigned int> vec(begin(indices), end(indices));
-        tracer = new IndexedTracer(trace_path, vec);
+        tracer = new IndexedTracer(trace_path, notrace, vec);
     } else {
-        tracer = new Tracer(trace_path);
+        tracer = new Tracer(trace_path, notrace);
     }
 
     TracerState *preamble, *roi, *prologue;

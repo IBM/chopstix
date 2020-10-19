@@ -38,9 +38,10 @@ static void preload(std::string path) {
 
 namespace chopstix {
 
-Tracer::Tracer(std::string trace_path) {
+Tracer::Tracer(std::string trace_path, bool dryrun) {
     regs = Arch::current()->create_regs();
     this->trace_path = trace_path;
+    tracing_enabled = !dryrun;
 }
 
 Tracer::~Tracer() {
@@ -56,6 +57,8 @@ void Tracer::start(TracerState *initial_state, int argc, char **argv) {
     while(running) {
         current_state->execute(child);
     }
+
+    log::info("Tracer captured %d traces", trace_id);
 }
 
 void Tracer::stop() {
@@ -199,8 +202,18 @@ void Tracer::init(int argc, char **argv) {
 }
 
 void Tracer::start_trace() {
-    Trace trace(trace_id++, child);
-    trace.save(trace_path);
+    if(tracing_enabled) {
+        Trace trace(trace_id, child);
+        trace.save(trace_path);
+        dyn_call("chopstix_start_trace");
+    }
+    trace_id++;
+}
+
+void Tracer::stop_trace() {
+    if (tracing_enabled) {
+        dyn_call("chopstix_stop_trace");
+    }
 }
 
 void Tracer::save_page() {
@@ -208,7 +221,7 @@ void Tracer::save_page() {
 }
 
 void Tracer::dyn_call(std::string symbol) {
-    log::info("Calling %s", symbol);
+    log::info("Tracer::Calling %s", symbol);
     auto location = symbols.find(symbol);
     if(location == symbols.end()) {
         Location loc = child.find_symbol(symbol, library_path());

@@ -11,8 +11,6 @@ namespace chopstix {
 
 void TracerPreambleState::do_trace(Process &child) {
     tracer->start_trace();
-    log::verbose("Preamble:: call start tracing routine on child");
-    tracer->dyn_call("chopstix_start_trace");
     change_state();
 }
 
