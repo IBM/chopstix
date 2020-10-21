@@ -33,8 +33,8 @@ class TracerRangedPreambleState : public TracerPreambleState {
        TracerPreambleState(tracer), start(start), end(end) {}
 
     virtual void execute(Process &child);
-    virtual void on_state_start();
-    virtual void on_state_finish();
+    virtual void on_state_start(Process &child);
+    virtual void on_state_finish(Process &child);
   private:
     std::vector<long> &start;
     std::vector<long> &end;

@@ -9,8 +9,10 @@ class TracerRegionOfInterestState : public TracerState {
     TracerRegionOfInterestState(Tracer *tracer) : TracerState(tracer) {}
 
     virtual void execute(Process &child);
+    virtual void on_state_start(Process &child);
   protected:
     virtual void handle_signal(Process &child, int signal);
+    long vdso_addr;
 };
 
 class TracerRangedRegionOfInterestState : public TracerRegionOfInterestState {
@@ -18,8 +20,8 @@ class TracerRangedRegionOfInterestState : public TracerRegionOfInterestState {
     TracerRangedRegionOfInterestState(Tracer *tracer, std::vector<long> &end) :
         TracerRegionOfInterestState(tracer), end(end) {}
 
-    virtual void on_state_start();
-    virtual void on_state_finish();
+    virtual void on_state_start(Process &child);
+    virtual void on_state_finish(Process &child);
   protected:
     virtual void handle_signal(Process &child, int signal);
   private:

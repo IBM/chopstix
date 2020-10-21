@@ -68,8 +68,8 @@ void Tracer::stop() {
 void Tracer::set_state(TracerState *state) {
     log::verbose("State change");
 
-    if (current_state != nullptr) current_state->on_state_finish();
-    state->on_state_start();
+    if (current_state != nullptr) current_state->on_state_finish(child);
+    state->on_state_start(child);
 
     current_state = state;
 }
@@ -207,10 +207,10 @@ void Tracer::start_trace() {
         trace.save(trace_path);
         dyn_call("chopstix_start_trace");
     }
-    trace_id++;
 }
 
 void Tracer::stop_trace() {
+    trace_id++;
     if (tracing_enabled) {
         dyn_call("chopstix_stop_trace");
     }
@@ -230,6 +230,19 @@ void Tracer::dyn_call(std::string symbol) {
     } else {
         child.dyn_call(location->second, regs, alt_stack);
     }
+}
+
+bool Tracer::symbol_contains(std::string symname, long addr) {
+    auto location = symbols.find(symname);
+    Location *symbol;
+    if(location == symbols.end()) {
+        Location loc = child.find_symbol(symname, library_path());
+        symbols.emplace(symname, loc);
+        return loc.entry().contains(addr);
+    } else {
+        return location->second.entry().contains(addr);
+    }
+
 }
 
 void Tracer::set_breakpoint(std::vector<long> address, bool state) {

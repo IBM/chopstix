@@ -20,17 +20,54 @@ void TracerRegionOfInterestState::execute(Process &child) {
     }
 }
 
+void TracerRegionOfInterestState::on_state_start(Process &child) {
+    vdso_addr = child.find_module("[vdso]").addr();
+}
+
 void TracerRegionOfInterestState::handle_signal(Process &child, int signal) {
     if (signal == SIGSEGV) {
         // forward signal
-        log::debug("run_trace:: catching signal SIGSEGV");
+        log::debug("RegionOfInterest:: catching signal SIGSEGV");
         tracer->save_page();
 
-        log::debug("run_trace:: forward signal SIGSEGV");
+        log::debug("RegionOfInterest:: forward signal SIGSEGV");
         child.syscall(signal);
     } else if (signal == SIGTRAP) {
+        log::debug("RegionOfInterest:: catching signal SIGTRAP");
+        // enter syscall
+        auto tmp_regs = Arch::current()->create_regs();
+        Arch::current()->read_regs(child.pid(), tmp_regs);
+        long sc_nr = Arch::current()->parse_syscall(tmp_regs);
+        free(tmp_regs);
+        long lnk_reg = Arch::current()->get_lnk(child.pid());
+        bool in_vdso = lnk_reg >= vdso_addr;
+        bool in_support =
+            tracer->symbol_contains("chopstix_start_trace", lnk_reg);
+        long cur_pc = Arch::current()->get_pc(child.pid());
+
+        // finish syscall
         child.syscall();
-        //child.wait();
+        child.wait();
+
+        // continue
+        if (child.exited()) {
+            log::verbose("run_trace:: child exited with %d",
+                         child.exit_status());
+            tracer->stop();
+        }
+
+        if (!in_support && !in_vdso) {
+            log::verbose("RegionOfInterest:: system call %d from %x", sc_nr,
+                      cur_pc);
+            log::verbose("RegionOfInterest:: split trace at %x", cur_pc);
+            tracer->stop_trace();
+            tracer->start_trace();
+        } else {
+            log::debug("run_trace:: in support / in_vdso");
+        }
+
+        // continue
+        child.syscall();
     } else {
         // forward signal
         log::debug("run_trace:: forward signal: %d", signal);
@@ -38,12 +75,13 @@ void TracerRegionOfInterestState::handle_signal(Process &child, int signal) {
     }
 }
 
-void TracerRangedRegionOfInterestState::on_state_start() {
+void TracerRangedRegionOfInterestState::on_state_start(Process &child) {
+    TracerRegionOfInterestState::on_state_start(child);
     log::debug("run_trace:: setting end break point of region");
     tracer->set_breakpoint(end, true);
 }
 
-void TracerRangedRegionOfInterestState::on_state_finish() {
+void TracerRangedRegionOfInterestState::on_state_finish(Process &child) {
     log::debug("run_trace:: removing end break point of region");
     tracer->set_breakpoint(end, false);
 }

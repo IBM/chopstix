@@ -18,9 +18,10 @@ class Tracer {
     void set_state(TracerState *state);
     void start_trace();
     void stop_trace();
-    virtual bool should_trace() {return false;}
+    virtual bool should_trace() {return true;}
     void save_page();
     void dyn_call(std::string symbol);
+    bool symbol_contains(std::string symbol, long addr);
     void set_breakpoint(std::vector<long> address, bool state);
   private:
     void init(int argc, char **argv);

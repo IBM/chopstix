@@ -37,13 +37,13 @@ void TracerTimedPreambleState::execute(Process &child) {
     }
 }
 
-void TracerRangedPreambleState::on_state_start() {
-    log::info("RangedPreamble:: setting start break point of region");
+void TracerRangedPreambleState::on_state_start(Process &child) {
+    log::debug("RangedPreamble:: setting start break point of region");
     tracer->set_breakpoint(start, true);
 }
 
-void TracerRangedPreambleState::on_state_finish() {
-    log::info("RangedPreamble:: removing start break point of region");
+void TracerRangedPreambleState::on_state_finish(Process &child) {
+    log::debug("RangedPreamble:: removing start break point of region");
     tracer->set_breakpoint(start, false);
 }
 

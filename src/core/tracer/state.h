@@ -12,8 +12,8 @@ public:
     void set_next_state(TracerState *state) {next_state = state;}
 
     virtual void execute(Process &child) = 0;
-    virtual void on_state_start() {}
-    virtual void on_state_finish() {}
+    virtual void on_state_start(Process &child) {}
+    virtual void on_state_finish(Process &child) {}
 protected:
     void change_state();
 
