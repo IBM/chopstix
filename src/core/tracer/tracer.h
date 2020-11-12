@@ -27,6 +27,7 @@ class Tracer {
     void init(int argc, char **argv);
     void track_mmap();
     long read_alt_stack();
+    Location& get_symbol(std::string name);
 
     TracerState *current_state = nullptr;
     Process child;

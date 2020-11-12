@@ -50,24 +50,25 @@ void TracerRegionOfInterestState::handle_signal(Process &child, int signal) {
         child.wait();
 
         // continue
-        if (child.exited()) {
+        if (!child.exited()) {
+            if (!in_support && !in_vdso) {
+                log::verbose("RegionOfInterest:: system call %d from %x", sc_nr,
+                          cur_pc);
+                log::verbose("RegionOfInterest:: split trace at %x", cur_pc);
+                tracer->stop_trace();
+                tracer->start_trace();
+            } else {
+                log::debug("run_trace:: in support / in_vdso");
+            }
+
+            // continue
+            child.syscall();
+        } else {
             log::verbose("run_trace:: child exited with %d",
                          child.exit_status());
             tracer->stop();
         }
 
-        if (!in_support && !in_vdso) {
-            log::verbose("RegionOfInterest:: system call %d from %x", sc_nr,
-                      cur_pc);
-            log::verbose("RegionOfInterest:: split trace at %x", cur_pc);
-            tracer->stop_trace();
-            tracer->start_trace();
-        } else {
-            log::debug("run_trace:: in support / in_vdso");
-        }
-
-        // continue
-        child.syscall();
     } else {
         // forward signal
         log::debug("run_trace:: forward signal: %d", signal);

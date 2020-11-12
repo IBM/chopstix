@@ -220,29 +220,21 @@ void Tracer::save_page() {
     log::debug("Page accessed!");
 }
 
-void Tracer::dyn_call(std::string symbol) {
-    log::info("Tracer::Calling %s", symbol);
-    auto location = symbols.find(symbol);
+Location& Tracer::get_symbol(std::string name) {
+    auto location = symbols.find(name);
     if(location == symbols.end()) {
-        Location loc = child.find_symbol(symbol, library_path());
-        symbols.emplace(symbol, loc);
-        child.dyn_call(loc, regs, alt_stack);
-    } else {
-        child.dyn_call(location->second, regs, alt_stack);
+        Location loc = child.find_symbol(name, library_path());
+        location = symbols.emplace(name, loc).first;
     }
+    return location->second;
+}
+
+void Tracer::dyn_call(std::string symbol) {
+    child.dyn_call(get_symbol(symbol), regs, alt_stack);
 }
 
 bool Tracer::symbol_contains(std::string symname, long addr) {
-    auto location = symbols.find(symname);
-    Location *symbol;
-    if(location == symbols.end()) {
-        Location loc = child.find_symbol(symname, library_path());
-        symbols.emplace(symname, loc);
-        return loc.entry().contains(addr);
-    } else {
-        return location->second.entry().contains(addr);
-    }
-
+    return get_symbol(symname).entry().contains(addr);
 }
 
 void Tracer::set_breakpoint(std::vector<long> address, bool state) {
