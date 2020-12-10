@@ -68,11 +68,14 @@ int run_trace(int argc, char **argv) {
 
     Tracer *tracer;
     if (getopt("prob").is_set()) {
+        log::info("Performing randomized tracing");
         tracer = new RandomizedTracer(trace_path, notrace, sample_freq);
     } else if(getopt("indices").is_set()) {
+        log::info("Performing index tracing");
         std::vector<unsigned int> vec(begin(indices), end(indices));
         tracer = new IndexedTracer(trace_path, notrace, vec);
     } else {
+        log::info("Tracing all invocations");
         tracer = new Tracer(trace_path, notrace);
     }
 
