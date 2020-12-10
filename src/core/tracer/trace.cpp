@@ -38,26 +38,33 @@ Trace::~Trace() {
     free(maps);
 }
 
-void Trace::save(std::string trace_path) {
+void Trace::save(std::string trace_path, TraceOptions &opts) {
     char fname[PATH_MAX];
+    FILE *fp;
 
-    //Serialize Registers
-    sfmt::format(fname, sizeof(fname), "%s/regs.%d", trace_path, trace_id);
-    FILE *fp = fopen(fname, "w");
-    Arch::current()->serialize_regs(fp, registers);
-    fclose(fp);
+    if (opts.dump_registers) {
+        //Serialize Registers
+        sfmt::format(fname, sizeof(fname), "%s/regs.%d", trace_path, trace_id);
+        fp = fopen(fname, "w");
+        Arch::current()->serialize_regs(fp, registers);
+        fclose(fp);
+    }
 
-    //Serialize memory mapping
-    sfmt::format(fname, sizeof(fname), "%s/maps.%d", trace_path, trace_id);
-    fp = fopen(fname, "w");
-    fwrite(maps, maps_size, 1, fp);
-    fclose(fp);
+    if (opts.dump_maps) {
+        //Serialize memory mapping
+        sfmt::format(fname, sizeof(fname), "%s/maps.%d", trace_path, trace_id);
+        fp = fopen(fname, "w");
+        fwrite(maps, maps_size, 1, fp);
+        fclose(fp);
+    }
 
-    //Serialize Program Counter
-    sfmt::format(fname, sizeof(fname), "%s/info.%d", trace_path, trace_id);
-    fp = fopen(fname, "w");
-    fprintf(fp, "begin_addr %016lx\n", pc);
-    fclose(fp);
+    if (opts.dump_info) {
+        //Serialize Program Counter
+        sfmt::format(fname, sizeof(fname), "%s/info.%d", trace_path, trace_id);
+        fp = fopen(fname, "w");
+        fprintf(fp, "begin_addr %016lx\n", pc);
+        fclose(fp);
+    }
 }
 
 }

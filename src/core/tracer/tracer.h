@@ -1,7 +1,8 @@
 #pragma once
 
 #include "../process.h"
-#include<vector>
+#include "trace.h"
+#include <vector>
 
 namespace chopstix {
 
@@ -9,7 +10,7 @@ class TracerState;
 
 class Tracer {
   public:
-    Tracer(std::string trace_path, bool dryrun);
+    Tracer(std::string trace_path, bool dryrun, TraceOptions trace_options);
     ~Tracer();
 
     void start(TracerState *initial_state, int argc, char **argv);
@@ -39,12 +40,14 @@ class Tracer {
     std::string trace_path;
     bool running;
     bool tracing_enabled;
+    TraceOptions trace_options;
 };
 
 class RandomizedTracer : public Tracer {
   public:
-    RandomizedTracer(std::string trace_path, bool dryrun, double probability) :
-        Tracer(trace_path, dryrun), probability(probability) {}
+    RandomizedTracer(std::string trace_path, bool dryrun,
+                     TraceOptions trace_options, double probability) :
+        Tracer(trace_path, dryrun, trace_options), probability(probability) {}
 
     virtual bool should_trace();
   private:
@@ -54,8 +57,8 @@ class RandomizedTracer : public Tracer {
 class IndexedTracer : public Tracer {
   public:
     IndexedTracer(std::string trace_path, bool dryrun,
-                  std::vector<unsigned int> indices) :
-        Tracer(trace_path, dryrun), indices(indices) {}
+                  TraceOptions trace_options, std::vector<unsigned int> indices) :
+        Tracer(trace_path, dryrun, trace_options), indices(indices) {}
 
     virtual bool should_trace();
   private:

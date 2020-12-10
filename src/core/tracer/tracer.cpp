@@ -38,10 +38,11 @@ static void preload(std::string path) {
 
 namespace chopstix {
 
-Tracer::Tracer(std::string trace_path, bool dryrun) {
+Tracer::Tracer(std::string trace_path, bool dryrun, TraceOptions trace_options) {
     regs = Arch::current()->create_regs();
     this->trace_path = trace_path;
     tracing_enabled = !dryrun;
+    this->trace_options = trace_options;
 }
 
 Tracer::~Tracer() {
@@ -204,7 +205,8 @@ void Tracer::init(int argc, char **argv) {
 void Tracer::start_trace(bool isInvocationStart) {
     if(tracing_enabled) {
         Trace trace(trace_id, child);
-        trace.save(trace_path);
+        trace.save(trace_path, trace_options);
+
         unsigned long arg0 = isInvocationStart ? 1 : 0;
         std::vector<unsigned long> args = {arg0};
         dyn_call("chopstix_start_trace", args);

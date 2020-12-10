@@ -5,12 +5,16 @@
 
 namespace chopstix {
 
+struct TraceOptions {
+    bool dump_registers, dump_maps, dump_info;
+};
+
 class Trace {
   public:
     Trace(int id, Process &child);
     ~Trace();
 
-    void save(std::string trace_path);
+    void save(std::string trace_path, TraceOptions &opts);
   private:
     Arch::regbuf_type registers;
     long pc;

@@ -64,8 +64,11 @@ Options:
                          Valid values: floats between 0 and 1. 0: no region
                          is going to be traced. 1: all region will be traced.
   -group <num>           Group <num> region into one trace (default: 1).
-  -no-save               Disable data page content dumping. 
+  -no-save               Disable data page content dumping.
   -no-code               Disable code page content dumping.
+  -no-registers          Disable register content dumping.
+  -no-maps               Disable memory map dumping.
+  -no-info               Disable additional information dumping.
   -trace-dir <path>      Path to directory where tracing data will be stored
                          (default: trace_data).
   -gzip                  Zip page contents.

@@ -50,6 +50,10 @@ int run_trace(int argc, char **argv) {
 
     bool save_regs = getopt("save").as_bool();
     bool drytrace = getopt("access-only").as_bool();
+    TraceOptions trace_options;
+    trace_options.dump_registers = getopt("registers").as_bool();
+    trace_options.dump_maps = getopt("maps").as_bool();
+    trace_options.dump_info = getopt("info").as_bool();
     std::string trace_path = getopt("trace-dir").as_string();
     double sample_freq = getopt("prob").as_float();
     bool notrace = !getopt("trace").as_bool();
@@ -69,14 +73,15 @@ int run_trace(int argc, char **argv) {
     Tracer *tracer;
     if (getopt("prob").is_set()) {
         log::info("Performing randomized tracing");
-        tracer = new RandomizedTracer(trace_path, notrace, sample_freq);
+        tracer = new RandomizedTracer(trace_path, notrace, trace_options,
+                                      sample_freq);
     } else if(getopt("indices").is_set()) {
         log::info("Performing index tracing");
         std::vector<unsigned int> vec(begin(indices), end(indices));
-        tracer = new IndexedTracer(trace_path, notrace, vec);
+        tracer = new IndexedTracer(trace_path, notrace, trace_options, vec);
     } else {
         log::info("Tracing all invocations");
-        tracer = new Tracer(trace_path, notrace);
+        tracer = new Tracer(trace_path, notrace, trace_options);
     }
 
     TracerState *preamble, *roi, *prologue;
