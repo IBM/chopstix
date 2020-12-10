@@ -16,7 +16,7 @@ class Tracer {
     void stop();
 
     void set_state(TracerState *state);
-    void start_trace();
+    void start_trace(bool isInvocationStart);
     void stop_trace();
     virtual bool should_trace() {return true;}
     void save_page();

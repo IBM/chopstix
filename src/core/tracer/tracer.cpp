@@ -201,11 +201,12 @@ void Tracer::init(int argc, char **argv) {
     alt_stack = read_alt_stack();
 }
 
-void Tracer::start_trace() {
+void Tracer::start_trace(bool isInvocationStart) {
     if(tracing_enabled) {
         Trace trace(trace_id, child);
         trace.save(trace_path);
-        static std::vector<unsigned long> args;
+        unsigned long arg0 = isInvocationStart ? 1 : 0;
+        std::vector<unsigned long> args = {arg0};
         dyn_call("chopstix_start_trace", args);
     }
 }

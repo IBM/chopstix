@@ -29,7 +29,7 @@ struct TraceBuffer {
 
     void setup(const char *trace_root);
 
-    void start_trace(int trace_id);
+    void start_trace(int trace_id, bool isNewInvocation);
     void stop_trace(int trace_id);
     void save_page(long page_addr);
 

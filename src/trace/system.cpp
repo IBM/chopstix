@@ -174,12 +174,12 @@ void System::save_page(unsigned long page_addr) {
     log::debug("System::save_page: finished saving %x", page_addr);
 }
 
-void System::start_trace() {
+void System::start_trace(bool isNewInvocation) {
     log::verbose("System: start_trace: start trace %d start", trace_id);
     check(tracing == false, "Tracing already started");
 
     if (drytrace) {
-        buf_.start_trace(trace_id);
+        buf_.start_trace(trace_id, isNewInvocation);
     }
 
     Memory::instance().update();
@@ -248,8 +248,8 @@ void System::stop_trace() {
 }
 }  // namespace chopstix
 
-void chopstix_start_trace() {
-    chopstix::sys_.start_trace();
+void chopstix_start_trace(unsigned long isNewInvocation) {
+    chopstix::sys_.start_trace(isNewInvocation);
 
     // Generate a SIGILL event, without using system routines like 'raise'
     // to avoid more page faults that needed (note that all pages have been

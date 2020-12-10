@@ -56,7 +56,7 @@ void TracerRegionOfInterestState::handle_signal(Process &child, int signal) {
                           cur_pc);
                 log::verbose("RegionOfInterest:: split trace at %x", cur_pc);
                 tracer->stop_trace();
-                tracer->start_trace();
+                tracer->start_trace(false);
             } else {
                 log::debug("run_trace:: in support / in_vdso");
             }

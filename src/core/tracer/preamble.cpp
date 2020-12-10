@@ -10,7 +10,7 @@
 namespace chopstix {
 
 void TracerPreambleState::do_trace(Process &child) {
-    tracer->start_trace();
+    tracer->start_trace(true);
     change_state();
 }
 

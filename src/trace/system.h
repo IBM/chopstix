@@ -36,7 +36,7 @@ struct System {
         return inst;
     }
 
-    void start_trace();
+    void start_trace(bool isNewInvocation);
     void stop_trace();
 
     System(const System &) = delete;
@@ -70,6 +70,6 @@ struct System {
 }  // namespace chopstix
 
 extern "C" {
-void chopstix_start_trace();
+void chopstix_start_trace(unsigned long isNewInvocation);
 void chopstix_stop_trace();
 }
