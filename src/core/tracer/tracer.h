@@ -20,7 +20,7 @@ class Tracer {
     void stop_trace();
     virtual bool should_trace() {return true;}
     void save_page();
-    void dyn_call(std::string symbol);
+    void dyn_call(std::string symbol, std::vector<unsigned long> &args);
     bool symbol_contains(std::string symbol, long addr);
     void set_breakpoint(std::vector<long> address, bool state);
   private:

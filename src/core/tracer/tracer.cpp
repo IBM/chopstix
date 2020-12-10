@@ -205,14 +205,16 @@ void Tracer::start_trace() {
     if(tracing_enabled) {
         Trace trace(trace_id, child);
         trace.save(trace_path);
-        dyn_call("chopstix_start_trace");
+        static std::vector<unsigned long> args;
+        dyn_call("chopstix_start_trace", args);
     }
 }
 
 void Tracer::stop_trace() {
     trace_id++;
     if (tracing_enabled) {
-        dyn_call("chopstix_stop_trace");
+        static std::vector<unsigned long> args;
+        dyn_call("chopstix_stop_trace", args);
     }
 }
 
@@ -229,8 +231,8 @@ Location& Tracer::get_symbol(std::string name) {
     return location->second;
 }
 
-void Tracer::dyn_call(std::string symbol) {
-    child.dyn_call(get_symbol(symbol), regs, alt_stack);
+void Tracer::dyn_call(std::string symbol, std::vector<unsigned long> &args) {
+    child.dyn_call(get_symbol(symbol), regs, alt_stack, args);
 }
 
 bool Tracer::symbol_contains(std::string symname, long addr) {

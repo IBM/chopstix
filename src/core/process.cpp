@@ -206,12 +206,13 @@ void Process::remove_break(long addr) {
     if (it != breaks_.end()) poke(addr, it->second);
 }
 
-void Process::dyn_call(long addr, Arch::regbuf_type &regs, long sp) {
+void Process::dyn_call(long addr, Arch::regbuf_type &regs, long sp, std::vector<unsigned long> &args) {
     int sig;
     log::debug("Process::dyn_call: Start");
     Arch::current()->read_regs(pid(), regs);
     Arch::current()->set_pc(pid(), addr);
     Arch::current()->set_sp(pid(), sp);
+    Arch::current()->set_args(pid(), args);
     log::debug(
         "Process::dyn_call: Temporal register state. Allow child to continue.");
     cont();

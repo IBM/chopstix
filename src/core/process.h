@@ -85,7 +85,7 @@ class Process {
 
     void timeout(double time);
 
-    void dyn_call(long addr, Arch::regbuf_type &regs, long sp);
+    void dyn_call(long addr, Arch::regbuf_type &regs, long sp, std::vector<unsigned long> &args);
 
     Location find_symbol(const std::string &name) const {
         return Location::Symbol(pid(), name);

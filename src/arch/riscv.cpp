@@ -149,3 +149,13 @@ long ArchRiscV::get_lnk(pid_t pid) const {
     read_regs(pid, (long*) &regs);
     return regs.gp.ra;
 }
+
+void ArchRiscV::set_args(pid_t pid, std::vector<unsigned long> &args) const {
+    check(args.size() <= 8, "Cannot set more than 8 argument registers.");
+    struct RiscVRegs regs;
+    read_regs(pid, (long*) &regs);
+    for (size_t i = 0; i < args.size(); i++) {
+        regs.gp.all[9 + i] = args[i];
+    }
+    write_regs(pid, (long*) &regs);
+}
