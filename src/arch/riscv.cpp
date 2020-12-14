@@ -155,7 +155,7 @@ void ArchRiscV::set_args(pid_t pid, std::vector<unsigned long> &args) const {
     struct RiscVRegs regs;
     read_regs(pid, (long*) &regs);
     for (size_t i = 0; i < args.size(); i++) {
-        regs.gp.all[9 + i] = args[i];
+        regs.gp.all[10 + i] = args[i];
     }
     write_regs(pid, (long*) &regs);
 }
