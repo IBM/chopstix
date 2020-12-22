@@ -1,7 +1,6 @@
 #include "tracer.h"
 
 #include "state.h"
-#include "trace.h"
 #include "../../support/check.h"
 #include "../../support/log.h"
 #include "../../support/filesystem.h"
@@ -202,10 +201,43 @@ void Tracer::init(int argc, char **argv) {
     alt_stack = read_alt_stack();
 }
 
+void Tracer::capture_trace() {
+    char fname[PATH_MAX];
+    FILE *fp;
+
+    if (trace_options.dump_registers) {
+        //Serialize Registers
+        auto registers = Arch::current()->create_regs();
+
+        sfmt::format(fname, sizeof(fname), "%s/regs.%d", trace_path, trace_id);
+        fp = fopen(fname, "w");
+        Arch::current()->serialize_regs(fp, registers);
+        fclose(fp);
+    }
+
+    if (trace_options.dump_maps) {
+        //Serialize memory mapping
+        sfmt::format(fname, sizeof(fname), "/proc/%d/maps", child.pid());
+        std::string from{fname};
+        sfmt::format(fname, sizeof(fname), "%s/maps.%d", trace_path, trace_id);
+        std::string to{fname};
+        fs::copy(from, to);
+    }
+
+    if (trace_options.dump_info) {
+        //Serialize Program Counter
+        auto pc = Arch::current()->get_pc(child.pid());
+
+        sfmt::format(fname, sizeof(fname), "%s/info.%d", trace_path, trace_id);
+        fp = fopen(fname, "w");
+        fprintf(fp, "begin_addr %016lx\n", pc);
+        fclose(fp);
+    }
+}
+
 void Tracer::start_trace(bool isInvocationStart) {
     if(tracing_enabled) {
-        Trace trace(trace_id, child);
-        trace.save(trace_path, trace_options);
+        capture_trace();
 
         unsigned long arg0 = isInvocationStart ? 1 : 0;
         std::vector<unsigned long> args = {arg0};

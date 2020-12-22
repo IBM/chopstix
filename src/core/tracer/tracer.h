@@ -1,10 +1,13 @@
 #pragma once
 
 #include "../process.h"
-#include "trace.h"
 #include <vector>
 
 namespace chopstix {
+
+struct TraceOptions {
+    bool dump_registers, dump_maps, dump_info;
+};
 
 class TracerState;
 
@@ -29,6 +32,7 @@ class Tracer {
     void track_mmap();
     long read_alt_stack();
     Location& get_symbol(std::string name);
+    void capture_trace();
 
     TracerState *current_state = nullptr;
     Process child;

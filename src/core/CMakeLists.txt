@@ -43,7 +43,6 @@ add_chopstix_library(core
     tracer/prologue.cpp
     tracer/regionofinterest.cpp
     tracer/state.cpp
-    tracer/trace.cpp
     tracer/tracer.cpp
 )
 
