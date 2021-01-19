@@ -208,6 +208,7 @@ void Tracer::capture_trace() {
     if (trace_options.dump_registers) {
         //Serialize Registers
         auto registers = Arch::current()->create_regs();
+        Arch::current()->read_regs(child.pid(), registers);
 
         sfmt::format(fname, sizeof(fname), "%s/regs.%d", trace_path, trace_id);
         fp = fopen(fname, "w");
