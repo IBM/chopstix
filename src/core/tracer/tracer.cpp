@@ -1,5 +1,6 @@
 #include "tracer.h"
 
+#include "core/process.h"
 #include "state.h"
 #include "../../support/check.h"
 #include "../../support/log.h"
@@ -240,6 +241,16 @@ void Tracer::start_trace(bool isInvocationStart) {
     if(tracing_enabled) {
         capture_trace();
 
+        // Pass breakpoint information to tracee
+        auto breakpoints = child.get_breakpoint_info();
+        char fname[PATH_MAX];
+        sfmt::format(fname, sizeof(fname), "%s/_breakpoints", trace_path);
+        FILE *fp = fopen(fname, "wb");
+        fwrite(breakpoints.data(), sizeof(BreakpointInformation),
+               breakpoints.size(), fp);
+        fclose(fp);
+
+        // Invoke trace start routine
         unsigned long arg0 = isInvocationStart ? 1 : 0;
         std::vector<unsigned long> args = {arg0};
         dyn_call("chopstix_start_trace", args);

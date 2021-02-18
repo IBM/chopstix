@@ -27,7 +27,14 @@
 
 #include "buffer.h"
 
+#define MAX_BREAKPOINTS 16
+
 namespace chopstix {
+
+struct BreakpointInformation {
+    long address;
+    long original_content;
+};
 
 struct System {
   public:
@@ -66,6 +73,8 @@ struct System {
     bool save;
     bool drytrace;
     TraceBuffer buf_;
+    BreakpointInformation breakpoints[MAX_BREAKPOINTS];
+    int breakpoint_count = 0;
 };
 }  // namespace chopstix
 

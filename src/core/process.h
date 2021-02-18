@@ -33,6 +33,12 @@
 #include "core/location.h"
 
 namespace chopstix {
+
+typedef struct {
+    long addr;
+    long original_content;
+} BreakpointInformation;
+
 class Process {
   public:
     // using callback_fn = std::function<void(void)>;
@@ -97,6 +103,13 @@ class Process {
 
     Location find_module(const std::string &name) const {
         return Location::Module(pid(), name);
+    }
+
+    std::vector<BreakpointInformation> get_breakpoint_info() {
+        std::vector<BreakpointInformation> infos;
+        for (auto brk : this->breaks_)
+            infos.push_back({brk.first, brk.second});
+        return infos;
     }
 
   private:

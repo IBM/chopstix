@@ -164,12 +164,27 @@ void System::save_page(unsigned long page_addr) {
     log::debug("System::save_page: saving %x", page_addr);
     sfmt::format(fname, sizeof(fname), "%s/page.%d.%x", trace_path, trace_id,
                  page_addr);
+
     log::debug("System::save_page: opening %s", fname);
-    int fd = syscall(SYS_openat, AT_FDCWD,fname, O_WRONLY | O_CREAT | O_TRUNC, PERM_664);
+    int fd = syscall(SYS_openat, AT_FDCWD, fname, O_WRONLY | O_CREAT | O_TRUNC,
+                     PERM_664);
     check(fd != -1, "Unable to save page at '%s'", fname);
+
     log::debug("System::save_page: writing to %s", fname);
     ssize_t w = ::write(fd, (void *)page_addr, pagesize);
     assert(w == pagesize && "Unable to write");
+
+    unsigned long offset_mask = pagesize - 1;
+    unsigned long page_mask = ~offset_mask;
+    for (int i = 0; i < breakpoint_count; i++) {
+        BreakpointInformation &breakpoint = breakpoints[i];
+        if (((unsigned long) breakpoint.address & page_mask) == (page_addr & page_mask)) {
+            log::debug("System::save_page: fixing breakpoint at 0x%x", breakpoint.address);
+            lseek(fd, breakpoint.address & offset_mask, SEEK_SET);
+            ::write(fd, &breakpoint.original_content, sizeof(long));
+        }
+    }
+
     syscall(SYS_close, fd);
     log::debug("System::save_page: finished saving %x", page_addr);
 }
@@ -181,6 +196,20 @@ void System::start_trace(bool isNewInvocation) {
     if (drytrace) {
         buf_.start_trace(trace_id, isNewInvocation);
     }
+
+    log::debug("System: start_Trace: reading breakpoint information");
+    char fname[PATH_MAX];
+    sfmt::format(fname, sizeof(fname), "%s/_breakpoints", trace_path);
+    FILE *fp = fopen(fname, "rb");
+    fseek(fp, 0L, SEEK_END);
+    size_t size = ftell(fp);
+    unsigned int elements = size / sizeof(BreakpointInformation);
+    check(elements <= MAX_BREAKPOINTS, "Too many breakpoints enabled");
+    rewind(fp);
+    breakpoint_count = elements;
+    fread(breakpoints, sizeof(BreakpointInformation), elements, fp);
+    fclose(fp);
+    log::debug("System: start_Trace: stored info of %d breakpoints", elements);
 
     Memory::instance().update();
     log::debug("System: start_Trace: map updated");
