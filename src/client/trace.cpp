@@ -31,6 +31,8 @@
 #include "support/log.h"
 #include "support/options.h"
 
+#include <climits>
+
 using namespace chopstix;
 
 namespace fs = filesystem;
@@ -100,6 +102,14 @@ int run_trace(int argc, char **argv) {
     prologue->set_next_state(preamble);
 
     tracer->start(preamble, argc, argv);
+
+    if (getopt("gzip").as_bool()) {
+        log::info("run_trace:: compressing trace directory");
+        char cmd[PATH_MAX];
+        snprintf(cmd, sizeof(cmd), "gzip -rf9 %s", trace_path.c_str());
+        int ret = system(cmd);
+        check(ret == 0, "'%s' command failed", cmd);
+    }
 
     return 0;
 }
