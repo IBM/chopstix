@@ -246,30 +246,30 @@ void System::stop_trace() {
     //    log::debug("System::stop_trace: writing %d to %s", pagecount, fname);
     //}
 
-    unsigned long *page = Memory::restricted_pages();
-    while (*page != 0) {
-        log::verbose(
-            "System:: stop_trace: saving unprotected reserved symbol pages:%x",
-            *page);
-        save_page(*page);
-        ++page;
-    }
-
-    mem_region *reg = Memory::instance().restricted_regions();
-    while (reg->addr[0] != 0) {
-        log::verbose(
-            "System:: stop_trace: saving pages of unprotected regions: %x-%x "
-            "%s (%s)",
-            reg->addr[0], reg->addr[1], reg->perm, reg->path);
-
-        for (unsigned long page = reg->addr[0]; page < reg->addr[1];
-             page += pagesize) {
-            log::verbose("System:: stop_trace: saving pages: 0x%x", page);
-            save_page(page);
+    if (save) {
+        unsigned long *page = Memory::restricted_pages();
+        while (*page != 0) {
+            log::verbose("System:: stop_trace: saving unprotected reserved "
+                         "symbol pages:%x", *page);
+            save_page(*page);
+            ++page;
         }
-        // save_page(*page);
-        //++page;
-        ++reg;
+
+        mem_region *reg = Memory::instance().restricted_regions();
+        while (reg->addr[0] != 0) {
+            log::verbose("System:: stop_trace: saving pages of unprotected "
+                         "regions: %x-%x %s (%s)", reg->addr[0], reg->addr[1],
+                         reg->perm, reg->path);
+
+            for (unsigned long page = reg->addr[0]; page < reg->addr[1];
+                 page += pagesize) {
+                log::verbose("System:: stop_trace: saving pages: 0x%x", page);
+                save_page(page);
+            }
+            // save_page(*page);
+            //++page;
+            ++reg;
+        }
     }
 
     ++trace_id;
