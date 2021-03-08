@@ -9,11 +9,6 @@
 
 namespace chopstix {
 
-void TracerPreambleState::do_trace(Process &child) {
-    tracer->start_trace(true);
-    change_state();
-}
-
 bool TracerPreambleState::check_finished(Process &child) {
     if (child.active()) return false;
 
@@ -33,7 +28,7 @@ bool TracerPreambleState::check_finished(Process &child) {
 void TracerTimedPreambleState::execute(Process &child) {
     child.timeout(time);
     if (!check_finished(child) && tracer->should_trace()) {
-        do_trace(child);
+        change_state();
     }
 }
 
@@ -56,7 +51,7 @@ void TracerRangedPreambleState::execute(Process &child) {
         log::debug("run_trace:: Stop at PC: %x", cur_pc);
 
         if (tracer->should_trace()) {
-            do_trace(child);
+            change_state();
             child.syscall();
         } else {
             tracer->set_breakpoint(start, false);

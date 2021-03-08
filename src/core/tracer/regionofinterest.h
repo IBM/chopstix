@@ -12,6 +12,7 @@ class TracerRegionOfInterestState : public TracerState {
     virtual void on_state_start(Process &child);
   protected:
     virtual void handle_signal(Process &child, int signal);
+    virtual void do_trace(Process &child);
     long vdso_addr;
 };
 

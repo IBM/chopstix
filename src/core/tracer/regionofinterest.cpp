@@ -8,6 +8,10 @@
 
 namespace chopstix {
 
+void TracerRegionOfInterestState::do_trace(Process &child) {
+    tracer->start_trace(true);
+}
+
 void TracerRegionOfInterestState::execute(Process &child) {
     child.wait();
     if (!child.active()) {
@@ -22,6 +26,7 @@ void TracerRegionOfInterestState::execute(Process &child) {
 
 void TracerRegionOfInterestState::on_state_start(Process &child) {
     vdso_addr = child.find_module("[vdso]").addr();
+    do_trace(child);
 }
 
 void TracerRegionOfInterestState::handle_signal(Process &child, int signal) {
@@ -77,9 +82,11 @@ void TracerRegionOfInterestState::handle_signal(Process &child, int signal) {
 }
 
 void TracerRangedRegionOfInterestState::on_state_start(Process &child) {
-    TracerRegionOfInterestState::on_state_start(child);
+    // Set breakpoint before starting trace so it gets reset when pages are
+    // dumped
     log::debug("run_trace:: setting end break point of region");
     tracer->set_breakpoint(end, true);
+    TracerRegionOfInterestState::on_state_start(child);
 }
 
 void TracerRangedRegionOfInterestState::on_state_finish(Process &child) {
