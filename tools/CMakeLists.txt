@@ -22,13 +22,21 @@ add_executable(chop-detrace
     detrace.c
 )
 
+add_executable(chop-trace2mpt
+    trace2mpt.c
+)
+
+find_package(ZLIB REQUIRED)
+target_link_libraries(chop-trace2mpt ZLIB::ZLIB)
+
 install(PROGRAMS
     chop-marks-ppc64
     chop-trace2mpt
     chop-score-table
     DESTINATION bin)
 
-install (
-    TARGETS chop-detrace
+install (TARGETS
+    chop-detrace
+    chop-trace2mpt
     DESTINATION bin
 )
