@@ -183,7 +183,8 @@ void trace2mpt(const char *output_base, const char *trace_dir,
     sprintf(path, "%s.%d.mps", output_base, index);
     FILE *mps = fopen(path, "w");
 
-    char *mps_name = strrchr(path, '/') + 1;
+    char *lastSlash =  strrchr(path, '/');
+    char *mps_name = (lastSlash != NULL ? lastSlash + 1 : path);
     fprintf(mpt, MPT_HEADER_TEMPLATE, mps_name, default_address);
 
     // Write register contents
