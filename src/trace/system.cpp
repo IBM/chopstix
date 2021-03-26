@@ -178,10 +178,17 @@ void System::save_page(unsigned long page_addr) {
     unsigned long page_mask = ~offset_mask;
     for (int i = 0; i < breakpoint_count; i++) {
         BreakpointInformation &breakpoint = breakpoints[i];
-        if (((unsigned long) breakpoint.address & page_mask) == (page_addr & page_mask)) {
-            log::debug("System::save_page: fixing breakpoint at 0x%x", breakpoint.address);
+
+        unsigned long page = page_addr & page_mask;
+        unsigned long breakpoint_page =
+            (unsigned long) breakpoint.address & page_mask;
+        if (breakpoint_page == page) {
+            log::debug("System::save_page: fixing breakpoint at 0x%x",
+                       breakpoint.address);
             lseek(fd, breakpoint.address & offset_mask, SEEK_SET);
-            ::write(fd, &breakpoint.original_content, sizeof(long));
+            w = ::write(fd, &breakpoint.original_content, sizeof(long));
+            assert(w == sizeof(long) &&
+                   "Unable to restore breakpoint contents");
         }
     }
 
@@ -207,7 +214,9 @@ void System::start_trace(bool isNewInvocation) {
     check(elements <= MAX_BREAKPOINTS, "Too many breakpoints enabled");
     rewind(fp);
     breakpoint_count = elements;
-    fread(breakpoints, sizeof(BreakpointInformation), elements, fp);
+    size_t w = fread(breakpoints, sizeof(BreakpointInformation), elements, fp);
+    assert(w == (sizeof(BreakpointInformation) * elements) &&
+           "Unable to read breakpoint information");
     fclose(fp);
     log::debug("System: start_Trace: stored info of %d breakpoints", elements);
 

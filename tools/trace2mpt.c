@@ -103,7 +103,8 @@ void readRegularFile(const char *path, char **data, size_t *data_size) {
     *data_size = ftell(fp);
     rewind(fp);
     *data = malloc(*data_size);
-    fread(*data, *data_size, 1, fp);
+    size_t w = fread(*data, *data_size, 1, fp);
+    assert(w == *data_size);
     fclose(fp);
 }
 
