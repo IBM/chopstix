@@ -19,6 +19,7 @@ addons:
             - cmake-data
             - shellcheck
             - linux-tools-generic
+            - zlib1g-dev
             # - linux-tools-4.4.0-87-generic
 notifications:
     email:
