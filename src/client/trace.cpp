@@ -80,6 +80,7 @@ int run_trace(int argc, char **argv) {
     } else if(getopt("indices").is_set()) {
         log::info("Performing index tracing");
         std::vector<unsigned int> vec(begin(indices), end(indices));
+        std::sort(vec.begin(), vec.end());
         tracer = new IndexedTracer(trace_path, notrace, trace_options, vec);
     } else {
         log::info("Tracing all invocations");

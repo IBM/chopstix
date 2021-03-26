@@ -300,8 +300,7 @@ bool RandomizedTracer::should_trace() {
 bool IndexedTracer::should_trace() {
     if (indices.size() <= current_index) return false;
 
-    current_execution++;
-    if (current_execution == indices[current_index]) {
+    if (indices[current_index] == current_execution++) {
         current_index++;
         return true;
     } else {
