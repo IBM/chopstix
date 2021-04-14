@@ -27,25 +27,52 @@
 # IBM (c) 2019 All rights reserved
 #
 
-# this one is important
-SET(CMAKE_SYSTEM_NAME Linux)
-#this one not so much
-SET(CMAKE_SYSTEM_VERSION 1)
+set -e # Finish right after a non-zero return command
+set -u # Finish right after a undefined expression is used
+set -a # All following variables are exported
 
-SET(CMAKE_SYSTEM_PROCESSOR s390x)
+if [ $# -eq 0 ]; then
+    echo "Using default install directory: /tmp/zlib"
+    dir=/tmp/zlib
+fi
 
-# specify the cross compiler
-SET(CMAKE_C_COMPILER s390x-linux-gnu-gcc)
-SET(CMAKE_CXX_COMPILER s390x-linux-gnu-g++)
+if [ $# -eq 1 ]; then
+    dir=$1
+    dir=$(readlink -m "$dir")
+elif [ $# -gt 1 ]; then
+    echo "Usage: $0 <install_dir>"
+    exit 1
+fi
 
-# where is the target environment 
-# SET(CMAKE_FIND_ROOT_PATH  "") 
+if [ ! -d "$dir" ]; then
+    echo "Install directory '$dir' does not exists"
+    set +e
+    mkdir -p "$dir"
+    error=$?
+    set -e
+    if [ $error -ne 0 ]; then
+        echo "Unable to create '$dir' install directory"
+        exit 1
+    fi
+fi
 
-# search for programs in the build host directories
-SET(CMAKE_FIND_ROOT_PATH_MODE_PROGRAM NEVER)
+tmp="$dir/src_build/"
+mkdir -p "$tmp"
+cd "$tmp" 
 
-# for libraries and headers in the target directories
-SET(CMAKE_FIND_ROOT_PATH_MODE_LIBRARY ONLY)
-SET(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE ONLY)
+ZLIB_VERSION=1.2.11
+rm -f zlib-${ZLIB_VERSION}.tar.gz
+wget https://www.zlib.net/zlib-${ZLIB_VERSION}.tar.gz
+tar xvf zlib-${ZLIB_VERSION}.tar.gz
+
+cd zlib-${ZLIB_VERSION} 
+
+./configure --prefix /tmp/zlib
+make -j 
+make install
+
+cd - || exit 1
+
+rm -fr "$tmp"
 
 # vim: set tabstop=4 softtabstop=4 shiftwidth=4 expandtab
