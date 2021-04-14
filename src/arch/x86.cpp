@@ -125,3 +125,6 @@ long ArchX86::parse_ret(regbuf_type regs) const { failx("Not implemented"); }
 void ArchX86::parse_args(regbuf_type regs, regbuf_type args) const {
     failx("Not implemented");
 }
+void ArchX86::set_args(pid_t pid, std::vector<unsigned long> &args) const {
+    failx("Not implemented");
+}
