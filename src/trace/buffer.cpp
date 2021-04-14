@@ -52,7 +52,7 @@ void TraceBuffer::setup(const char *trace_root) {
     check(fd_ != -1, "Unable to open 'trace.bin'");
 }
 
-void TraceBuffer::start_trace(int trace_id) { write(-1); }
+void TraceBuffer::start_trace(int trace_id, bool isNewInvocation) { if(isNewInvocation) write(-3); write(-1); }
 
 void TraceBuffer::stop_trace(int trace_id) { write(-2); }
 

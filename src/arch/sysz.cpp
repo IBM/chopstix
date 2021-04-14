@@ -256,3 +256,7 @@ void ArchZ::parse_args(regbuf_type regs, regbuf_type args) const {
     args[4] = regs[SYSZ_R6];
     args[5] = regs[SYSZ_R7];
 }
+
+void ArchZ::set_args(pid_t pid, std::vector<unsigned long> &args) const {
+    failx("Not implemented");
+}

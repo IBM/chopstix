@@ -79,6 +79,7 @@ struct Arch {
     virtual long get_sp(pid_t pid) const = 0;
     virtual long set_sp(pid_t pid, long sp) const = 0;
     virtual long get_lnk(pid_t pid) const = 0;
+    virtual void set_args(pid_t pid, std::vector<unsigned long> &args) const = 0;
     virtual long parse_syscall(regbuf_type regs) const = 0;
     virtual long parse_ret(regbuf_type regs) const = 0;
     virtual void parse_args(regbuf_type regs, regbuf_type args) const = 0;

@@ -32,6 +32,8 @@ SET(CMAKE_SYSTEM_NAME Linux)
 #this one not so much
 SET(CMAKE_SYSTEM_VERSION 1)
 
+SET(CMAKE_SYSTEM_PROCESSOR ppc64)
+
 # specify the cross compiler
 SET(CMAKE_C_COMPILER  powerpc64-linux-gnu-gcc)
 SET(CMAKE_CXX_COMPILER powerpc64-linux-gnu-g++)

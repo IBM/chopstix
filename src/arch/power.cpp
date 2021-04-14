@@ -213,3 +213,7 @@ void ArchPower::parse_args(regbuf_type regs, regbuf_type args) const {
     args[4] = regs[POWER_R7];
     args[5] = regs[POWER_R8];
 }
+
+void ArchPower::set_args(pid_t pid, std::vector<unsigned long> &args) const {
+    failx("Not implemented");
+}

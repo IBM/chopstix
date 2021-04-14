@@ -47,6 +47,7 @@ struct ArchX86 : public Arch {
     long get_sp(pid_t pid) const;
     long set_sp(pid_t pid, long sp) const;
     long get_lnk(pid_t pid) const;
+    void set_args(pid_t pid, std::vector<unsigned long> &args) const;
     long parse_syscall(regbuf_type regs) const;
     long parse_ret(regbuf_type regs) const;
     void parse_args(regbuf_type regs, regbuf_type args) const;

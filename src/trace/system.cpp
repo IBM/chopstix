@@ -164,23 +164,61 @@ void System::save_page(unsigned long page_addr) {
     log::debug("System::save_page: saving %x", page_addr);
     sfmt::format(fname, sizeof(fname), "%s/page.%d.%x", trace_path, trace_id,
                  page_addr);
+
     log::debug("System::save_page: opening %s", fname);
-    int fd = syscall(SYS_openat, AT_FDCWD,fname, O_WRONLY | O_CREAT | O_TRUNC, PERM_664);
+    int fd = syscall(SYS_openat, AT_FDCWD, fname, O_WRONLY | O_CREAT | O_TRUNC,
+                     PERM_664);
     check(fd != -1, "Unable to save page at '%s'", fname);
+
     log::debug("System::save_page: writing to %s", fname);
     ssize_t w = ::write(fd, (void *)page_addr, pagesize);
     assert(w == pagesize && "Unable to write");
+
+    unsigned long offset_mask = pagesize - 1;
+    unsigned long page_mask = ~offset_mask;
+    for (int i = 0; i < breakpoint_count; i++) {
+        BreakpointInformation &breakpoint = breakpoints[i];
+
+        unsigned long page = page_addr & page_mask;
+        unsigned long breakpoint_page =
+            (unsigned long) breakpoint.address & page_mask;
+        if (breakpoint_page == page) {
+            log::debug("System::save_page: fixing breakpoint at 0x%x",
+                       breakpoint.address);
+            lseek(fd, breakpoint.address & offset_mask, SEEK_SET);
+            w = ::write(fd, &breakpoint.original_content, sizeof(long));
+            assert(w == sizeof(long) &&
+                   "Unable to restore breakpoint contents");
+        }
+    }
+
     syscall(SYS_close, fd);
     log::debug("System::save_page: finished saving %x", page_addr);
 }
 
-void System::start_trace() {
+void System::start_trace(bool isNewInvocation) {
     log::verbose("System: start_trace: start trace %d start", trace_id);
     check(tracing == false, "Tracing already started");
 
     if (drytrace) {
-        buf_.start_trace(trace_id);
+        buf_.start_trace(trace_id, isNewInvocation);
     }
+
+    log::debug("System: start_Trace: reading breakpoint information");
+    char fname[PATH_MAX];
+    sfmt::format(fname, sizeof(fname), "%s/_breakpoints", trace_path);
+    FILE *fp = fopen(fname, "rb");
+    fseek(fp, 0L, SEEK_END);
+    size_t size = ftell(fp);
+    unsigned int elements = size / sizeof(BreakpointInformation);
+    check(elements <= MAX_BREAKPOINTS, "Too many breakpoints enabled");
+    rewind(fp);
+    breakpoint_count = elements;
+    size_t w = fread(breakpoints, sizeof(BreakpointInformation), elements, fp);
+    assert(w == (sizeof(BreakpointInformation) * elements) &&
+           "Unable to read breakpoint information");
+    fclose(fp);
+    log::debug("System: start_Trace: stored info of %d breakpoints", elements);
 
     Memory::instance().update();
     log::debug("System: start_Trace: map updated");
@@ -217,30 +255,30 @@ void System::stop_trace() {
     //    log::debug("System::stop_trace: writing %d to %s", pagecount, fname);
     //}
 
-    unsigned long *page = Memory::restricted_pages();
-    while (*page != 0) {
-        log::verbose(
-            "System:: stop_trace: saving unprotected reserved symbol pages:%x",
-            *page);
-        save_page(*page);
-        ++page;
-    }
-
-    mem_region *reg = Memory::instance().restricted_regions();
-    while (reg->addr[0] != 0) {
-        log::verbose(
-            "System:: stop_trace: saving pages of unprotected regions: %x-%x "
-            "%s (%s)",
-            reg->addr[0], reg->addr[1], reg->perm, reg->path);
-
-        for (unsigned long page = reg->addr[0]; page < reg->addr[1];
-             page += pagesize) {
-            log::verbose("System:: stop_trace: saving pages: 0x%x", page);
-            save_page(page);
+    if (save) {
+        unsigned long *page = Memory::restricted_pages();
+        while (*page != 0) {
+            log::verbose("System:: stop_trace: saving unprotected reserved "
+                         "symbol pages:%x", *page);
+            save_page(*page);
+            ++page;
         }
-        // save_page(*page);
-        //++page;
-        ++reg;
+
+        mem_region *reg = Memory::instance().restricted_regions();
+        while (reg->addr[0] != 0) {
+            log::verbose("System:: stop_trace: saving pages of unprotected "
+                         "regions: %x-%x %s (%s)", reg->addr[0], reg->addr[1],
+                         reg->perm, reg->path);
+
+            for (unsigned long page = reg->addr[0]; page < reg->addr[1];
+                 page += pagesize) {
+                log::verbose("System:: stop_trace: saving pages: 0x%x", page);
+                save_page(page);
+            }
+            // save_page(*page);
+            //++page;
+            ++reg;
+        }
     }
 
     ++trace_id;
@@ -248,8 +286,8 @@ void System::stop_trace() {
 }
 }  // namespace chopstix
 
-void chopstix_start_trace() {
-    chopstix::sys_.start_trace();
+void chopstix_start_trace(unsigned long isNewInvocation) {
+    chopstix::sys_.start_trace(isNewInvocation);
 
     // Generate a SIGILL event, without using system routines like 'raise'
     // to avoid more page faults that needed (note that all pages have been
