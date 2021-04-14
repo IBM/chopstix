@@ -68,6 +68,8 @@ tar xvf zlib-${ZLIB_VERSION}.tar.gz
 cd zlib-${ZLIB_VERSION} 
 
 ./configure --prefix /tmp/zlib
+cat configure.log
+
 make -j 
 make install
 

@@ -50,11 +50,11 @@ install:
     - echo "Install"
     - if [ "$CHOPSTIX_POWER_SUPPORT" == "ON" ]; then export PATH=$PATH:$(find /opt/ -maxdepth 1 -name at* -type d)/bin ; fi;
     - if [ "$CHOPSTIX_POWER_SUPPORT" == "ON" ]; then CC=powerpc64-linux-gnu-gcc ARCH=ppc scripts/ci/install_libpfm.sh ; fi
-    - if [ "$CHOPSTIX_POWER_SUPPORT" == "ON" ]; then CHOST=powerpc64-linux-gnu scripts/ci/install_zlib.sh ; fi 
+    - if [ "$CHOPSTIX_POWER_SUPPORT" == "ON" ]; then CC=powerpc64-linux-gnu-gcc CHOST=powerpc64-linux-gnu scripts/ci/install_zlib.sh ; fi 
     - if [ "$CHOPSTIX_POWERLE_SUPPORT" == "ON" ]; then CC=powerpc64le-linux-gnu-gcc ARCH=ppc scripts/ci/install_libpfm.sh ; fi
-    - if [ "$CHOPSTIX_POWERLE_SUPPORT" == "ON" ]; then CHOST=powerpc64le-linux-gnu scripts/ci/install_zlib.sh ; fi 
+    - if [ "$CHOPSTIX_POWERLE_SUPPORT" == "ON" ]; then CC=powerpc64le-linux-gnu-gcc CHOST=powerpc64le-linux-gnu scripts/ci/install_zlib.sh ; fi 
     - if [ "$CHOPSTIX_SYSZ_SUPPORT" == "ON" ]; then CC=s390x-linux-gnu-gcc ARCH=s390x scripts/ci/install_libpfm.sh ; fi
-    - if [ "$CHOPSTIX_SYSZ_SUPPORT" == "ON" ]; then CHOST=s390x-linux-gnu scripts/ci/install_zlib.sh ; fi 
+    - if [ "$CHOPSTIX_SYSZ_SUPPORT" == "ON" ]; then CC=s390x-linux-gnu-gcc CHOST=s390x-linux-gnu scripts/ci/install_zlib.sh ; fi 
     - if [ "$CHOPSTIX_X86_SUPPORT" == "ON" ]; then scripts/ci/install_libpfm.sh ; fi
 script:
     - set -e
