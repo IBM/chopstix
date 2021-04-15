@@ -67,7 +67,7 @@ tar xvf zlib-${ZLIB_VERSION}.tar.gz
 
 cd zlib-${ZLIB_VERSION} 
 
-./configure --prefix /tmp/zlib
+./configure --prefix "$dir"
 cat configure.log
 
 make -j 
