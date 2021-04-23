@@ -32,6 +32,10 @@ struct ArchRiscV : public Arch {
     long parse_syscall(regbuf_type regs) const;
     long parse_ret(regbuf_type regs) const;
     void parse_args(regbuf_type regs, regbuf_type args) const;
+protected:
+    BreakpointSize get_breakpoint_size() const {
+        return BreakpointSize::HALF_WORD;
+    }
 };
 
 }  // namespace chopstix

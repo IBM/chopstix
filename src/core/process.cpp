@@ -26,6 +26,7 @@
 
 #include "process.h"
 
+#include "core/arch.h"
 #include "support/check.h"
 #include "support/log.h"
 
@@ -196,8 +197,12 @@ void Process::step(int sig) {
 void Process::set_break(long addr) {
     log::debug("set break at %x", addr);
     auto it = breaks_.find(addr);
-    if (it == breaks_.end()) breaks_[addr] = peek(addr);
-    poke(addr, 0);
+    long addr_content = peek(addr);
+    if (it == breaks_.end()) breaks_[addr] = addr_content;
+    long mask = Arch::current()->get_breakpoint_mask();
+    addr_content &= mask;
+    log::debug("break contents are %x", addr_content);
+    poke(addr, addr_content);
 }
 
 void Process::remove_break(long addr) {

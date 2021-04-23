@@ -32,6 +32,7 @@
 #include "support/string.h"
 
 #include <sys/utsname.h>
+#include <byteswap.h>
 
 #if defined(CHOPSTIX_POWER_SUPPORT) || defined(CHOPSTIX_POWERLE_SUPPORT)
 #include "arch/power.h"
@@ -109,4 +110,24 @@ Popen Arch::objdump(const std::string &filename) const {
 
     std::string run = fmt::format("{} -j .text -d {}", cmd, filename);
     return Popen(run);
+}
+
+long Arch::get_breakpoint_mask() const {
+    long mask;
+    switch(get_breakpoint_size()) {
+        case BreakpointSize::HALF_WORD:
+            mask = std::numeric_limits<unsigned short>::max();
+            break;
+        case BreakpointSize::WORD:
+            mask = std::numeric_limits<unsigned int>::max();
+            break;
+        default:
+        case BreakpointSize::DOUBLE_WORD:
+            mask = std::numeric_limits<unsigned long>::max();
+            break;
+    }
+
+    if (get_endianess() == Endianess::BIG) mask = __bswap_64(mask);
+
+    return ~mask;
 }

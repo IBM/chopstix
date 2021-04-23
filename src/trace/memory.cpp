@@ -457,6 +457,8 @@ void Memory::protect_region(mem_region *reg) {
 
     check(!err, "Unable to protect region %x-%x %s %s", reg->addr[0],
           reg->addr[1], reg->perm, reg->path);
+    log::debug("Memory::protect_region: protected %d bytes at %x",
+               REGION_SIZE(reg), reg->addr[0]);
 }
 
 void Memory::unprotect_region(mem_region *reg) {
@@ -507,6 +509,8 @@ void Memory::unprotect_page(mem_region *reg, unsigned long page_addr) {
                       decode_perm(reg->perm));
     check(!err, "Unable to unprotect page %x in region %x-%x %s %s", page_addr,
           reg->addr[0], reg->addr[1], reg->perm, reg->path);
+    log::debug("Memory::unprotect_page: unprotected %d bytes at %x", pagesize_,
+               page_addr);
 }
 
 void Memory::debug_all() {
