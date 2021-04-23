@@ -38,6 +38,7 @@
 #include <ostream>
 #include <string>
 #include <vector>
+#include <limits>
 
 namespace chopstix {
 
@@ -46,6 +47,12 @@ struct Instruction;
 enum class Endianess {
     LITTLE,
     BIG
+};
+
+enum class BreakpointSize {
+    HALF_WORD,
+    WORD,
+    DOUBLE_WORD,
 };
 
 struct Arch {
@@ -61,6 +68,7 @@ struct Arch {
     virtual std::string name() const = 0;
     virtual std::vector<std::string> prefix() const = 0;
     virtual Endianess get_endianess() const = 0;
+    virtual long get_breakpoint_mask() const;
 
     virtual size_t regsize() const = 0;
     regbuf_type create_regs() const { return new long[regsize()]; }
@@ -83,6 +91,11 @@ struct Arch {
     virtual long parse_syscall(regbuf_type regs) const = 0;
     virtual long parse_ret(regbuf_type regs) const = 0;
     virtual void parse_args(regbuf_type regs, regbuf_type args) const = 0;
+
+protected:
+    virtual BreakpointSize get_breakpoint_size() const {
+        return BreakpointSize::DOUBLE_WORD;
+    }
 };
 
 }  // namespace chopstix

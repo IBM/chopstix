@@ -67,7 +67,8 @@ void Tracer::stop() {
 }
 
 void Tracer::set_state(TracerState *state) {
-    log::verbose("State change");
+    log::verbose("State change at PC = 0x%x",
+                 Arch::current()->get_pc(child.pid()));
 
     if (current_state != nullptr) current_state->on_state_finish(child);
     state->on_state_start(child);
