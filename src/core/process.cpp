@@ -31,6 +31,7 @@
 #include "support/log.h"
 
 #include <sys/ptrace.h>
+#include <sys/signal.h>
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <unistd.h>
@@ -162,19 +163,23 @@ int Process::stop_sig() { return WSTOPSIG(status_); }
 void Process::send(int sig) { kill(pid_, sig); }
 void Process::syscall(int sig) {
     status_ = 0;
+    log::debug("process::syscall");
     long ret = ptrace(PTRACE_SYSCALL, pid_, 0, sig);
     check(ret != -1, "ptrace_syscall");
 }
 void Process::cont(int sig) {
     status_ = 0;
+    log::debug("process::cont");
     long ret = ptrace(PTRACE_CONT, pid_, 0, sig);
     check(ret != -1, "ptrace_cont");
 }
 void Process::attach() {
+    log::debug("process::attach");
     long ret = ptrace(PTRACE_ATTACH, pid_, 0, 0);
     check(ret != -1, "ptrace_attach");
 }
 void Process::detach(int sig) {
+    log::debug("process::detach");
     long ret = ptrace(PTRACE_DETACH, pid_, 0, sig);
     check(ret != -1, "ptrace_detach");
 }
@@ -190,6 +195,7 @@ void Process::poke(long addr, long data) {
 }
 
 void Process::step(int sig) {
+    log::debug("process::step");
     long ret = ptrace(PTRACE_SINGLESTEP, pid_, 0, sig);
     check(ret != -1, "ptrace_singlestep");
 }
@@ -209,6 +215,13 @@ void Process::remove_break(long addr) {
     log::debug("remove break at %x", addr);
     auto it = breaks_.find(addr);
     if (it != breaks_.end()) poke(addr, it->second);
+}
+
+void *Process::get_segfault_addr() {
+    siginfo_t siginfo;
+    long ret = ptrace(PTRACE_GETSIGINFO, pid_, NULL, &siginfo);
+    check(ret != -1, "ptrace_getsiginfo");
+    return siginfo.si_addr;
 }
 
 void Process::dyn_call(long addr, Arch::regbuf_type &regs, long sp, std::vector<unsigned long> &args) {
@@ -234,6 +247,9 @@ void Process::dyn_call(long addr, Arch::regbuf_type &regs, long sp, std::vector<
             // should be just skipped since it is as a result of our tracing
             // library code and not from the application code.
 
+            log::debug("Segfault info: PC = %x, RA = %x, ADDR = %x",
+                       Arch::current()->get_pc(pid()),
+                       Arch::current()->get_lnk(pid()), get_segfault_addr());
             log::debug(
                 "Process::dyn_call: Ignoring segmentation fault during dynamic "
                 "call");
