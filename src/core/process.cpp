@@ -30,8 +30,8 @@
 #include "support/check.h"
 #include "support/log.h"
 
-#include <bits/types/siginfo_t.h>
 #include <sys/ptrace.h>
+#include <sys/signal.h>
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <unistd.h>
