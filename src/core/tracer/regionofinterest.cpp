@@ -31,10 +31,14 @@ void TracerRegionOfInterestState::on_state_start(Process &child) {
 
 void TracerRegionOfInterestState::handle_signal(Process &child, int signal) {
     if (signal == SIGSEGV) {
-        // forward signal
         log::debug("RegionOfInterest:: catching signal SIGSEGV");
+        log::debug("Segfault info: PC = %x, RA = %x, ADDR = %x",
+                   Arch::current()->get_pc(child.pid()),
+                   Arch::current()->get_lnk(child.pid()),
+                   child.get_segfault_addr());
         tracer->save_page();
 
+        // forward signal
         log::debug("RegionOfInterest:: forward signal SIGSEGV");
         child.syscall(signal);
     } else if (signal == SIGTRAP) {

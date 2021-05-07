@@ -146,7 +146,7 @@ void System::record_segv(unsigned long addr) {
             int fd = syscall(SYS_openat, AT_FDCWD,fname, O_WRONLY | O_CREAT | O_TRUNC,
                              PERM_664);
             check(fd != -1, "Unable to open %s", fname);
-            int val = write(fd, (void *)&pagecount, sizeof(int));
+            int val = syscall(SYS_write, fd, (void *)&pagecount, sizeof(int));
             check(val == sizeof(int), "Unable to write bytes");
             syscall(SYS_close, fd);
             log::debug("System::record_segv: writing %d to %s", pagecount,
@@ -171,7 +171,7 @@ void System::save_page(unsigned long page_addr) {
     check(fd != -1, "Unable to save page at '%s'", fname);
 
     log::debug("System::save_page: writing to %s", fname);
-    ssize_t w = ::write(fd, (void *)page_addr, pagesize);
+    ssize_t w = syscall(SYS_write, fd, (void *)page_addr, pagesize);
     assert(w == pagesize && "Unable to write");
 
     unsigned long offset_mask = pagesize - 1;
@@ -185,8 +185,8 @@ void System::save_page(unsigned long page_addr) {
         if (breakpoint_page == page) {
             log::debug("System::save_page: fixing breakpoint at 0x%x",
                        breakpoint.address);
-            lseek(fd, breakpoint.address & offset_mask, SEEK_SET);
-            w = ::write(fd, &breakpoint.original_content, sizeof(long));
+            syscall(SYS_lseek, fd, breakpoint.address & offset_mask, SEEK_SET);
+            w = syscall(SYS_write, fd, &breakpoint.original_content, sizeof(long));
             assert(w == sizeof(long) &&
                    "Unable to restore breakpoint contents");
         }

@@ -61,7 +61,7 @@ struct Logger {
         if (m > mode_) return;
         n = sfmt::format(linebuf, sizeof(linebuf), "%s %s: ", LOG_FROM,
                          prefix[m]);
-        ssize_t w = write(fd_, linebuf, n);
+        ssize_t w = syscall(SYS_write, fd_, linebuf, n);
         assert(w == n && "Write errror");
         n = sfmt::format(linebuf, sizeof(linebuf), fmt, args...);
         linebuf[n++] = '\n';

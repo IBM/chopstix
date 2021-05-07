@@ -112,6 +112,8 @@ class Process {
         return infos;
     }
 
+    void *get_segfault_addr();
+
   private:
     int pid_;
     int status_;
