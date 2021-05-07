@@ -47,7 +47,7 @@ static int protect_bits_R = PROT_NONE;    // Read-only (contains GOT :S)
 static int protect_bits_W = PROT_NONE;    // Should never happen
 static int protect_bits_X = PROT_NONE;    // Should never happen
 static int protect_bits_RW = PROT_NONE;   // Data section
-static int protect_bits_RX = PROT_READ;   // Text section
+static int protect_bits_RX = PROT_NONE;   // Text section
 static int protect_bits_WX = PROT_NONE;   // Should never happen
 static int protect_bits_RWX = PROT_READ;  // Might happen?
 
