@@ -215,5 +215,11 @@ void ArchPower::parse_args(regbuf_type regs, regbuf_type args) const {
 }
 
 void ArchPower::set_args(pid_t pid, std::vector<unsigned long> &args) const {
-    failx("Not implemented");
+    check(args.size() <= 8, "Cannot set more than 8 argument registers.");
+    long buf[POWER_NUM_REGS];
+    read_regs(pid, buf);
+    for (size_t i = 0; i < args.size(); i++) {
+        buf[3 + i] = args[i];
+    }
+    write_regs(pid, buf);
 }
