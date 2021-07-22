@@ -39,13 +39,22 @@ if [ $# -eq 0 ]; then
     dir=/tmp/libpfm
 fi
 
-if [ $# -eq 1 ]; then
-    dir="$1"
-    dir=$(readlink -m "$dir")
-elif [ $# -gt 1 ]; then
-    echo "Usage: $0 <install_dir>"
+if [ $# -gt 2 ]; then
+    echo "Usage: $0 [<install_dir> [-debug]]"
     exit 1
 fi
+
+dir="$1"
+dir=$(readlink -m "$dir")
+
+debug=""
+if [ $# -eq 2 ]; then
+    if [ "$2" != "-debug" ]; then
+        echo "Usage: $0 [<install_dir> [-debug]]"
+        exit 1
+    fi
+    debug="-DCMAKE_BUILD_TYPE=Debug"
+if
 
 if [ ! -d "$dir" ]; then
     echo "Install directory '$dir' does not exists"
@@ -59,11 +68,11 @@ if [ ! -d "$dir" ]; then
     fi
 fi
 
-tmp=$(mktemp -d)
+tmp="$(mktemp -d)"
 cd "$tmp"
 
 "$base_dir/scripts/ci/install_libpfm.sh" "$dir"
-cmake "$base_dir" -DCHOPSTIX_PERFMON_PREFIX="$dir" -DCMAKE_INSTALL_PREFIX="$dir" -DCHOPSTIX_BUILD_SQLITE=ON
+cmake "$base_dir" -DCHOPSTIX_PERFMON_PREFIX="$dir" -DCMAKE_INSTALL_PREFIX="$dir" -DCHOPSTIX_BUILD_SQLITE=ON $debug
 make -j 
 make -j install
 
