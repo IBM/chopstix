@@ -33,6 +33,7 @@ set -a # All following variables are exported
 
 ATVERSION=12.0
 DISTRO=xenial
+UPDATE=5
 
 if [ ! -d ./toolchain ]; then
     mkdir ./toolchain
@@ -41,11 +42,11 @@ fi
 cd ./toolchain
 
 apt-get install axel 
-baseurl="ftp://ftp.unicamp.br/pub/linuxpatch/toolchain/at/ubuntu/dists/$DISTRO/at$ATVERSION/binary-amd64/"
-packages="advance-toolchain-at$ATVERSION-cross-common_$ATVERSION-1_amd64.deb
-          advance-toolchain-at$ATVERSION-cross-ppc64_$ATVERSION-1_amd64.deb
-          advance-toolchain-at$ATVERSION-cross-ppc64-mcore-libs_$ATVERSION-1_amd64.deb
-          advance-toolchain-at$ATVERSION-cross-ppc64-runtime-extras_$ATVERSION-1_amd64.deb"
+baseurl="https://public.dhe.ibm.com/software/server/POWER/Linux/toolchain/at/ubuntu/dists/$DISTRO/at$ATVERSION/binary-amd64/"
+packages="advance-toolchain-at$ATVERSION-cross-common_$ATVERSION-${UPDATE}_amd64.deb
+          advance-toolchain-at$ATVERSION-cross-ppc64_$ATVERSION-${UPDATE}_amd64.deb
+          advance-toolchain-at$ATVERSION-cross-ppc64-mcore-libs_$ATVERSION-${UPDATE}_amd64.deb
+          advance-toolchain-at$ATVERSION-cross-ppc64-runtime-extras_$ATVERSION-${UPDATE}_amd64.deb"
 
 for package in $packages; do
     if [ ! -f "./$package" ]; then 
@@ -57,7 +58,7 @@ for package in $packages; do
 
     echo "Installing packages ..."
     set +e
-    dpkg -i "./$package" 
+    dpkg -i "./$package"
     apt-get install -f -y
     set -e
 done;
