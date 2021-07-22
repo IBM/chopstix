@@ -167,7 +167,7 @@ int run_sample(int argc, char **argv) {
         child.ready();
         child.cont();
         std::thread stop_onexit([&]() {
-            child.wait();
+            child.wait(0);
             running = false;
         });
         stop_onexit.detach();
