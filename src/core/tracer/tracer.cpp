@@ -39,27 +39,35 @@ static void preload(std::string path) {
 namespace chopstix {
 
 Tracer::Tracer(std::string trace_path, bool dryrun, TraceOptions trace_options) {
+    log::verbose("Tracer:: contructor start");
     regs = Arch::current()->create_regs();
     this->trace_path = trace_path;
     tracing_enabled = !dryrun;
     this->trace_options = trace_options;
+    log::verbose("Tracer:: contructor end");
 }
 
 Tracer::~Tracer() {
+    log::verbose("Tracer:: destructor start");
     free(regs);
+    log::verbose("Tracer:: destructor end");
 }
 
 void Tracer::start(TracerState *initial_state, int argc, char **argv) {
+    log::verbose("Tracer:: start start");
     init(argc, argv);
 
     running = true;
+    log::verbose("Tracer:: start: set initial state");
     set_state(initial_state);
 
     while(running) {
+        log::verbose("Tracer:: start: running, calling execute on state");
         current_state->execute(child);
     }
 
     log::info("Tracer captured %d traces", trace_id);
+    log::verbose("Tracer:: start end");
 }
 
 void Tracer::stop() {
@@ -67,23 +75,32 @@ void Tracer::stop() {
 }
 
 void Tracer::set_state(TracerState *state) {
-    log::verbose("State change at PC = 0x%x",
+    log::verbose("Tracer:: set_state start");
+    log::verbose("Tracer:: State change at PC = 0x%x",
                  Arch::current()->get_pc(child.pid()));
 
-    if (current_state != nullptr) current_state->on_state_finish(child);
+    if (current_state != nullptr) {
+        log::verbose("Tracer:: calling_on_state_finish");
+        current_state->on_state_finish(child);
+    }
+
+    log::verbose("Tracer:: calling_on_state_start");
     state->on_state_start(child);
 
     current_state = state;
+    log::verbose("Tracer:: set_state end");
 }
 
 long Tracer::read_alt_stack() {
+    log::verbose("Tracer:: read_alt_start start");
     char fname[PATH_MAX];
     sfmt::format(fname, sizeof(fname), "%s/_alt_stack", trace_path);
     int stack_fd = ::open(fname, O_RDONLY);
     stack_t alt_stack;
     int n = read(stack_fd, &alt_stack, sizeof(stack_t));
-    log::debug("alt stack at %x-%x", (unsigned long)alt_stack.ss_sp,
+    log::debug("Tracer:: alt stack at %x-%x", (unsigned long)alt_stack.ss_sp,
                (unsigned long)alt_stack.ss_sp + alt_stack.ss_size);
+    log::verbose("Tracer:: read_alt_start end");
     return (long)alt_stack.ss_sp + alt_stack.ss_size / 2;
 }
 
@@ -119,37 +136,41 @@ struct mmap_call {
 };
 
 void Tracer::track_mmap() {
+    log::verbose("Tracer:: track_mmap start");
     std::vector<mmap_call> restrict_map;
     long pagesize = sysconf(_SC_PAGESIZE);
     long args[7];
     while (1) {
         int sig;
 
-        child.syscall();
-        child.wait();
-        checkx(child.stopped(), "Child did not stop");
+        child.syscall(0);
+        child.wait(0);
+        checkx(child.stopped(), "Tracer:: track_mmap: Child did not stop");
         sig = child.stop_sig();
         if (sig == SIGUSR1) {
             break;
         }
-        checkx(sig == SIGTRAP, "Expected trap/breakpoint A, found %s",
+        checkx(sig == SIGTRAP, "Tracer:: track_mmap: Expected trap/breakpoint A, found %s",
                strsignal(sig));
         Arch::current()->read_regs(child.pid(), regs);
 
         long syscall_nr = Arch::current()->parse_syscall(regs);
         Arch::current()->parse_args(regs, args);
 
-        //      0   , 1     , 2   , 3    , 4  , 5
-        // mmap(addr, length, prot, flags, fd, offset)
+        //
+        //        0   , 1     , 2   , 3    , 4 , 5
+        //   mmap(addr, length, prot, flags, fd, offset)
         //        0   , 1
         // munmap(addr, length)
+        //
 
-        child.syscall();
-        child.wait();
-        checkx(child.stopped(), "Child did not stop");
+        child.syscall(0);
+        child.wait(0);
+        checkx(child.stopped(), "Tracer:: track_mmap: Child did not stop");
         sig = child.stop_sig();
-        checkx(sig == SIGTRAP, "Expected trap/breakpoint B, found %s",
+        checkx(sig == SIGTRAP, "Tracer:: track_mmap: Expected trap/breakpoint B, found %s",
                strsignal(sig));
+
         Arch::current()->read_regs(child.pid(), regs);
 
         long ret = Arch::current()->parse_ret(regs);
@@ -159,7 +180,7 @@ void Tracer::track_mmap() {
             mmap.addr = ret;
             mmap.length = args[1];
             mmap.prot = args[2];
-            log::debug("mmap %x-%x %s", mmap.addr, mmap.addr + mmap.length,
+            log::debug("Tracer:: track_mmap: mmap %x-%x %s", mmap.addr, mmap.addr + mmap.length,
                        encode_perm(mmap.prot));
             restrict_map.push_back(mmap);
         } else if (syscall_nr == SYS_munmap) {
@@ -167,7 +188,7 @@ void Tracer::track_mmap() {
             mmap_call munmap;
             munmap.addr = args[0];
             munmap.length = args[1];
-            log::debug("munmap %x-%x", munmap.addr,
+            log::debug("Tracer:: track_mmap: munmap %x-%x", munmap.addr,
                        munmap.addr + munmap.length);
             auto end = std::remove_if(restrict_map.begin(), restrict_map.end(),
                                       [&](const mmap_call &mmap) {
@@ -180,35 +201,42 @@ void Tracer::track_mmap() {
     char fname[PATH_MAX];
     sfmt::format(fname, sizeof(fname), "%s/_restrict_map", trace_path);
     FILE *fp = fopen(fname, "w");
-    check(fp, "Unable to open restrict_map");
+    check(fp, "Tracer:: track_mmap: Unable to open restrict_map");
     for (auto &reg : restrict_map) {
         reg.length = upper_div(reg.length, pagesize) * pagesize;
         fprintf(fp, "%lx-%lx %s 0 0:0 0 [restrict]\n", reg.addr,
                 reg.addr + reg.length, encode_perm(reg.prot));
     }
     fclose(fp);
+    log::verbose("Tracer:: track_mmap end");
 }
 
 void Tracer::init(int argc, char **argv) {
+    log::verbose("Tracer:: init start");
     setenv("LD_BIND_NOW", "1", 1);
     preload(library_path());
     child.exec(argv, argc);
     child.ready();
     unsetenv("LD_PRELOAD");
     log::verbose("Tracer:: Spawned child process %d", child.pid());
+
+    // TODO: why this sleep is needed?
     sleep(2);
 
     track_mmap();
 
     alt_stack = read_alt_stack();
+    log::verbose("Tracer:: init end");
 }
 
 void Tracer::capture_trace() {
+    log::verbose("Tracer:: capture_trace start");
     char fname[PATH_MAX];
     FILE *fp;
 
     if (trace_options.dump_registers) {
         //Serialize Registers
+        log::verbose("Tracer:: capture_trace dump_registers");
         auto registers = Arch::current()->create_regs();
         Arch::current()->read_regs(child.pid(), registers);
 
@@ -220,6 +248,7 @@ void Tracer::capture_trace() {
 
     if (trace_options.dump_maps) {
         //Serialize memory mapping
+        log::verbose("Tracer:: capture_trace dump_maps");
         sfmt::format(fname, sizeof(fname), "/proc/%d/maps", child.pid());
         std::string from{fname};
         sfmt::format(fname, sizeof(fname), "%s/maps.%d", trace_path, trace_id);
@@ -229,6 +258,7 @@ void Tracer::capture_trace() {
 
     if (trace_options.dump_info) {
         //Serialize Program Counter
+        log::verbose("Tracer:: capture_trace dump_info");
         auto pc = Arch::current()->get_pc(child.pid());
 
         sfmt::format(fname, sizeof(fname), "%s/info.%d", trace_path, trace_id);
@@ -236,14 +266,25 @@ void Tracer::capture_trace() {
         fprintf(fp, "begin_addr %016lx\n", pc);
         fclose(fp);
     }
+    log::verbose("Tracer:: capture_trace end");
 }
 
 void Tracer::start_trace(bool isInvocationStart) {
+
+    log::verbose("Tracer:: start_trace start");
+    log::verbose("Tracer:: start_trace: Start capturing trace %d", trace_id);
     if(tracing_enabled) {
+        log::verbose("Tracer::start_trace tracing enabled");
         capture_trace();
 
         // Pass breakpoint information to tracee
         auto breakpoints = child.get_breakpoint_info();
+
+        for(auto & elem : breakpoints)
+        {
+            log::verbose("Tracer:: start_trace: Breakpoint address: 0x%x Contents: 0x%x", elem.addr, elem.original_content);
+        }
+
         char fname[PATH_MAX];
         sfmt::format(fname, sizeof(fname), "%s/_breakpoints", trace_path);
         FILE *fp = fopen(fname, "wb");
@@ -254,20 +295,35 @@ void Tracer::start_trace(bool isInvocationStart) {
         // Invoke trace start routine
         unsigned long arg0 = isInvocationStart ? 1 : 0;
         std::vector<unsigned long> args = {arg0};
+
+        log::verbose("Tracer::start_trace : dyn_call to chopstix_start_trace");
         dyn_call("chopstix_start_trace", args);
+        log::verbose("Tracer::start_trace end");
     }
+    log::verbose("Tracer:: start_trace end");
 }
 
 void Tracer::stop_trace() {
+
+    log::verbose("Tracer:: stop_trace start");
+    log::verbose("Stop capturing trace %d", trace_id);
     trace_id++;
     if (tracing_enabled) {
+        log::verbose("Tracer::stop_trace : dyn_call to chopstix_stop_trace");
         static std::vector<unsigned long> args;
         dyn_call("chopstix_stop_trace", args);
     }
+
+    if (trace_id >= trace_options.max_traces) {
+        log::info("Max number of traces reached");
+        running = false;
+    }
+
+    log::verbose("Tracer:: stop_trace end");
 }
 
 void Tracer::save_page() {
-    log::debug("Page accessed!");
+    log::debug("Tracer:: save_page: page access detected (child process signal handler will take care of it)");
 }
 
 Location& Tracer::get_symbol(std::string name) {
@@ -280,6 +336,7 @@ Location& Tracer::get_symbol(std::string name) {
 }
 
 void Tracer::dyn_call(std::string symbol, std::vector<unsigned long> &args) {
+    log::verbose("Tracer:: dyn_call: dynamic call to: %s", symbol);
     child.dyn_call(get_symbol(symbol), regs, alt_stack, args);
 }
 
@@ -288,23 +345,47 @@ bool Tracer::symbol_contains(std::string symname, long addr) {
 }
 
 void Tracer::set_breakpoint(std::vector<long> address, bool state) {
+    log::verbose("Tracer:: set_breakpoint start");
     for (auto addr : address) {
-        if(state) child.set_break(addr + module_offset.addr());
-        else child.remove_break(addr + module_offset.addr());
+        auto baddr = addr + module_offset.addr();
+        if(state) {
+            log::verbose("Tracer:: set_breakpoint: set_break at 0x%x (0x%x)", addr, baddr);
+            child.set_break(baddr);
+        }
+        else {
+            log::verbose("Tracer:: set_breakpoint: remove_break at 0x%x (0x%x)", addr, baddr);
+            child.remove_break(baddr);
+        }
     }
+    log::verbose("Tracer:: set_breakpoint end");
 }
 
 bool RandomizedTracer::should_trace() {
-    return ((random() + 0.0) / RAND_MAX) < probability;
+    log::verbose("RandomizedTracer::should_trace");
+    //if (trace_id >= trace_options.max_traces) return false;
+    double value = ((random() + 0.0) / RAND_MAX);
+    if (value < probability) {
+        log::verbose("RandomizedTracer::should_trace yes");
+    } else {
+        log::verbose("RandomizedTracer::should_trace no");
+    }
+    return value < probability;
 }
 
 bool IndexedTracer::should_trace() {
-    if (indices.size() <= current_index) return false;
+    log::verbose("IndexedTracer::should_trace (execution %d)", current_execution);
+    //if (trace_id >= trace_options.max_traces) return false;
+    if (indices.size() <= current_index) {
+        current_execution++;
+        return false;
+    }
 
     if (indices[current_index] == current_execution++) {
         current_index++;
+        log::verbose("IndexedTracer::should_trace yes");
         return true;
     } else {
+        log::verbose("IndexedTracer::should_trace no");
         return false;
     }
 }

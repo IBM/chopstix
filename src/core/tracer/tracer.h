@@ -1,12 +1,14 @@
 #pragma once
 
 #include "../process.h"
+#include "../../support/log.h"
 #include <vector>
 
 namespace chopstix {
 
 struct TraceOptions {
     bool dump_registers, dump_maps, dump_info;
+    long max_traces;
 };
 
 class TracerState;
@@ -22,14 +24,25 @@ class Tracer {
     void set_state(TracerState *state);
     void start_trace(bool isInvocationStart);
     void stop_trace();
-    virtual bool should_trace() {return true;}
+    virtual bool should_trace() {
+        log::verbose("Tracer::should_trace");
+        if (trace_id >= trace_options.max_traces) {
+            log::verbose("Tracer::should_trace false");
+            return false;
+        }
+        log::verbose("Tracer::should_trace true");
+        return true;
+    }
     void save_page();
     void dyn_call(std::string symbol, std::vector<unsigned long> &args);
     bool symbol_contains(std::string symbol, long addr);
     void set_breakpoint(std::vector<long> address, bool state);
+    int trace_id = 0;
+    TraceOptions trace_options;
   private:
     void init(int argc, char **argv);
     void track_mmap();
+
     long read_alt_stack();
     Location& get_symbol(std::string name);
     void capture_trace();
@@ -40,11 +53,9 @@ class Tracer {
     long alt_stack;
     Arch::regbuf_type regs;
     Location module_offset = Location::Address(0);
-    int trace_id = 0;
     std::string trace_path;
     bool running;
     bool tracing_enabled;
-    TraceOptions trace_options;
 };
 
 class RandomizedTracer : public Tracer {
