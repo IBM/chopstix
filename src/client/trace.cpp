@@ -56,12 +56,12 @@ int run_trace(int argc, char **argv) {
     trace_options.dump_registers = getopt("registers").as_bool();
     trace_options.dump_maps = getopt("maps").as_bool();
     trace_options.dump_info = getopt("info").as_bool();
+    trace_options.max_traces = getopt("max-traces").as_int();
     std::string trace_path = getopt("trace-dir").as_string();
     double sample_freq = getopt("prob").as_float();
     bool notrace = !getopt("trace").as_bool();
     double tidle = getopt("interval").as_time();
     double tsample = getopt("active").as_time();
-    int max_traces = getopt("max-traces").as_int();
     int max_pages = getopt("max-pages").as_int();
     int group_iter = getopt("group").as_int();
     auto addr_begin = getopt("begin").as_hex_vec();
