@@ -114,7 +114,7 @@ static int filter_perm(const char *test, const char *perm) {
                 if (match) return 1;
                 i = 0;
                 match = 1;
-                break;
+                continue;
             case 'r':
             case 'w':
             case 'x':
