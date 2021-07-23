@@ -54,7 +54,7 @@ if [ $# -eq 2 ]; then
         exit 1
     fi
     debug="-DCMAKE_BUILD_TYPE=Debug"
-if
+fi
 
 if [ ! -d "$dir" ]; then
     echo "Install directory '$dir' does not exists"
