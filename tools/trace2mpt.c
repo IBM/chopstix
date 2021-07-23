@@ -7,8 +7,9 @@
 #include <stdlib.h>
 #include <string.h>
 #include <zlib.h>
+#include <errno.h>
 
-#define PATH_LEN 1024
+#define PATH_LEN 512
 
 const char MPT_HEADER_TEMPLATE[] =
 "[MPT]\n\
@@ -106,7 +107,7 @@ void readRegularFile(const char *path, char **data, size_t *data_size) {
     rewind(fp);
     *data = malloc(*data_size);
     size_t w = fread(*data, *data_size, 1, fp);
-    assert(w == *data_size);
+    assert((*data_size * w) == *data_size);
     fclose(fp);
 }
 
@@ -176,6 +177,12 @@ void trace2mpt(const char *output_base, const char *trace_dir,
     sprintf(mpt_path, "%s.%d.mpt", output_base, index);
     FILE *mpt = fopen(mpt_path, "w");
 
+    if (mpt == NULL) {
+        fprintf(stderr, "chop-trace2mpt: Unable to write to '%s'\n", mpt_path);
+        fprintf(stderr, "chop-trace2mpt: Error: %s\n",strerror(errno));
+        exit(-1);
+    }
+
     // Read default address
     unsigned long default_address;
     sprintf(path, "%s/info.%d", trace_dir, index);
@@ -188,8 +195,15 @@ void trace2mpt(const char *output_base, const char *trace_dir,
     sprintf(mps_path, "%s.%d.mps", output_base, index);
     FILE *mps = fopen(mps_path, "w");
 
-    char *lastSlash =  strrchr(path, '/');
-    char *mps_name = (lastSlash != NULL ? lastSlash + 1 : path);
+    if (mps == NULL) {
+        fprintf(stderr, "chop-trace2mpt: Unable to write to '%s'\n", mpt_path);
+        fprintf(stderr, "chop-trace2mpt: Error: %s\n",strerror(errno));
+        exit(-1);
+    }
+
+    char *lastSlash = strrchr(mps_path, '/');
+
+    char *mps_name = (lastSlash != NULL ? lastSlash + 1 : mps_path);
     fprintf(mpt, MPT_HEADER_TEMPLATE, mps_name, default_address);
 
     // Write register contents
