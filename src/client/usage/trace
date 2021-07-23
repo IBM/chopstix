@@ -7,17 +7,17 @@ Trace page accesses of a given command. The provided command
 is executed and the memory and/or code pages being executed 
 are dumped to the provided path. You need to use the
 'chop-trace2mpt' post-processing script to convert the trace 
-to a MPT file. 
+to a MPT file that can be handled by Microprobe tool.
 
-There are 3 alternative tracing methods to select the portion
-of execution to be traced:
+There are 3 alternative methods to define the portion of execution
+that will be considered for tracing:
 
-a) Region of interest, if you know the start and ending addreses
+a) Region of interest, if you know the start and ending addresses
    of the region to be traced. E.g.:
     
    chop trace -begin 400 -end 800 ./foo bar baz
 
-   will trace starting at address 0x400 and ending at addres 0x800.
+   will trace starting at address 0x400 and ending at address 0x800.
    This process is repeated, and different traces are generated,
    until a termination condition is met.
 
@@ -30,15 +30,44 @@ b) Temporal-based sampling. The execution will be traced at the
    again. This process is repeated, and different traces are generated,
    until a termination condition is met.
 
-c) Hybrid approach, where you want to do temporal-based sampling
-   but bounded by the region of interest. E.g.:
+c) Region of interest + time, where you want to do temporal-based sampling
+   but bounded by the start of the region of interest. E.g.:
    
-   chop trace -begin 400 -end 800 -active 5ms -interval 100ms ./foo bar baz
+   chop trace -begin 400 -active 5ms ./foo bar baz
 
-    will wait for 100ms, then it will start tracing when address 0x400
-    is reached. Then, will trace for at least 5ms, and it will stop 
-    tracing when address 0x800 is reached.  This process is repeated, 
-    and different traces are generated, until a termination condition is met.
+   will start tracing when address 0x400 is reached. Then, it will trace for
+   5ms. This process is repeated, and different traces are generated, until a
+   termination condition is met.
+
+Once the portion of execution is defined, there are also 3 alternative 
+methods to decide whether to trace or not that particular execution:
+
+a) All executions. This is the default behaviors if no extra parameter is
+   specified.
+
+b) Random. Use the -prob <pct> to define the probability of a specific 
+   execution to be traced. E.g. : 
+
+   chop trace -begin 400 -end 800 -prob 0.5 ./foo bar baz
+
+   will trace half of the executions starting at address 0x400 and ending at
+   address 0x800.
+
+c) Index based. Use -indices <list> parameter to specify the execution number
+   to be traced. 
+
+   chop trace -begin 400 -end 800 -indices 2,18 ./foo bar baz
+
+   will trace executions 2 and 18 of the executions starting at address 0x400
+   and ending at address 0x800.
+
+To control the amount of data to be generated one can use the following 
+parameters and stop conditions:
+
+a) -max-pages controls the maximum number of pages dumped for each traced
+   execution
+
+b) -max-traces controls the maximum number of execution traces to generate
 
 Options:
 
@@ -48,9 +77,6 @@ Options:
   -end <addr>            End address of the region of interest in hex format.
                          Address correspond to static image address of the modules
                          being executed.
-  -module <name>         Name of module to trace. This is always mandatory for Z
-                         backend or if the module to trace is not the main
-                         module.
   -active <time>         Time tracing is active. By default <time> is in seconds. 
                          One can use time specifiers as following: d (days), h
                          (hours), m(minutes), s(seconds), ms (milliseconds), 
@@ -60,31 +86,42 @@ Options:
                          One can use time specifiers as following: d (days), h
                          (hours), m(minutes), s(seconds), ms (milliseconds), 
                          us(microseconds). 
+
   -prob <pct>            Probability that a given region is traced
                          Valid values: floats between 0 and 1. 0: no region
                          is going to be traced. 1: all region will be traced.
-  -group <num>           Group <num> region into one trace (default: 1).
+  -indices <list>        Trace the indicated executions (starting at 1). e.g.
+                         if tracing a region of interest defined by a starting
+                         address, and list=3,5 , it will generate a trace
+                         when that address is reached a third and fifth time.
+
+  -max-pages <num>       Limit tracing to <num> pages per execution traced.
+  -max-traces <num>      Stop tracing after <num> traces have been extracted.
+
+  -trace-dir <path>      Path to directory where tracing data will be stored
+                         (default: trace_data).
+  -gzip                  Zip contents of the output -trace-dir specified.
+
+  -access-trace          Generate 'trace.bin' file in -trace-dir path. The
+                         binary file is a trace containing the addresses of
+                         the pages being accessed. It can be processed with 
+                         'chop-detrace' helper tool. 
+
+Other options:
+
   -no-save               Disable data page content dumping.
   -no-code               Disable code page content dumping.
   -no-registers          Disable register content dumping.
   -no-maps               Disable memory map dumping.
   -no-info               Disable additional information dumping.
-  -trace-dir <path>      Path to directory where tracing data will be stored
-                         (default: trace_data).
-  -gzip                  Zip page contents.
+
   -log-path <path>       Path to log file.
   -log-level <level>     Set verbosity of the log file (default: info)
-                         Options are: debug,verbose,info,warn,error.
-  -max-pages <num>       Stop tracing after <num> pages have been extracted.
-  -max-traces <num>      Stop tracing after <num> traces have been extracted.
-  -access-only           Generate 'trace.bin' file in -trace-dir path. The
-                         binary file is a trace containind the addresses of
-                         the pages being accessed. It can be processed with 
-                         'chop-detrace' helper tool. (experimental)
+                         Options are: debug, verbose, info, warn, error.
+
   -no-trace              Do no call tracing mechanisms. This debugging option is
                          used for testing the detection of the regions of interests.
-                         (experimental)
-  -indices <list>        Trace the indicated executions (starting at 1). e.g.
-                         if tracing a region of interest defined by a starting
-                         address, and list=3,5 , it will generate a trace
-                         when that address is reached a third and fifth time.
+
+  -group <num>           Group <num> region into one trace (default: 1) (experimental)
+  -module <name>         Name of module to trace. This is always mandatory if
+                         the module to trace is not the main module (experimental)
