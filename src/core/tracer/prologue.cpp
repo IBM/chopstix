@@ -7,10 +7,10 @@
 namespace chopstix {
 
 void TracerPrologueState::execute(Process &child) {
-    log::verbose("TracerPrologueState:: execute start");
+    log::debug("TracerPrologueState:: execute start");
     tracer->stop_trace();
     change_state();
-    log::verbose("TracerPrologueState:: execute end");
+    log::debug("TracerPrologueState:: execute end");
 }
 
 }

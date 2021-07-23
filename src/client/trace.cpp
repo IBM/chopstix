@@ -46,9 +46,10 @@ int run_trace(int argc, char **argv) {
 
     CHECK_USAGE(trace,
                 (getopt("begin").is_set() && getopt("end").is_set()) ||
-                    (getopt("interval").is_set() && getopt("active").is_set()),
+                (getopt("interval").is_set() && getopt("active").is_set()) ||
+                (getopt("begin").is_set() && getopt("active").is_set()),
                 "No tracing parameters (Region of Interest or Temporal-based "
-                "sampling)");
+                "sampling or Region with time)");
 
     bool save_regs = getopt("save").as_bool();
     bool drytrace = getopt("access-only").as_bool();
@@ -88,11 +89,18 @@ int run_trace(int argc, char **argv) {
     }
 
     TracerState *preamble, *roi, *prologue;
-    if (with_region) {
+    if (with_region && tsample) {
+        log::info("Tracing for executiong time when reaching the specified region");
+        preamble = new TracerRangedTimedPreambleState(tracer, addr_begin, tsample);
+        roi = new TracerTimedRegionOfInterestState(tracer, tsample);
+        prologue = new TracerPrologueState(tracer);
+    } else if (with_region) {
+        log::info("Tracing specified region of interest");
         preamble = new TracerRangedPreambleState(tracer, addr_begin, addr_end);
         roi = new TracerRangedRegionOfInterestState(tracer, addr_end);
         prologue = new TracerPrologueState(tracer);
     } else {
+        log::info("Tracing specified execution time interval");
         preamble = new TracerTimedPreambleState(tracer, tidle);
         roi = new TracerTimedRegionOfInterestState(tracer, tsample);
         prologue = new TracerPrologueState(tracer);

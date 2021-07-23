@@ -48,18 +48,15 @@ System &sys_ = System::instance();
 
 System::System() {
     log::Logger::instance();
-    log::info("System:: Start preload library initialization");
+    log::verbose("System:: Start preload library initialization");
 
-    // checkx(getopt("begin"), "No begin address set");
-    // checkx(getopt("end"), "No end address set");
     checkx(getopt("trace-dir").is_set(), "System:: No trace path set");
     safe_strncpy(trace_path, getopt("trace-dir"), sizeof(trace_path));
     save = getopt("save").as_bool();
-    drytrace = getopt("access-only").as_bool();
+    drytrace = getopt("access-trace").as_bool();
     max_pages = getopt("max-pages").as_int();
     max_traces = getopt("max-traces").as_int();
     group_iter = getopt("group").as_int(1);
-    // cur_iter = 0;
 
     filesystem::mkdir(trace_path);
 
@@ -68,7 +65,8 @@ System::System() {
     register_handlers();
 
     Memory::instance();
-    buf_.setup(trace_path);
+
+    if (drytrace) buf_.setup(trace_path);
 
     sigaltstack(Memory::instance().alt_stack(), NULL);
 
@@ -84,7 +82,7 @@ System::System() {
                     sizeof(Memory::stack_type));
     syscall(SYS_close, stack_fd);
 
-    log::verbose("System:: Raising SIGUSR1 signal to notify parent");
+    log::debug("System:: Raising SIGUSR1 signal to notify parent");
     raise(SIGUSR1);
 
     sfmt::format(fname, sizeof(fname), "%s/_restrict_map", trace_path);
@@ -92,13 +90,13 @@ System::System() {
     Memory::instance().restrict_map(res_fd);
     syscall(SYS_close, res_fd);
 
-    log::info("System:: End preload library initialization");
+    log::verbose("System:: End preload library initialization");
 }
 
 System::~System() {}
 
 void System::sigsegv_handler(int sig, siginfo_t *si, void *ptr) {
-    log::verbose("System::sigsegv_handler start");
+    log::debug("System::sigsegv_handler start");
     ucontext_t *ctx = (ucontext_t *)ptr;
 #if defined(CHOPSTIX_POWER_SUPPORT)
 #define POWER_R1 1
@@ -106,38 +104,31 @@ void System::sigsegv_handler(int sig, siginfo_t *si, void *ptr) {
     log::debug("System::sigsegv_handler: R1  = %x", ctx->uc_mcontext.gp_regs[POWER_R1]);
     log::debug("System::sigsegv_handler: NIP = %x", ctx->uc_mcontext.gp_regs[POWER_NIP]);
 #elif defined(CHOPSTIX_SYSZ_SUPPORT)
-    log::verbose("System::sigsegv_handler: PSWM = %x", ctx->uc_mcontext.psw.mask);
-    log::verbose("System::sigsegv_handler: PSWA = %x", ctx->uc_mcontext.psw.addr);
+    log::debug("System::sigsegv_handler: PSWM = %x", ctx->uc_mcontext.psw.mask);
+    log::debug("System::sigsegv_handler: PSWA = %x", ctx->uc_mcontext.psw.addr);
 #endif
     sys_.record_segv((unsigned long)si->si_addr);
-    log::verbose("System::sigsegv_handler end");
+    log::debug("System::sigsegv_handler end");
 }
 
 void System::register_handlers() {
-    log::verbose("System::register_handlers start");
+    log::debug("System::register_handlers start");
     struct sigaction sa;
     sa.sa_flags = SA_SIGINFO | SA_ONSTACK;
     sigemptyset(&sa.sa_mask);
     sa.sa_sigaction = &System::sigsegv_handler;
     sigaction(SIGSEGV, &sa, NULL);
-    log::verbose("System::register_handlers end");
+    log::debug("System::register_handlers end");
 }
 
 void System::record_segv(unsigned long addr) {
-    log::verbose("System::record_segv start");
-    log::debug("System::record_segv: segv at %x", addr);
-
-    //if (trace_id >= max_traces) {
-    //    log::verbose("System: record_seqv: max traces reached");
-    //    tracing = false;
-    //    return;
-    //}
-    //if (addr == 0) return;
+    log::debug("System::record_segv start");
+    log::verbose("System::record_segv: segv at %x", addr);
 
     unsigned long page_addr = Memory::instance().page_addr(addr);
     auto reg = Memory::instance().find_region(page_addr);
     checkx(reg, "System::record_segv: Unable to find memory region for %x", addr);
-    log::verbose(
+    log::debug(
         "System::record_segv: access at addr:%x page:%x region:%s perm:%s",
         addr, page_addr, reg->path, reg->perm);
     Memory::instance().unprotect_page(reg, page_addr);
@@ -149,9 +140,10 @@ void System::record_segv(unsigned long addr) {
     ++pagecount;
 
     if (max_pages > 0 && pagecount > max_pages) {
-        log::debug("System::record_segv: max. pages reached");
+        log::verbose("System::record_segv: max. pages reached, not saving");
     } else {
         if (save) {
+            log::verbose("System::record_segv: saving %x", page_addr);
             save_page(page_addr);
 
             char fname[PATH_MAX];
@@ -171,11 +163,11 @@ void System::record_segv(unsigned long addr) {
     if (drytrace) {
         buf_.save_page(page_addr);
     }
-    log::verbose("System::record_segv end");
+    log::debug("System::record_segv end");
 }
 
 void System::save_page(unsigned long page_addr) {
-    log::verbose("System::save_page: start");
+    log::debug("System::save_page: start");
     char fname[PATH_MAX];
     log::debug("System::save_page: saving %x", page_addr);
     sfmt::format(fname, sizeof(fname), "%s/page.%d.%x", trace_path, trace_id,
@@ -210,18 +202,12 @@ void System::save_page(unsigned long page_addr) {
 
     syscall(SYS_close, fd);
     log::debug("System::save_page: finished saving %x", page_addr);
-    log::verbose("System::save_page: end");
+    log::debug("System::save_page: end");
 }
 
 void System::start_trace(bool isNewInvocation) {
 
-    //if (trace_id >= max_traces) {
-    //    log::verbose("System: start_trace: max_trace reached");
-    //    tracing = false;
-    //    return;
-    //}
-
-    log::verbose("System: start_trace start (trace %d)", trace_id);
+    log::debug("System: start_trace start (trace %d)", trace_id);
     check(tracing == false, "System: start_trace: Tracing already started");
 
     if (drytrace) {
@@ -258,32 +244,22 @@ void System::start_trace(bool isNewInvocation) {
     pagecount = 0;
 
     // log::debug("Tracing: %d", tracing);
-     log::verbose("Systen: start_trace end (trace %d)", trace_id);
+     log::debug("Systen: start_trace end (trace %d)", trace_id);
 }
 
 void System::stop_trace() {
-    log::verbose("System:: stop_trace start");
+    log::debug("System:: stop_trace start");
     log::debug("Tracing: %d", tracing);
     check(tracing == true, "System:: stop_trace: Tracing already stopped");
     tracing = false;
     tpagecount += pagecount;
 
     Memory::instance().unprotect_all();
-    log::verbose("System:: stop_trace: Trace id: %d", trace_id);
+    log::debug("System:: stop_trace: Trace id: %d", trace_id);
 
     if (drytrace) {
         buf_.stop_trace(trace_id);
     }
-
-    // if (max_pages > 0) {
-    //    char fname[PATH_MAX];
-    //    sfmt::format(fname, sizeof(fname), "%s/_page_count.%d", trace_path,
-    //    trace_id); int fd = ::creat(fname, PERM_664); check(fd != -1, "Unable
-    //    to open %s", fname);
-    //    ::write(fd, (void *)&pagecount, sizeof(int));
-    //    ::close(fd);
-    //    log::debug("System::stop_trace: writing %d to %s", pagecount, fname);
-    //}
 
     if (save) {
         unsigned long *page = Memory::restricted_pages();
@@ -296,24 +272,26 @@ void System::stop_trace() {
 
         mem_region *reg = Memory::instance().restricted_regions();
         while (reg->addr[0] != 0) {
-            log::verbose("System:: stop_trace: saving pages of unprotected "
+            log::debug("System:: stop_trace: saving pages of unprotected "
                          "regions: %x-%x %s (%s)", reg->addr[0], reg->addr[1],
                          reg->perm, reg->path);
 
             for (unsigned long page = reg->addr[0]; page < reg->addr[1];
                  page += pagesize) {
-                log::verbose("System:: stop_trace: saving pages: 0x%x", page);
+                log::debug("System:: stop_trace: saving pages: 0x%x", page);
                 save_page(page);
             }
-            // save_page(*page);
-            //++page;
             ++reg;
         }
     }
 
     ++trace_id;
 
-    log::verbose("System:: stop_trace end");
+    if (trace_id >= max_traces) {
+        buf_.write_back();
+    }
+    log::debug("System:: stop_trace end");
+
 }
 }  // namespace chopstix
 

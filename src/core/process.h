@@ -82,6 +82,7 @@ class Process {
     void attach();
     void detach(int sig = 0);
     void step(int sig = 0);
+    void steps(long steps);
 
     long peek(long addr);
     void poke(long addr, long data);
@@ -90,7 +91,6 @@ class Process {
     void remove_break(long addr);
 
     void timeout(double time);
-    void debug(long steps);
 
     void dyn_call(long addr, Arch::regbuf_type &regs, long sp, std::vector<unsigned long> &args);
 

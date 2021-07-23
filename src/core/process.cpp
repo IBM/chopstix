@@ -41,23 +41,23 @@
 using namespace chopstix;
 
 Process::~Process() {
-    log::verbose("Process:: destructor start");
+    log::debug("Process:: destructor start");
     if (!active()) {
-        log::verbose("Process:: not active, nothing to do");
+        log::debug("Process:: not active, nothing to do");
     } else {
-        log::verbose("Process:: active, wait for it");
+        log::debug("Process:: active, wait for it");
         wait(0);
     }
     // checkx(exited() || signaled(), "Process did not exit");
     //
-    log::verbose("Process:: destructor end");
+    log::debug("Process:: destructor end");
 }
 
 Process::Process(Process &&other) : pid_(other.pid_), status_(other.status_) {
-    log::verbose("Process:: constructor start");
+    log::debug("Process:: constructor start");
     other.pid_ = -1;
     other.status_ = 0;
-    log::verbose("Process:: constructor end");
+    log::debug("Process:: constructor end");
 }
 
 Process &Process::operator=(Process &&other) {
@@ -71,15 +71,15 @@ Process &Process::operator=(Process &&other) {
 }
 
 void Process::exec(char **argv, int argc) {
-    log::verbose("Process:: exec start");
+    log::debug("Process:: exec start");
     pid_ = fork();
     check(pid_ != -1, "Process:: exec: Unable to spawn process");
     if (pid_ != 0) {
-        log::verbose("Process:: exec end");
+        log::debug("Process:: exec end");
         return;
     }
 
-    log::verbose("Process:: exec child");
+    log::debug("Process:: exec child");
     ptrace(PTRACE_TRACEME, 0, NULL, NULL);
     execvp(*argv, argv);
 
@@ -92,16 +92,16 @@ void Process::exec(char **argv, int argc) {
 }
 
 void Process::exec_wait(char **argv, int argc) {
-    log::verbose("Process:: exec_wait start");
+    log::debug("Process:: exec_wait start");
     pid_ = fork();
     check(pid_ != -1, "Process:: exec_wait: Unable to spawn process");
     if (pid_ != 0) {
-        log::verbose("Process:: exec_wait: wait for child");
+        log::debug("Process:: exec_wait: wait for child");
         usleep(50000);
-        log::verbose("Process:: exec_wait: wair for child done");
+        log::debug("Process:: exec_wait: wair for child done");
         return;
     }
-    log::verbose("Process:: exec_wait child");
+    log::debug("Process:: exec_wait child");
     ptrace(PTRACE_TRACEME, 0, NULL, NULL);
     usleep(10000);
     execvp(*argv, argv);
@@ -121,7 +121,7 @@ void Process::ready() {
 }
 
 void Process::abandon() {
-    log::verbose("Process:: abandon");
+    log::debug("Process:: abandon");
     pid_ = -1;
 }
 void Process::copy(long pid) {
@@ -129,15 +129,15 @@ void Process::copy(long pid) {
 }
 
 void Process::wait(int flags) {
-    log::verbose("Process:: wait start");
+    log::debug("Process:: wait start");
     if (!active()) {
-        log::verbose("Process:: wait: not active");
+        log::debug("Process:: wait: not active");
         return;
     }
     pid_t pid = waitpid(pid_, &status_, flags);
-    log::verbose("Process::wait: waitpid return: %d", pid);
+    log::debug("Process::wait: waitpid return: %d", pid);
     if (exited()) {
-        log::verbose("Process:: wait: %d exited", pid);
+        log::debug("Process:: wait: %d exited", pid);
         abandon();
     }
 
@@ -153,9 +153,9 @@ void Process::wait(int flags) {
 #endif
 
     if (signaled()) {
-        log::verbose("Process:: wait: %d signaled by signal %d", pid, term_sig());
+        log::debug("Process:: wait: %d signaled by signal %d", pid, term_sig());
         if (term_sig() == SIGTERM) {
-            log::verbose("Process:: wait: %d signaled by signal SIGTERM", pid);
+            log::debug("Process:: wait: %d signaled by signal SIGTERM", pid);
             abandon();
             return;
         }
@@ -165,31 +165,33 @@ void Process::wait(int flags) {
 }
 
 void Process::waitfor(int which) {
-    log::verbose("Process:: waitfor start");
+    log::debug("Process:: waitfor start");
     checkx(pid_ != -1, "Process:: waitfor: No child process");
-    log::verbose("Process:: waitfor: waiting for signal %s", strsignal(which));
+    log::debug("Process:: waitfor: waiting for signal %s", strsignal(which));
     while (active()) {
         wait(0);
         if (!stopped()) {
-            log::verbose("Process:: waitfor: not stopped");
+            log::debug("Process:: waitfor: not stopped");
             return;
         }
         int sig = stop_sig();
-        log::verbose("Process:: waitfor: signal %s received", strsignal(sig));
+        log::debug("Process:: waitfor: signal %s received", strsignal(sig));
         if (sig == which) {
-            log::verbose("Process:: waitfor: %s signal! stop wait", strsignal(sig));
+            log::debug("Process:: waitfor: %s signal! stop wait", strsignal(sig));
             return;
         }
         cont(sig);
     }
-    log::verbose("Process:: waitfor: %s never received while process active",
+    log::debug("Process:: waitfor: %s never received while process active",
                strsignal(which));
 }
 
 void Process::touch() {
+    log::debug("Process:: touch start");
     if (!active()) return;
     waitpid(pid_, &status_, WNOHANG);
     if (exited()) abandon();
+    log::debug("Process:: touch end");
 }
 
 bool Process::exited() { return WIFEXITED(status_); }
@@ -200,51 +202,51 @@ bool Process::stopped() { return WIFSTOPPED(status_); }
 int Process::stop_sig() { return WSTOPSIG(status_); }
 
 void Process::send(int sig) {
-    log::verbose("Process:: send signal %s", strsignal(sig));
+    log::debug("Process:: send signal %s", strsignal(sig));
     kill(pid_, sig);
 }
 void Process::syscall(int sig) {
     status_ = 0;
-    log::verbose("Process:: syscall (%s)", strsignal(sig));
+    log::debug("Process:: syscall (%s)", strsignal(sig));
     long ret = ptrace(PTRACE_SYSCALL, pid_, 0, sig);
     check(ret != -1, "Process:: syscall: ptrace_syscall failed");
 }
 void Process::cont(int sig) {
     status_ = 0;
-    log::verbose("Process:: cont (%s)", strsignal(sig));
+    log::debug("Process:: cont (%s)", strsignal(sig));
     long ret = ptrace(PTRACE_CONT, pid_, 0, sig);
     check(ret != -1, "Process:: cont: ptrace_cont failed");
 }
 void Process::attach() {
-    log::verbose("Process:: attach");
+    log::debug("Process:: attach");
     long ret = ptrace(PTRACE_ATTACH, pid_, 0, 0);
     check(ret != -1, "Process:: attach: ptrace_attach failed");
 }
 void Process::detach(int sig) {
-    log::verbose("Process:: detach");
+    log::debug("Process:: detach");
     long ret = ptrace(PTRACE_DETACH, pid_, 0, sig);
     check(ret != -1, "Process:: detach: ptrace_detach failed");
 }
 
 long Process::peek(long addr) {
-    log::verbose("Process:: peek/read data from 0x%x", addr);
+    log::debug("Process:: peek/read data from 0x%x", addr);
     long ret = ptrace(PTRACE_PEEKDATA, pid_, addr, 0);
-    log::verbose("Process:: poke/read data 0x%x readed from 0x%x", ret, addr);
+    log::debug("Process:: poke/read data 0x%x readed from 0x%x", ret, addr);
     return ret;
 }
 
 void Process::poke(long addr, long data) {
-    log::verbose("Process:: poke/write data 0x%x to 0x%x", data, addr);
+    log::debug("Process:: poke/write data 0x%x to 0x%x", data, addr);
     long ret = ptrace(PTRACE_POKEDATA, pid_, addr, data);
     check(ret != -1, "Process: poke: ptrace_poke failed");
     long wdata = peek(addr);
     check(wdata == data, "Process: poke: ptrace_poke wrote wrong data");
-    log::verbose("Process:: poke/write data 0x%x written to 0x%x", data, addr);
+    log::debug("Process:: poke/write data 0x%x written to 0x%x", data, addr);
 
 }
 
 void Process::step(int sig) {
-    log::verbose("Process:: step one (%d)", sig);
+    log::debug("Process:: step one (%d)", sig);
     long ret = ptrace(PTRACE_SINGLESTEP, pid_, 0, sig);
     check(ret != -1, "Process: step: ptrace_singlestep failed");
 }
@@ -278,7 +280,7 @@ void Process::dyn_call(long addr, Arch::regbuf_type &regs, long sp, std::vector<
     int sig;
     log::debug("Process::dyn_call: Start");
     long cur_pc = Arch::current()->get_pc(pid());
-    log::verbose("Process::dyn_call: Dynamic call from PC = 0x%x", cur_pc);
+    log::debug("Process::dyn_call: Dynamic call from PC = 0x%x", cur_pc);
 
     Arch::current()->read_regs(pid(), regs);
     Arch::current()->set_pc(pid(), addr);
@@ -343,7 +345,7 @@ void Process::dyn_call(long addr, Arch::regbuf_type &regs, long sp, std::vector<
     Arch::current()->write_regs(pid(), regs);
 
     cur_pc = Arch::current()->get_pc(pid());
-    log::verbose("Process::dyn_call: Restarting from PC = 0x%x", cur_pc);
+    log::debug("Process::dyn_call: Restarting from PC = 0x%x", cur_pc);
 
     log::debug("Process::dyn_call: End");
 }
@@ -359,22 +361,22 @@ void Process::timeout(double time) {
     log::debug("Process::timeout: End");
 }
 
-void Process::debug(long steps) {
-    log::verbose("Process:: debug: start");
+void Process::steps(long steps) {
+    log::debug("Process:: steps: start");
     for (long step = 0; step < steps; ++step) {
         long pc = Arch::current()->get_pc(pid());
-        log::verbose("Step: %d PC = 0x%x (contents: 0x%x)", step, pc, peek(pc));
+        log::debug("Step: %d PC = 0x%x (contents: 0x%x)", step, pc, peek(pc));
         if (exited()) {
-            log::verbose("Step: %d Process exited with status %d", step, exit_status());
+            log::debug("Step: %d Process exited with status %d", step, exit_status());
         }
         if (signaled()) {
-            log::verbose("Step: %d Process signaled with signal %s", step, strsignal(term_sig()));
+            log::debug("Step: %d Process signaled with signal %s", step, strsignal(term_sig()));
         }
         if (stopped()) {
-            log::verbose("Step: %d Process stopped with signal %s", step, strsignal(stop_sig()));
+            log::debug("Step: %d Process stopped with signal %s", step, strsignal(stop_sig()));
         }
         Process::step(0);
         wait(0);
     }
-    log::verbose("Process:: debug: end");
+    log::debug("Process:: steps: end");
 }

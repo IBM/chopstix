@@ -25,12 +25,12 @@ class Tracer {
     void start_trace(bool isInvocationStart);
     void stop_trace();
     virtual bool should_trace() {
-        log::verbose("Tracer::should_trace");
-        if (trace_id >= trace_options.max_traces) {
-            log::verbose("Tracer::should_trace false");
+        log::debug("Tracer::should_trace");
+        if (trace_options.max_traces > 0 && trace_id >= trace_options.max_traces) {
+            log::debug("Tracer::should_trace false");
             return false;
         }
-        log::verbose("Tracer::should_trace true");
+        log::debug("Tracer::should_trace true");
         return true;
     }
     void save_page();
@@ -39,6 +39,8 @@ class Tracer {
     void set_breakpoint(std::vector<long> address, bool state);
     int trace_id = 0;
     TraceOptions trace_options;
+  protected:
+    bool running;
   private:
     void init(int argc, char **argv);
     void track_mmap();
@@ -54,7 +56,6 @@ class Tracer {
     Arch::regbuf_type regs;
     Location module_offset = Location::Address(0);
     std::string trace_path;
-    bool running;
     bool tracing_enabled;
 };
 

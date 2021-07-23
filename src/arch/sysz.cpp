@@ -216,40 +216,40 @@ void ArchZ::serialize_regs(FILE *os, Arch::regbuf_type regs) const {
 void ArchZ::debug_regs(Arch::regbuf_type regs) const {
     log::debug("ArchZ::debug_regs start");
     struct ArchZRegs *azregs = (struct ArchZRegs *) regs;
-    log::verbose("ArchZ::debug_regs: PSW_MASK 0x%x", azregs->gp.psw.mask);
-    log::verbose("ArchZ::debug_regs: PSW_ADDR 0x%x", azregs->gp.psw.addr);
+    log::debug("ArchZ::debug_regs: PSW_MASK 0x%x", azregs->gp.psw.mask);
+    log::debug("ArchZ::debug_regs: PSW_ADDR 0x%x", azregs->gp.psw.addr);
     for (int i=0; i<16; i++) {
-        log::verbose("ArchZ::debug_regs: GR%d 0x%x", i, azregs->gp.all[i+2]);
+        log::debug("ArchZ::debug_regs: GR%d 0x%x", i, azregs->gp.all[i+2]);
     }
-    log::verbose("ArchZ::debug_regs: AR%d 0x%x", 0, azregs->gp.ac0);
-    log::verbose("ArchZ::debug_regs: AR%d 0x%x", 1, azregs->gp.ac1);
-    log::verbose("ArchZ::debug_regs: AR%d 0x%x", 2, azregs->gp.ac2);
-    log::verbose("ArchZ::debug_regs: AR%d 0x%x", 3, azregs->gp.ac3);
-    log::verbose("ArchZ::debug_regs: AR%d 0x%x", 4, azregs->gp.ac4);
-    log::verbose("ArchZ::debug_regs: AR%d 0x%x", 5, azregs->gp.ac5);
-    log::verbose("ArchZ::debug_regs: AR%d 0x%x", 6, azregs->gp.ac6);
-    log::verbose("ArchZ::debug_regs: AR%d 0x%x", 7, azregs->gp.ac7);
-    log::verbose("ArchZ::debug_regs: AR%d 0x%x", 8, azregs->gp.ac8);
-    log::verbose("ArchZ::debug_regs: AR%d 0x%x", 9, azregs->gp.ac9);
-    log::verbose("ArchZ::debug_regs: AR%d 0x%x", 10, azregs->gp.ac10);
-    log::verbose("ArchZ::debug_regs: AR%d 0x%x", 11, azregs->gp.ac11);
-    log::verbose("ArchZ::debug_regs: AR%d 0x%x", 12, azregs->gp.ac12);
-    log::verbose("ArchZ::debug_regs: AR%d 0x%x", 13, azregs->gp.ac13);
-    log::verbose("ArchZ::debug_regs: AR%d 0x%x", 14, azregs->gp.ac14);
-    log::verbose("ArchZ::debug_regs: AR%d 0x%x", 15, azregs->gp.ac15);
+    log::debug("ArchZ::debug_regs: AR%d 0x%x", 0, azregs->gp.ac0);
+    log::debug("ArchZ::debug_regs: AR%d 0x%x", 1, azregs->gp.ac1);
+    log::debug("ArchZ::debug_regs: AR%d 0x%x", 2, azregs->gp.ac2);
+    log::debug("ArchZ::debug_regs: AR%d 0x%x", 3, azregs->gp.ac3);
+    log::debug("ArchZ::debug_regs: AR%d 0x%x", 4, azregs->gp.ac4);
+    log::debug("ArchZ::debug_regs: AR%d 0x%x", 5, azregs->gp.ac5);
+    log::debug("ArchZ::debug_regs: AR%d 0x%x", 6, azregs->gp.ac6);
+    log::debug("ArchZ::debug_regs: AR%d 0x%x", 7, azregs->gp.ac7);
+    log::debug("ArchZ::debug_regs: AR%d 0x%x", 8, azregs->gp.ac8);
+    log::debug("ArchZ::debug_regs: AR%d 0x%x", 9, azregs->gp.ac9);
+    log::debug("ArchZ::debug_regs: AR%d 0x%x", 10, azregs->gp.ac10);
+    log::debug("ArchZ::debug_regs: AR%d 0x%x", 11, azregs->gp.ac11);
+    log::debug("ArchZ::debug_regs: AR%d 0x%x", 12, azregs->gp.ac12);
+    log::debug("ArchZ::debug_regs: AR%d 0x%x", 13, azregs->gp.ac13);
+    log::debug("ArchZ::debug_regs: AR%d 0x%x", 14, azregs->gp.ac14);
+    log::debug("ArchZ::debug_regs: AR%d 0x%x", 15, azregs->gp.ac15);
 
-    log::verbose("ArchZ::debug_regs: FPC 0x%x", azregs->fp.fpc);
+    log::debug("ArchZ::debug_regs: FPC 0x%x", azregs->fp.fpc);
 
     for (int i=0; i<16; i++) {
-        log::verbose("ArchZ::debug_regs: FPR%d 0x%x", i, azregs->fp.all[i+1].ui);
+        log::debug("ArchZ::debug_regs: FPR%d 0x%x", i, azregs->fp.all[i+1].ui);
     }
 
     for (int i=0; i<16; i++) {
-        log::verbose("ArchZ::debug_regs: VR%d 0x%x 0x%x", i, azregs->vr.all[i].fld.high.ui, azregs->vr.all[i].fld.low.ui);
+        log::debug("ArchZ::debug_regs: VR%d 0x%x 0x%x", i, azregs->vr.all[i].fld.high.ui, azregs->vr.all[i].fld.low.ui);
     }
 
     for (int i=16; i<32; i++) {
-        log::verbose("ArchZ::debug_regs: VR%d 0x%x 0x%x", i, azregs->vr.all[i].fld.low.ui, azregs->vr.all[i].fld.high.ui);
+        log::debug("ArchZ::debug_regs: VR%d 0x%x 0x%x", i, azregs->vr.all[i].fld.low.ui, azregs->vr.all[i].fld.high.ui);
     }
     log::debug("ArchZ::debug_end start");
 }
@@ -404,7 +404,7 @@ long ArchZ::set_pc(pid_t pid, long pc) const {
     buf[1] = pc;
     ret = ptrace(PTRACE_SETREGSET, pid, NT_PRSTATUS, &iov);
 
-    log::verbose("ArchZ::set_pc old PC: 0x%x new PC: 0x%x", old_pc, pc);
+    log::debug("ArchZ::set_pc old PC: 0x%x new PC: 0x%x", old_pc, pc);
 
     check(ret >= 0, "Unable to set PC");
     return old_pc;
