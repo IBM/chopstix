@@ -159,7 +159,6 @@ void Process::wait(int flags) {
             abandon();
             return;
         }
-      g
     } else {
         checkx(pid != -1, "Process:: wait: Process aborted");
     }
