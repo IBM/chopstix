@@ -176,40 +176,40 @@ size_t ArchZ::regsize() const { return sizeof(struct ArchZRegs)/sizeof(unsigned 
 void ArchZ::serialize_regs(FILE *os, Arch::regbuf_type regs) const {
     log::debug("ArchZ::serialize_regs start");
     struct ArchZRegs *azregs = (struct ArchZRegs *) regs;
-    fprintf(os, "PSW_MASK %016lX\n", azregs->gp.psw.mask);
-    fprintf(os, "PSW_ADDR %016lX\n", azregs->gp.psw.addr);
+    fprintf(os, "PSW_MASK 0x%016lX\n", azregs->gp.psw.mask);
+    fprintf(os, "PSW_ADDR 0x%016lX\n", azregs->gp.psw.addr);
     for (int i=0; i<16; i++) {
-        fprintf(os, "GR%d %016lX\n", i, azregs->gp.all[i+2]);
+        fprintf(os, "GR%d 0x%016lX\n", i, azregs->gp.all[i+2]);
     }
-    fprintf(os, "AR%d %08X\n", 0, azregs->gp.ac0);
-    fprintf(os, "AR%d %08X\n", 1, azregs->gp.ac1);
-    fprintf(os, "AR%d %08X\n", 2, azregs->gp.ac2);
-    fprintf(os, "AR%d %08X\n", 3, azregs->gp.ac3);
-    fprintf(os, "AR%d %08X\n", 4, azregs->gp.ac4);
-    fprintf(os, "AR%d %08X\n", 5, azregs->gp.ac5);
-    fprintf(os, "AR%d %08X\n", 6, azregs->gp.ac6);
-    fprintf(os, "AR%d %08X\n", 7, azregs->gp.ac7);
-    fprintf(os, "AR%d %08X\n", 8, azregs->gp.ac8);
-    fprintf(os, "AR%d %08X\n", 9, azregs->gp.ac9);
-    fprintf(os, "AR%d %08X\n", 10, azregs->gp.ac10);
-    fprintf(os, "AR%d %08X\n", 11, azregs->gp.ac11);
-    fprintf(os, "AR%d %08X\n", 12, azregs->gp.ac12);
-    fprintf(os, "AR%d %08X\n", 13, azregs->gp.ac13);
-    fprintf(os, "AR%d %08X\n", 14, azregs->gp.ac14);
-    fprintf(os, "AR%d %08X\n", 15, azregs->gp.ac15);
+    fprintf(os, "AR%d 0x%08X\n", 0, azregs->gp.ac0);
+    fprintf(os, "AR%d 0x%08X\n", 1, azregs->gp.ac1);
+    fprintf(os, "AR%d 0x%08X\n", 2, azregs->gp.ac2);
+    fprintf(os, "AR%d 0x%08X\n", 3, azregs->gp.ac3);
+    fprintf(os, "AR%d 0x%08X\n", 4, azregs->gp.ac4);
+    fprintf(os, "AR%d 0x%08X\n", 5, azregs->gp.ac5);
+    fprintf(os, "AR%d 0x%08X\n", 6, azregs->gp.ac6);
+    fprintf(os, "AR%d 0x%08X\n", 7, azregs->gp.ac7);
+    fprintf(os, "AR%d 0x%08X\n", 8, azregs->gp.ac8);
+    fprintf(os, "AR%d 0x%08X\n", 9, azregs->gp.ac9);
+    fprintf(os, "AR%d 0x%08X\n", 10, azregs->gp.ac10);
+    fprintf(os, "AR%d 0x%08X\n", 11, azregs->gp.ac11);
+    fprintf(os, "AR%d 0x%08X\n", 12, azregs->gp.ac12);
+    fprintf(os, "AR%d 0x%08X\n", 13, azregs->gp.ac13);
+    fprintf(os, "AR%d 0x%08X\n", 14, azregs->gp.ac14);
+    fprintf(os, "AR%d 0x%08X\n", 15, azregs->gp.ac15);
 
-    fprintf(os, "FPC %08X\n", azregs->fp.fpc);
+    fprintf(os, "FPC 0x%08X\n", azregs->fp.fpc);
 
     for (int i=0; i<16; i++) {
-        fprintf(os, "FPR%d %016lX\n", i, azregs->fp.all[i+1].ui);
+        fprintf(os, "FPR%d 0x%016lX\n", i, azregs->fp.all[i+1].ui);
     }
 
     for (int i=0; i<16; i++) {
-        fprintf(os, "VR%d %016lX%016lX\n", i, azregs->vr.all[i].fld.high.ui, azregs->vr.all[i].fld.low.ui);
+        fprintf(os, "VR%d 0x%016lX%016lX\n", i, azregs->vr.all[i].fld.high.ui, azregs->vr.all[i].fld.low.ui);
     }
 
     for (int i=16; i<32; i++) {
-        fprintf(os, "VR%d %016lX%016lX\n", i, azregs->vr.all[i].fld.low.ui, azregs->vr.all[i].fld.high.ui);
+        fprintf(os, "VR%d 0x%016lX%016lX\n", i, azregs->vr.all[i].fld.low.ui, azregs->vr.all[i].fld.high.ui);
     }
 }
 
