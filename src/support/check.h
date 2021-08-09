@@ -47,22 +47,21 @@ __attribute__((noreturn)) void failx(const char *fmt, Args... args) {
     exit(EXIT_FAILURE);
 }
 
+#define check(cond, ...) if (!(cond)) _check(__VA_ARGS__)
 template <typename... Args>
-void check(bool cond, const char *fmt, Args... args) {
-    if (!cond) {
-        log::error(fmt, args...);
-        log::error("(errno: %d) %s", errno, strerror(errno));
-        if (getenv("CHOPSTIX_DEBUG")) backtrace();
-        exit(EXIT_FAILURE);
-    }
+void _check(const char *fmt, Args... args) {
+    log::error(fmt, args...);
+    log::error("(errno: %d) %s", errno, strerror(errno));
+    if (getenv("CHOPSTIX_DEBUG")) backtrace();
+    exit(EXIT_FAILURE);
 }
 
+#define checkx(cond, ...) if (!(cond)) _checkx(__VA_ARGS__)
 template <typename... Args>
-void checkx(bool cond, const char *fmt, Args... args) {
-    if (!cond) {
-        log::error(fmt, args...);
-        if (getenv("CHOPSTIX_DEBUG")) backtrace();
-        exit(EXIT_FAILURE);
-    }
+void _checkx(const char *fmt, Args... args) {
+    log::error(fmt, args...);
+    if (getenv("CHOPSTIX_DEBUG")) backtrace();
+    exit(EXIT_FAILURE);
 }
+
 }  // namespace chopstix

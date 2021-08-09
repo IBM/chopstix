@@ -73,6 +73,7 @@ struct Arch {
     virtual size_t regsize() const = 0;
     regbuf_type create_regs() const { return new long[regsize()]; }
     virtual void serialize_regs(FILE *fp, regbuf_type regs) const = 0;
+    virtual void debug_regs(regbuf_type regs) const { return; };
 
     static void free_regs(regbuf_type regs) { delete[] regs; }
 

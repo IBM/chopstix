@@ -21,18 +21,26 @@
 */
 #include <stdlib.h>
 #include <stdio.h>
+#include <errno.h>
+#include <string.h>
 #include <assert.h>
 
 int main(int argc, const char **argv) {
 
     if(argc != 2){
-        printf("Usage: chop-detrace <bin_file>\n");
+        fprintf(stderr, "Usage: chop-detrace <bin_file>\n");
         if (argc == 1) { exit(0); }
         exit(-1);
     }
 
+    fprintf(stderr, "chop-detrace: Opening '%s' ...\n", argv[1]);
     FILE *fp = fopen(argv[1], "r");
-    assert(fp);
+    if (fp == NULL) {
+        fprintf(stderr, "chop-detrace: Unable to read '%s'\n", argv[1]);
+        fprintf(stderr, "chop-detrace: Error: %s\n",strerror(errno));
+        exit(-1);
+    }
+
     long dat;
     int trace_id = 0;
     while (fread(&dat, sizeof(long), 1, fp) > 0) {

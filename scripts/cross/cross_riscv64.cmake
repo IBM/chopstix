@@ -32,11 +32,11 @@ SET(CMAKE_SYSTEM_NAME Linux)
 #this one not so much
 SET(CMAKE_SYSTEM_VERSION 1)
 
-SET(CMAKE_SYSTEM_PROCESSOR ppc64le)
+SET(CMAKE_SYSTEM_PROCESSOR riscv64)
 
 # specify the cross compiler
-SET(CMAKE_C_COMPILER  powerpc64le-linux-gnu-gcc)
-SET(CMAKE_CXX_COMPILER powerpc64le-linux-gnu-g++)
+SET(CMAKE_C_COMPILER  riscv64-linux-gnu-gcc-8)
+SET(CMAKE_CXX_COMPILER riscv64-linux-gnu-g++-8)
 
 # where is the target environment
 # SET(CMAKE_FIND_ROOT_PATH  "")

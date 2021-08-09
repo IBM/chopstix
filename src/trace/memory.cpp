@@ -30,6 +30,7 @@
 #include <sys/mman.h>
 #include <unistd.h>
 #include <algorithm>
+#include <string.h>
 
 #include <sys/syscall.h>
 
@@ -73,21 +74,24 @@ unsigned long libc_addrs[] = {
 
     (unsigned long)&open,  // Space for NULL sep
     (unsigned long)&open,  // Space for NULL sep
-    //(unsigned long)&open,
-    //(unsigned long)&close,
-    //(unsigned long)&creat,
-    //(unsigned long)&mprotect,
     (unsigned long)&syscall,
-    //(unsigned long)&write,
-    //(unsigned long)&strcmp,
-    //(unsigned long)&gsignal,
-    //(unsigned long)&signal,
 
-    // (unsigned long)&strstr,
-    // (unsigned long)&__libc_init_first,
-    // (unsigned long)&__libc_start_main,
-    // (unsigned long)&explicit_bzero,
-    // (unsigned long)&bzero,
+#ifdef PROTECTALLSYMBOLS
+    (unsigned long)&open,
+    (unsigned long)&close,
+    (unsigned long)&creat,
+    (unsigned long)&mprotect,
+    (unsigned long)&write,
+    (unsigned long)&strcmp,
+    (unsigned long)&gsignal,
+    (unsigned long)&signal,
+
+    //(unsigned long)&strstr,
+    (unsigned long)&__libc_init_first,
+    (unsigned long)&__libc_start_main,
+    (unsigned long)&explicit_bzero,
+    (unsigned long)&bzero,
+#endif
 };
 int libc_count = sizeof(libc_addrs) / sizeof(unsigned long);
 // int libc_count = -1;
@@ -206,7 +210,7 @@ Memory::Memory() {
     auto it = std::unique(libc_addrs, libc_addrs + libc_count);
     libc_count = it - libc_addrs;
     for (int i = 0; i < it - libc_addrs; ++i) {
-        log::debug(
+        log::verbose(
             "Memory::Memory init: registering libc page for protected function "
             "(sorted/uniq): %x",
             (unsigned long)libc_addrs[i]);
