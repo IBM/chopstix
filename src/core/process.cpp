@@ -34,6 +34,7 @@
 #include <sys/signal.h>
 #include <sys/types.h>
 #include <sys/wait.h>
+#include <sys/personality.h>
 #include <unistd.h>
 #include <chrono>
 #include <thread>
@@ -81,14 +82,40 @@ void Process::exec(char **argv, int argc) {
 
     log::debug("Process:: exec child");
     ptrace(PTRACE_TRACEME, 0, NULL, NULL);
-    execvp(*argv, argv);
 
-    // char **real_args = (char **)malloc(sizeof(char *) * (argc + 3));
-    // real_args[0] = strdup("setarch");
-    // real_args[1] = strdup("linux64");
-    // real_args[2] = strdup("-R");
-    // for (int i = 0; i < argc; ++i) real_args[2 + i] = argv[i];
-    // execvp(*real_args, real_args);
+    int persona = personality(0xffffffff);
+    if (persona == -1)
+    {
+        fprintf(stderr, "Process:: exec: Unable to get ASLR info: %s\n", strerror(errno));
+        abandon();
+        exit(EXIT_FAILURE);
+    }
+    persona = persona | ADDR_NO_RANDOMIZE;
+    if (persona & ADDR_NO_RANDOMIZE)
+    {
+        log::debug("Process:: exec: ASLR already disabled");
+    } else {
+          persona = personality(persona | ADDR_NO_RANDOMIZE);
+        if (persona == -1) {
+            fprintf(stderr, "Process:: exec: Unable to set ASLR info: %s\n", strerror(errno));
+            abandon();
+            exit(EXIT_FAILURE);
+        }
+        if (!(personality (0xffffffff) & ADDR_NO_RANDOMIZE))
+        {
+            fprintf(stderr, "Process:: exec: Unable to disable ASLR");
+            abandon();
+            exit(EXIT_FAILURE);
+        }
+    }
+
+    int ret = execvp(*argv, argv);
+    if (ret <  0) {
+         fprintf(stderr, "Process:: exec: Error: %s\n", strerror(errno));
+         abandon();
+         exit(EXIT_FAILURE);
+    }
+
 }
 
 void Process::exec_wait(char **argv, int argc) {
@@ -97,21 +124,46 @@ void Process::exec_wait(char **argv, int argc) {
     check(pid_ != -1, "Process:: exec_wait: Unable to spawn process");
     if (pid_ != 0) {
         log::debug("Process:: exec_wait: wait for child");
-        usleep(50000);
-        log::debug("Process:: exec_wait: wair for child done");
+        waitpid(pid_, &status_, WNOHANG);
+        log::debug("Process:: exec_wait: wait for child done");
         return;
     }
     log::debug("Process:: exec_wait child");
     ptrace(PTRACE_TRACEME, 0, NULL, NULL);
-    usleep(10000);
-    execvp(*argv, argv);
 
-    // char **real_args = (char **)malloc(sizeof(char *) * (argc + 3));
-    // real_args[0] = strdup("setarch");
-    // real_args[1] = strdup("linux64");
-    // real_args[2] = strdup("-R");
-    // for (int i = 0; i < argc; ++i) real_args[2 + i] = argv[i];
-    // execvp(*real_args, real_args);
+    int persona = personality(0xffffffff);
+    if (persona == -1)
+    {
+        fprintf(stderr, "Process:: exec_wait: Unable to get ASLR info: %s\n", strerror(errno));
+        abandon();
+        exit(EXIT_FAILURE);
+    }
+    persona = persona | ADDR_NO_RANDOMIZE;
+    if (persona & ADDR_NO_RANDOMIZE)
+    {
+        log::debug("Process:: exec_wait: ASLR already disabled");
+    } else {
+          persona = personality(persona | ADDR_NO_RANDOMIZE);
+        if (persona == -1) {
+            fprintf(stderr, "Process:: exec_wait: Unable to set ASLR info: %s\n", strerror(errno));
+            abandon();
+            exit(EXIT_FAILURE);
+        }
+        if (!(personality (0xffffffff) & ADDR_NO_RANDOMIZE))
+        {
+            fprintf(stderr, "Process:: exec_wait: Unable to disable ASLR");
+            abandon();
+            exit(EXIT_FAILURE);
+        }
+    }
+
+    int ret = execvp(*argv, argv);
+    if (ret <  0) {
+         fprintf(stderr, "Process:: exec_wait: Error: %s\n", strerror(errno));
+         abandon();
+         exit(EXIT_FAILURE);
+    }
+
 }
 
 void Process::ready() {
