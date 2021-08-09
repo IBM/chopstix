@@ -52,5 +52,5 @@ EOM
         || die "Error: $name has more than $max basic blocks ($num_blocks)"
 }
 
-# shellcheck disable=SC1090
+# shellcheck disable=SC1090,SC1091
 . "$testdir/disasm.spec"
