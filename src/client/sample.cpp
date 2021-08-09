@@ -152,10 +152,12 @@ int run_sample(int argc, char **argv) {
     if (opt_pid.is_set()) {
         child.copy(opt_pid.as_int());
     } else {
+        log::debug("chop sample: executing command provided");
         setenv("LD_BIND_NOW", "1", 1);
         child.exec_wait(argv, argc);
     }
 
+    log::debug("chop sample: setting events");
     setup_events(events, child.pid());
     auto &prof = events.front();
 
@@ -164,6 +166,7 @@ int run_sample(int argc, char **argv) {
     Sample::value_list last(events.size(), 0);
 
     if (!opt_pid.is_set()) {
+        log::debug("chop sample: waiting for ready");
         child.ready();
         child.cont();
         std::thread stop_onexit([&]() {
