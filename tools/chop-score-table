@@ -62,7 +62,7 @@ score_min_size="$4"
 
 function=0
 if [ $# -eq 5 ]; then
-    if [ $5 != "-functions" ]; then
+    if [ "$5" != "-functions" ]; then
         usage
         exit 1
     else
@@ -126,7 +126,7 @@ if [ $function -eq 0 ]; then
     echo "--------------------------------------"
     echo "chop list functions -data $db -min $(echo "$winner" | cut -d' ' -f 1) -minsize $(echo "$winner" | cut -d' ' -f 2) -limit $(echo "$winner" | cut -d' ' -f 3)"
 else
-    chop list functions -data $db -min $(echo "$winner" | cut -d' ' -f 1) -minsize $(echo "$winner" | cut -d' ' -f 2) -limit $(echo "$winner" | cut -d' ' -f 3) | cut -f 2 | grep -v "^NAME$"
+    chop list functions -data "$db" -min "$(echo "$winner" | cut -d' ' -f 1)" -minsize "$(echo "$winner" | cut -d' ' -f 2)" -limit "$(echo "$winner" | cut -d' ' -f 3)" | cut -f 2 | grep -v "^NAME$"
 fi
 
 rm -f "$tmp" "$tmp2"

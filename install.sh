@@ -18,7 +18,7 @@
 #
 # ----------------------------------------------------------------------------
 #
-# 
+#
 # ChopStiX CI support scripts
 #
 # Author: Ramon Bertran Monfort <rbertra@us.ibm.com>
@@ -73,13 +73,13 @@ cd "$tmp"
 
 "$base_dir/scripts/ci/install_libpfm.sh" "$dir"
 cmake "$base_dir" -DCHOPSTIX_PERFMON_PREFIX="$dir" -DCMAKE_INSTALL_PREFIX="$dir" -DCHOPSTIX_BUILD_SQLITE=ON $debug
-make -j 
+make -j
 make -j install
 
 cd - || exit 1
 rm -fr "$tmp"
 
-echo "ChopStiX installed in $dir" 
+echo "ChopStiX installed in $dir"
 echo "Execute: 'source $dir/share/chopstix/setup.sh' to set up the ChopStix environment"
 
 # vim: set tabstop=4 softtabstop=4 shiftwidth=4 expandtab
