@@ -18,7 +18,7 @@
 #
 # ----------------------------------------------------------------------------
 #
-# 
+#
 # ChopStiX CI support scripts
 #
 # Author: Ramon Bertran Monfort <rbertra@us.ibm.com>
@@ -38,8 +38,8 @@ SET(CMAKE_SYSTEM_PROCESSOR ppc64)
 SET(CMAKE_C_COMPILER  powerpc64-linux-gnu-gcc)
 SET(CMAKE_CXX_COMPILER powerpc64-linux-gnu-g++)
 
-# where is the target environment 
-# SET(CMAKE_FIND_ROOT_PATH  "") 
+# where is the target environment
+# SET(CMAKE_FIND_ROOT_PATH  "")
 
 # search for programs in the build host directories
 SET(CMAKE_FIND_ROOT_PATH_MODE_PROGRAM NEVER)

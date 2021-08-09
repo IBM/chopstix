@@ -279,3 +279,153 @@ const char *sysz_regnames[] = {
     "V30",
     "V31",
 };
+
+typedef unsigned int __u32;
+typedef unsigned long __u64;
+
+typedef struct {
+    unsigned long mask;
+    unsigned long addr;
+} __attribute__ ((aligned(8))) psw_t;
+
+typedef union {
+    float   f;
+    double  d;
+    __u64   ui;
+    struct
+    {
+        __u32 hi;
+        __u32 lo;
+    } fp;
+} freg_t;
+
+typedef union {
+    struct {
+        freg_t low;
+        freg_t high;
+    } fld;
+    __int128 vr;
+} vector_t;
+
+struct ArchZRegs {
+    union {
+        struct {
+            psw_t psw;
+            unsigned long r0;
+            unsigned long r1;
+            unsigned long r2;
+            unsigned long r3;
+            unsigned long r4;
+            unsigned long r5;
+            unsigned long r6;
+            unsigned long r7;
+            unsigned long r8;
+            unsigned long r9;
+            unsigned long r10;
+            unsigned long r11;
+            unsigned long r12;
+            unsigned long r13;
+            unsigned long r14;
+            unsigned long r15;
+            unsigned long r16;
+            unsigned int ac0;
+            unsigned int ac1;
+            unsigned int ac2;
+            unsigned int ac3;
+            unsigned int ac4;
+            unsigned int ac5;
+            unsigned int ac6;
+            unsigned int ac7;
+            unsigned int ac8;
+            unsigned int ac9;
+            unsigned int ac10;
+            unsigned int ac11;
+            unsigned int ac12;
+            unsigned int ac13;
+            unsigned int ac14;
+            unsigned int ac15;
+            unsigned int ac16;
+            unsigned long orig_gpr2;
+        };
+        unsigned long int all[27];
+    } gp;
+    union {
+        struct {
+            __u32  fpc;
+            __u32  pad;
+            freg_t fp0;
+            freg_t fp1;
+            freg_t fp2;
+            freg_t fp3;
+            freg_t fp4;
+            freg_t fp5;
+            freg_t fp6;
+            freg_t fp7;
+            freg_t fp8;
+            freg_t fp9;
+            freg_t fp10;
+            freg_t fp11;
+            freg_t fp12;
+            freg_t fp13;
+            freg_t fp14;
+            freg_t fp15;
+            freg_t fp16;
+        };
+        freg_t all[17];
+    } fp;
+    union {
+        struct {
+            vector_t vr0;
+            vector_t vr1;
+            vector_t vr2;
+            vector_t vr3;
+            vector_t vr4;
+            vector_t vr5;
+            vector_t vr6;
+            vector_t vr7;
+            vector_t vr8;
+            vector_t vr9;
+            vector_t vr10;
+            vector_t vr11;
+            vector_t vr12;
+            vector_t vr13;
+            vector_t vr14;
+            vector_t vr15;
+            vector_t vr16;
+            vector_t vr17;
+            vector_t vr18;
+            vector_t vr19;
+            vector_t vr20;
+            vector_t vr21;
+            vector_t vr22;
+            vector_t vr23;
+            vector_t vr24;
+            vector_t vr25;
+            vector_t vr26;
+            vector_t vr27;
+            vector_t vr28;
+            vector_t vr29;
+            vector_t vr30;
+            vector_t vr31;
+        };
+        vector_t all[32];
+        freg_t low[16];
+        __int128 high[16];
+    } vr;
+};
+
+#define NT_PRSTATUS 1
+#define NT_PRFPREG  2
+#define NT_S390_VXRS_LOW    0x309   /* s390 vector registers 0-15 upper half */
+#define NT_S390_VXRS_HIGH   0x30a   /* s390 vector registers 16-31 */
+
+#define PTRACE_GP_REGISTERS NT_PRSTATUS
+#define PTRACE_FP_REGISTERS NT_PRFPREG
+
+#define PTRACE_VXR1_REGISTERS NT_S390_VXRS_LOW
+#define PTRACE_VXR2_REGISTERS NT_S390_VXRS_HIGH
+
+#define ARCHZ_GPR_SIZE sizeof(((struct ArchZRegs *)0)->gp)
+#define ARCHZ_FPR_SIZE sizeof(((struct ArchZRegs *)0)->fp)
+#define ARCHZ_VXR1_SIZE sizeof(((struct ArchZRegs *)0)->vr.low)
+#define ARCHZ_VXR2_SIZE sizeof(((struct ArchZRegs *)0)->vr.high)

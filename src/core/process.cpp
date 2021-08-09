@@ -34,6 +34,7 @@
 #include <sys/signal.h>
 #include <sys/types.h>
 #include <sys/wait.h>
+#include <sys/personality.h>
 #include <unistd.h>
 #include <chrono>
 #include <thread>
@@ -41,14 +42,23 @@
 using namespace chopstix;
 
 Process::~Process() {
-    if (!active()) return;
-    wait();
+    log::debug("Process:: destructor start");
+    if (!active()) {
+        log::debug("Process:: not active, nothing to do");
+    } else {
+        log::debug("Process:: active, wait for it");
+        wait(0);
+    }
     // checkx(exited() || signaled(), "Process did not exit");
+    //
+    log::debug("Process:: destructor end");
 }
 
 Process::Process(Process &&other) : pid_(other.pid_), status_(other.status_) {
+    log::debug("Process:: constructor start");
     other.pid_ = -1;
     other.status_ = 0;
+    log::debug("Process:: constructor end");
 }
 
 Process &Process::operator=(Process &&other) {
@@ -62,95 +72,178 @@ Process &Process::operator=(Process &&other) {
 }
 
 void Process::exec(char **argv, int argc) {
+    log::debug("Process:: exec start");
     pid_ = fork();
-    check(pid_ != -1, "Unable to spawn process");
-    if (pid_ != 0) return;
+    check(pid_ != -1, "Process:: exec: Unable to spawn process");
+    if (pid_ != 0) {
+        log::debug("Process:: exec end");
+        return;
+    }
+
+    log::debug("Process:: exec child");
     ptrace(PTRACE_TRACEME, 0, NULL, NULL);
 
-    execvp(*argv, argv);
-    // char **real_args = (char **)malloc(sizeof(char *) * (argc + 3));
-    // real_args[0] = strdup("setarch");
-    // real_args[1] = strdup("linux64");
-    // real_args[2] = strdup("-R");
-    // for (int i = 0; i < argc; ++i) real_args[2 + i] = argv[i];
-    // execvp(*real_args, real_args);
+    int persona = personality(0xffffffff);
+    if (persona == -1)
+    {
+        fprintf(stderr, "Process:: exec: Unable to get ASLR info: %s\n", strerror(errno));
+        abandon();
+        exit(EXIT_FAILURE);
+    }
+    persona = persona | ADDR_NO_RANDOMIZE;
+    if (persona & ADDR_NO_RANDOMIZE)
+    {
+        log::debug("Process:: exec: ASLR already disabled");
+    } else {
+          persona = personality(persona | ADDR_NO_RANDOMIZE);
+        if (persona == -1) {
+            fprintf(stderr, "Process:: exec: Unable to set ASLR info: %s\n", strerror(errno));
+            abandon();
+            exit(EXIT_FAILURE);
+        }
+        if (!(personality (0xffffffff) & ADDR_NO_RANDOMIZE))
+        {
+            fprintf(stderr, "Process:: exec: Unable to disable ASLR");
+            abandon();
+            exit(EXIT_FAILURE);
+        }
+    }
+
+    int ret = execvp(*argv, argv);
+    if (ret <  0) {
+         fprintf(stderr, "Process:: exec: Error: %s\n", strerror(errno));
+         abandon();
+         exit(EXIT_FAILURE);
+    }
+
 }
 
 void Process::exec_wait(char **argv, int argc) {
+    log::debug("Process:: exec_wait start");
     pid_ = fork();
-    check(pid_ != -1, "Unable to spawn process");
+    check(pid_ != -1, "Process:: exec_wait: Unable to spawn process");
     if (pid_ != 0) {
-        usleep(50000);
+        log::debug("Process:: exec_wait: wait for child");
+        waitpid(pid_, &status_, WNOHANG);
+        log::debug("Process:: exec_wait: wait for child done");
         return;
     }
+    log::debug("Process:: exec_wait child");
     ptrace(PTRACE_TRACEME, 0, NULL, NULL);
-    usleep(10000);
-    execvp(*argv, argv);
-    // char **real_args = (char **)malloc(sizeof(char *) * (argc + 3));
-    // real_args[0] = strdup("setarch");
-    // real_args[1] = strdup("linux64");
-    // real_args[2] = strdup("-R");
-    // for (int i = 0; i < argc; ++i) real_args[2 + i] = argv[i];
-    // execvp(*real_args, real_args);
+
+    int persona = personality(0xffffffff);
+    if (persona == -1)
+    {
+        fprintf(stderr, "Process:: exec_wait: Unable to get ASLR info: %s\n", strerror(errno));
+        abandon();
+        exit(EXIT_FAILURE);
+    }
+    persona = persona | ADDR_NO_RANDOMIZE;
+    if (persona & ADDR_NO_RANDOMIZE)
+    {
+        log::debug("Process:: exec_wait: ASLR already disabled");
+    } else {
+          persona = personality(persona | ADDR_NO_RANDOMIZE);
+        if (persona == -1) {
+            fprintf(stderr, "Process:: exec_wait: Unable to set ASLR info: %s\n", strerror(errno));
+            abandon();
+            exit(EXIT_FAILURE);
+        }
+        if (!(personality (0xffffffff) & ADDR_NO_RANDOMIZE))
+        {
+            fprintf(stderr, "Process:: exec_wait: Unable to disable ASLR");
+            abandon();
+            exit(EXIT_FAILURE);
+        }
+    }
+
+    int ret = execvp(*argv, argv);
+    if (ret <  0) {
+         fprintf(stderr, "Process:: exec_wait: Error: %s\n", strerror(errno));
+         abandon();
+         exit(EXIT_FAILURE);
+    }
+
 }
 
 void Process::ready() {
-    wait();
-    checkx(stopped(), "The provided command failed");
-    checkx(stop_sig() == SIGTRAP, "The provided command failed");
+    wait(0);
+    checkx(stopped(), "Process:: ready: The provided command failed");
+    checkx(stop_sig() == SIGTRAP, "Process:: ready: The provided command failed");
 }
 
-void Process::abandon() { pid_ = -1; }
-void Process::copy(long pid) { pid_ = pid; }
+void Process::abandon() {
+    log::debug("Process:: abandon");
+    pid_ = -1;
+}
+void Process::copy(long pid) {
+    pid_ = pid;
+}
 
 void Process::wait(int flags) {
+    log::debug("Process:: wait start");
     if (!active()) {
-        log::debug("Process::wait: not active");
+        log::debug("Process:: wait: not active");
         return;
     }
     pid_t pid = waitpid(pid_, &status_, flags);
     log::debug("Process::wait: waitpid return: %d", pid);
     if (exited()) {
-        log::debug("Process::wait: %d exited", pid);
+        log::debug("Process:: wait: %d exited", pid);
         abandon();
     }
+
+#if defined(CHOPSTIX_SYSZ_SUPPORT)
+    if (stopped()) {
+        // Z architecture advances 2 bytes the PC on SIGILL
+        if (stop_sig() == SIGILL) {
+                long cur_pc = Arch::current()->get_pc(pid_);
+                cur_pc = cur_pc - 2;
+                Arch::current()->set_pc(pid_, cur_pc);
+        }
+    }
+#endif
+
     if (signaled()) {
-        log::debug("Process::wait: %d signaled by signal %d", pid, term_sig());
+        log::debug("Process:: wait: %d signaled by signal %d", pid, term_sig());
         if (term_sig() == SIGTERM) {
-            log::debug("Process::wait: %d signaled by signal SIGTERM", pid);
+            log::debug("Process:: wait: %d signaled by signal SIGTERM", pid);
             abandon();
             return;
         }
     } else {
-        checkx(pid != -1, "Process aborted");
+        checkx(pid != -1, "Process:: wait: Process aborted");
     }
 }
 
 void Process::waitfor(int which) {
-    checkx(pid_ != -1, "No child process");
-    log::debug("Process::waitfor: waiting for signal %d", which);
+    log::debug("Process:: waitfor start");
+    checkx(pid_ != -1, "Process:: waitfor: No child process");
+    log::debug("Process:: waitfor: waiting for signal %s", strsignal(which));
     while (active()) {
-        wait();
+        wait(0);
         if (!stopped()) {
-            log::debug("Process::waitfor: not stopped");
+            log::debug("Process:: waitfor: not stopped");
             return;
         }
         int sig = stop_sig();
-        log::debug("Process::waitfor: signal %d received", sig);
+        log::debug("Process:: waitfor: signal %s received", strsignal(sig));
         if (sig == which) {
-            log::debug("Process::waitfor: %d signal! stop wait", sig);
+            log::debug("Process:: waitfor: %s signal! stop wait", strsignal(sig));
             return;
         }
         cont(sig);
     }
-    log::debug("Process::waitfor: %d never received while process active",
-               which);
+    log::debug("Process:: waitfor: %s never received while process active",
+               strsignal(which));
 }
 
 void Process::touch() {
+    log::debug("Process:: touch start");
     if (!active()) return;
     waitpid(pid_, &status_, WNOHANG);
     if (exited()) abandon();
+    log::debug("Process:: touch end");
 }
 
 bool Process::exited() { return WIFEXITED(status_); }
@@ -160,81 +253,94 @@ int Process::term_sig() { return WTERMSIG(status_); }
 bool Process::stopped() { return WIFSTOPPED(status_); }
 int Process::stop_sig() { return WSTOPSIG(status_); }
 
-void Process::send(int sig) { kill(pid_, sig); }
+void Process::send(int sig) {
+    log::debug("Process:: send signal %s", strsignal(sig));
+    kill(pid_, sig);
+}
 void Process::syscall(int sig) {
     status_ = 0;
-    log::debug("process::syscall");
+    log::debug("Process:: syscall (%s)", strsignal(sig));
     long ret = ptrace(PTRACE_SYSCALL, pid_, 0, sig);
-    check(ret != -1, "ptrace_syscall");
+    check(ret != -1, "Process:: syscall: ptrace_syscall failed");
 }
 void Process::cont(int sig) {
     status_ = 0;
-    log::debug("process::cont");
+    log::debug("Process:: cont (%s)", strsignal(sig));
     long ret = ptrace(PTRACE_CONT, pid_, 0, sig);
-    check(ret != -1, "ptrace_cont");
+    check(ret != -1, "Process:: cont: ptrace_cont failed");
 }
 void Process::attach() {
-    log::debug("process::attach");
+    log::debug("Process:: attach");
     long ret = ptrace(PTRACE_ATTACH, pid_, 0, 0);
-    check(ret != -1, "ptrace_attach");
+    check(ret != -1, "Process:: attach: ptrace_attach failed");
 }
 void Process::detach(int sig) {
-    log::debug("process::detach");
+    log::debug("Process:: detach");
     long ret = ptrace(PTRACE_DETACH, pid_, 0, sig);
-    check(ret != -1, "ptrace_detach");
+    check(ret != -1, "Process:: detach: ptrace_detach failed");
 }
 
 long Process::peek(long addr) {
+    log::debug("Process:: peek/read data from 0x%x", addr);
     long ret = ptrace(PTRACE_PEEKDATA, pid_, addr, 0);
+    log::debug("Process:: poke/read data 0x%x readed from 0x%x", ret, addr);
     return ret;
 }
 
 void Process::poke(long addr, long data) {
+    log::debug("Process:: poke/write data 0x%x to 0x%x", data, addr);
     long ret = ptrace(PTRACE_POKEDATA, pid_, addr, data);
-    check(ret != -1, "ptrace_poke");
+    check(ret != -1, "Process: poke: ptrace_poke failed");
+    long wdata = peek(addr);
+    check(wdata == data, "Process: poke: ptrace_poke wrote wrong data");
+    log::debug("Process:: poke/write data 0x%x written to 0x%x", data, addr);
+
 }
 
 void Process::step(int sig) {
-    log::debug("process::step");
+    log::debug("Process:: step one (%d)", sig);
     long ret = ptrace(PTRACE_SINGLESTEP, pid_, 0, sig);
-    check(ret != -1, "ptrace_singlestep");
+    check(ret != -1, "Process: step: ptrace_singlestep failed");
 }
 
 void Process::set_break(long addr) {
-    log::debug("set break at %x", addr);
+    log::debug("Process:: set break: address %x", addr);
     auto it = breaks_.find(addr);
     long addr_content = peek(addr);
     if (it == breaks_.end()) breaks_[addr] = addr_content;
     long mask = Arch::current()->get_breakpoint_mask();
     addr_content &= mask;
-    log::debug("break contents are %x", addr_content);
+    log::debug("Process:: set break: break contents are %x", addr_content);
     poke(addr, addr_content);
 }
 
 void Process::remove_break(long addr) {
-    log::debug("remove break at %x", addr);
+    log::debug("Process:: remove_break: address %x", addr);
     auto it = breaks_.find(addr);
     if (it != breaks_.end()) poke(addr, it->second);
 }
 
 void *Process::get_segfault_addr() {
+    log::debug("Process:: get_segfault_addr");
     siginfo_t siginfo;
     long ret = ptrace(PTRACE_GETSIGINFO, pid_, NULL, &siginfo);
-    check(ret != -1, "ptrace_getsiginfo");
+    check(ret != -1, "Process:: get_segfault_addr: ptrace_getsiginfo failed");
     return siginfo.si_addr;
 }
 
 void Process::dyn_call(long addr, Arch::regbuf_type &regs, long sp, std::vector<unsigned long> &args) {
     int sig;
     log::debug("Process::dyn_call: Start");
+    long cur_pc = Arch::current()->get_pc(pid());
+    log::debug("Process::dyn_call: Dynamic call from PC = 0x%x", cur_pc);
+
     Arch::current()->read_regs(pid(), regs);
     Arch::current()->set_pc(pid(), addr);
     Arch::current()->set_sp(pid(), sp);
     Arch::current()->set_args(pid(), args);
-    log::debug(
-        "Process::dyn_call: Temporal register state. Allow child to continue.");
+    log::debug("Process::dyn_call: Temporal register state. Allow child to continue.");
     cont();
-    wait();
+    wait(0);
     while (stopped() || signaled()) {
         if (stopped()) {
             sig = stop_sig();
@@ -247,21 +353,22 @@ void Process::dyn_call(long addr, Arch::regbuf_type &regs, long sp, std::vector<
             // should be just skipped since it is as a result of our tracing
             // library code and not from the application code.
 
-            log::debug("Segfault info: PC = %x, RA = %x, ADDR = %x",
-                       Arch::current()->get_pc(pid()),
-                       Arch::current()->get_lnk(pid()), get_segfault_addr());
+            log::debug("Process::dyn_call: Segfault info: PC = 0x%x, RA = 0x%x, ADDR = 0x%x",
+                       (long) Arch::current()->get_pc(pid()),
+                       (long) Arch::current()->get_lnk(pid()),
+                       (long) get_segfault_addr());
             log::debug(
                 "Process::dyn_call: Ignoring segmentation fault during dynamic "
                 "call");
             cont(SIGSEGV);
-            wait();
+            wait(0);
 
         } else if (sig != SIGILL) {
             log::debug(
                 "Process::dyn_call: Expected segmentation fault, found %s",
                 strsignal(sig));
             cont(SIGTERM);
-            wait();
+            wait(0);
             exit(1);
 
         } else {
@@ -288,6 +395,10 @@ void Process::dyn_call(long addr, Arch::regbuf_type &regs, long sp, std::vector<
 
     log::debug("Process::dyn_call: Restoring temporal register state.");
     Arch::current()->write_regs(pid(), regs);
+
+    cur_pc = Arch::current()->get_pc(pid());
+    log::debug("Process::dyn_call: Restarting from PC = 0x%x", cur_pc);
+
     log::debug("Process::dyn_call: End");
 }
 
@@ -300,4 +411,24 @@ void Process::timeout(double time) {
     attach();
     waitfor(SIGSTOP);
     log::debug("Process::timeout: End");
+}
+
+void Process::steps(long steps) {
+    log::debug("Process:: steps: start");
+    for (long step = 0; step < steps; ++step) {
+        long pc = Arch::current()->get_pc(pid());
+        log::debug("Step: %d PC = 0x%x (contents: 0x%x)", step, pc, peek(pc));
+        if (exited()) {
+            log::debug("Step: %d Process exited with status %d", step, exit_status());
+        }
+        if (signaled()) {
+            log::debug("Step: %d Process signaled with signal %s", step, strsignal(term_sig()));
+        }
+        if (stopped()) {
+            log::debug("Step: %d Process stopped with signal %s", step, strsignal(stop_sig()));
+        }
+        Process::step(0);
+        wait(0);
+    }
+    log::debug("Process:: steps: end");
 }

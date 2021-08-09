@@ -218,13 +218,17 @@ void Event::start_buffering() {
     if (is_buffering()) {
         return;
     }
+
     checkx(attr_.sample_freq, "No sampling freq or period set");
-    // buf_ =
-    //    mmap(nullptr, map_size(), PROT_READ | PROT_WRITE, MAP_SHARED, fd(),
-    //    0);
 
     buf_ = mmap(nullptr, map_size(), PROT_READ | PROT_WRITE,
                 MAP_SHARED | MAP_LOCKED, fd(), 0);
+
+    if(buf_ == MAP_FAILED) {
+        buf_ = mmap(nullptr, map_size(), PROT_READ | PROT_WRITE,
+                MAP_SHARED, fd(), 0);
+    }
+
     check(buf_ != MAP_FAILED, "Unable to map buffer to memory");
     pfd_.fd = fd();
     pfd_.events = POLLIN;

@@ -68,6 +68,7 @@ struct System {
     int pagecount = 0;
     int tpagecount = 0;
     int max_pages;
+    int max_traces;
     int group_iter;
     int cur_iter;
     bool save;

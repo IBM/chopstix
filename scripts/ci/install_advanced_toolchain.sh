@@ -1,8 +1,6 @@
 #!/usr/bin/env sh
 #
-# ----------------------------------------------------------------------------
-#
-# Copyright 2019 IBM Corporation
+# Copyright 2011-2021 IBM Corporation
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -18,61 +16,75 @@
 #
 # ----------------------------------------------------------------------------
 #
-# 
 # ChopStiX CI support scripts
 #
 # Author: Ramon Bertran Monfort <rbertra@us.ibm.com>
-#
-# Copyright 2019 IBM Corporation
-# IBM (c) 2019 All rights reserved
 #
 
 set -e # Finish right after a non-zero return command
 set -u # Finish right after a undefined expression is used
 set -a # All following variables are exported
 
-ATVERSION=12.0
-DISTRO=xenial
-UPDATE=5
+ATVERSION=14.0
+DISTRO=bionic
+UPDATE=3
 
-if [ ! -d ./toolchain ]; then
-    mkdir ./toolchain
+if [ -f /opt/at$ATVERSION/bin/powerpc64le-linux-gnu-gcc ]; then
+    echo "Toolchain already there"
+    rm -fr "./toolchain_powerpc"
+    exit 0
 fi
 
-cd ./toolchain
+if [ ! -d ./toolchain_powerpc ]; then
+    mkdir ./toolchain_powerpc
+fi
 
-apt-get install axel 
+cd ./toolchain_powerpc
+
 baseurl="https://public.dhe.ibm.com/software/server/POWER/Linux/toolchain/at/ubuntu/dists/$DISTRO/at$ATVERSION/binary-amd64/"
+
 packages="advance-toolchain-at$ATVERSION-cross-common_$ATVERSION-${UPDATE}_amd64.deb
-          advance-toolchain-at$ATVERSION-cross-ppc64_$ATVERSION-${UPDATE}_amd64.deb
-          advance-toolchain-at$ATVERSION-cross-ppc64-mcore-libs_$ATVERSION-${UPDATE}_amd64.deb
-          advance-toolchain-at$ATVERSION-cross-ppc64-runtime-extras_$ATVERSION-${UPDATE}_amd64.deb"
+advance-toolchain-at$ATVERSION-cross-ppc64le-libnxz_$ATVERSION-${UPDATE}_amd64.deb
+advance-toolchain-at$ATVERSION-cross-ppc64le-mcore-libs_$ATVERSION-${UPDATE}_amd64.deb
+advance-toolchain-at$ATVERSION-cross-ppc64le-runtime-extras_$ATVERSION-${UPDATE}_amd64.deb
+advance-toolchain-at$ATVERSION-cross-ppc64le_$ATVERSION-${UPDATE}_amd64.deb
+advance-toolchain-cross-common_$ATVERSION-${UPDATE}_amd64.deb
+advance-toolchain-cross-ppc64le-libnxz_$ATVERSION-${UPDATE}_amd64.deb
+advance-toolchain-cross-ppc64le-mcore-libs_$ATVERSION-${UPDATE}_amd64.deb
+advance-toolchain-cross-ppc64le-runtime-extras_$ATVERSION-${UPDATE}_amd64.deb
+advance-toolchain-cross-ppc64le_$ATVERSION-${UPDATE}_amd64.deb"
 
 for package in $packages; do
-    if [ ! -f "./$package" ]; then 
+    if [ ! -f "./$package" ]; then
         echo "Downloading $package ..."
         axel -n 8 -q "$baseurl/$package"
     else
         echo "$package already in cache"
     fi
-
-    echo "Installing packages ..."
-    set +e
-    dpkg -i "./$package"
-    apt-get install -f -y
-    set -e
 done;
 
-# echo "Installing packages ..."
-# set +e
-# dpkg -R -i . 
-# apt-get install -f -y
-# set -e
+echo "Installing packages ..."
+set +e
+# shellcheck disable=SC2086
+sudo dpkg -i $packages
+#dpkg --configure *deb
+sudo apt-get install -f -y
+# shellcheck disable=SC2086
+sudo dpkg -i $packages
+#dpkg --configure *deb
+sudo apt-get install -f -y
+# shellcheck disable=SC2086
+sudo dpkg -i $packages
+#dpkg --configure *deb
+sudo apt-get install -f -y
+set -e
 
-PATH=$PATH:/opt/at$ATVERSION/bin 
+PATH="$PATH:/opt/at$ATVERSION/bin"
 export PATH
-command -v powerpc64-linux-gnu-gcc
+command -v powerpc64le-linux-gnu-gcc
 
 cd - || exit 1
+
+rm -fr "./toolchain_powerpc"
 
 # vim: set tabstop=4 softtabstop=4 shiftwidth=4 expandtab

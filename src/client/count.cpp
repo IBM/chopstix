@@ -50,7 +50,13 @@ int run_count(int argc, char **argv) {
     Progress prog(5);
 
     fmt::print("{} Grouping samples\n", prog);
-    db.exec(SQL_GROUP_SAMPLES);
+    std::string msg = db.exec_safe(SQL_GROUP_SAMPLES);
+
+    size_t error = msg.find("not an error");
+    if (error == std::string::npos) {
+        failx("%s. Run 'chop disasm' first.", msg);
+    }
+
     prog.next();
 
     fmt::print("{} Counting instructions\n", prog);

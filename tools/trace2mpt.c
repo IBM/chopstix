@@ -1,5 +1,4 @@
 //#define _GNU_SOURCE
-#include <assert.h>
 #include <dirent.h>
 #include <stdbool.h>
 #include <stdio.h>
@@ -7,13 +6,16 @@
 #include <stdlib.h>
 #include <string.h>
 #include <zlib.h>
+#include <errno.h>
+
+#define PATH_LEN 512
 
 const char MPT_HEADER_TEMPLATE[] =
 "[MPT]\n\
 mpt_version = 0.5\n\
 \n\
 [STATE]\n\
-contents = %s\n\
+contents = %s%s\n\
 \n\
 [CODE]\n\
 default_address = 0x%016lx\n\
@@ -80,7 +82,10 @@ void parseMemorySegments(char *data, size_t data_size,
 
 void readCompressedFile(const char *path, char **data, size_t *data_size) {
     gzFile fp = gzopen(path, "rb");
-    assert(fp != NULL);
+    if (fp == NULL) {
+        fprintf(stderr, "chop-trace2mpt: Error: Unable to open %s\n", path);
+        exit(EXIT_FAILURE);
+    }
     size_t buffer_size = READ_BUFFER_BS;
     *data = malloc(buffer_size);
     size_t offset = 0;
@@ -98,13 +103,21 @@ void readCompressedFile(const char *path, char **data, size_t *data_size) {
 
 void readRegularFile(const char *path, char **data, size_t *data_size) {
     FILE *fp = fopen(path, "rb");
-    assert(fp != NULL);
+    if (fp == NULL) {
+        fprintf(stderr, "chop-trace2mpt: Error: Unable to open %s\n", path);
+        fprintf(stderr, "chop-trace2mpt: Error: %s\n", strerror(errno));
+        exit(EXIT_FAILURE);
+    }
     fseek(fp, 0L, SEEK_END);
     *data_size = ftell(fp);
     rewind(fp);
     *data = malloc(*data_size);
     size_t w = fread(*data, *data_size, 1, fp);
-    assert(w == *data_size);
+    if ((*data_size * w) != *data_size) {
+        fprintf(stderr, "chop-trace2mpt: Error: Unable to read all contents of %s\n", path);
+        fprintf(stderr, "chop-trace2mpt: Error: Expecting: %ld bytes, %ld readed\n", (*data_size * w),  *data_size);
+        exit(EXIT_FAILURE);
+    }
     fclose(fp);
 }
 
@@ -119,7 +132,7 @@ void readFile(char *path, char **data, size_t *data_size, bool text) {
         if (access(path, R_OK) == 0) {
             compressed = true;
         } else {
-            fprintf(stderr, "Can't find file %s", path);
+            fprintf(stderr, "chop-trace2mpt: Can't find file %s", path);
             abort();
         }
     }
@@ -142,7 +155,11 @@ void format_data(FILE *mps, const char *data, size_t data_size,
 
 void format_code(FILE *mpt, const char *data, size_t data_size,
                  unsigned long address) {
-    assert(data_size % 16 == 0);
+    if ((data_size % 16) != 0) {
+        fprintf(stderr, "chop-trace2mpt: Data size not multiple of 16 bytes\n");
+        exit(EXIT_FAILURE);
+    }
+
     uint32_t *words = (uint32_t *) data;
     unsigned int word_groups = data_size / 16;
     for (unsigned int i = 0; i < word_groups; i++) {
@@ -154,8 +171,11 @@ void format_code(FILE *mpt, const char *data, size_t data_size,
 }
 
 void trace2mpt(const char *output_base, const char *trace_dir,
-               unsigned int index, bool compressed) {
-    char path[512];
+               unsigned int index, unsigned long long int max_address,
+               bool compressed) {
+    char path[PATH_LEN];
+    char mpt_path[PATH_LEN];
+    char mps_path[PATH_LEN];
     char *data;
     size_t data_size;
 
@@ -167,10 +187,16 @@ void trace2mpt(const char *output_base, const char *trace_dir,
     parseMemorySegments(data, data_size, &segments, &segment_count);
     free(data);
 
-    printf("Read %d segments.\n", segment_count);
+    printf("chop-trace2mpt: Read %d segments.\n", segment_count);
 
-    sprintf(path, "%s.%d.mpt", output_base, index);
-    FILE *mpt = fopen(path, "w");
+    sprintf(mpt_path, "%s#%d.mpt", output_base, index);
+    FILE *mpt = fopen(mpt_path, "w");
+
+    if (mpt == NULL) {
+        fprintf(stderr, "chop-trace2mpt: Unable to write to '%s'\n", mpt_path);
+        fprintf(stderr, "chop-trace2mpt: Error: %s\n", strerror(errno));
+        exit(EXIT_FAILURE);
+    }
 
     // Read default address
     unsigned long default_address;
@@ -179,14 +205,21 @@ void trace2mpt(const char *output_base, const char *trace_dir,
     sscanf(data, "%*s %lx", &default_address);
     free(data);
 
-    printf("Default code address: %lx\n", default_address);
+    printf("chop-trace2mpt: Default code address: %lx\n", default_address);
 
-    sprintf(path, "%s.%d.mps", output_base, index);
-    FILE *mps = fopen(path, "w");
+    sprintf(mps_path, "%s#%d.mps", output_base, index);
+    FILE *mps = fopen(mps_path, "w");
 
-    char *lastSlash =  strrchr(path, '/');
-    char *mps_name = (lastSlash != NULL ? lastSlash + 1 : path);
-    fprintf(mpt, MPT_HEADER_TEMPLATE, mps_name, default_address);
+    if (mps == NULL) {
+        fprintf(stderr, "chop-trace2mpt: Unable to write to '%s'\n", mpt_path);
+        fprintf(stderr, "chop-trace2mpt: Error: %s\n",strerror(errno));
+        exit(EXIT_FAILURE);
+    }
+
+    char *lastSlash = strrchr(mps_path, '/');
+
+    char *mps_name = (lastSlash != NULL ? lastSlash + 1 : mps_path);
+    fprintf(mpt, MPT_HEADER_TEMPLATE, mps_name, compressed ? ".gz" : "", default_address);
 
     // Write register contents
     sprintf(path, "%s/regs.%d", trace_dir, index);
@@ -199,7 +232,7 @@ void trace2mpt(const char *output_base, const char *trace_dir,
         register_count++;
     }
     free(data);
-    printf("Read %d registers.\n", register_count);
+    printf("chop-trace2mpt: Read %d registers.\n", register_count);
 
     // Find memory pages
     unsigned int _num_alloced_pages = 64;
@@ -207,11 +240,16 @@ void trace2mpt(const char *output_base, const char *trace_dir,
     unsigned int num_pages = 0;
     DIR *dir;
     dir = opendir(trace_dir);
-    assert(dir);
+    if (dir == NULL) {
+        fprintf(stderr, "chop-trace2mpt: Error: Unable to open %s\n", trace_dir);
+        fprintf(stderr, "chop-trace2mpt: Error: %s\n", strerror(errno));
+        exit(EXIT_FAILURE);
+    }
     char filter[16];
     sprintf(filter, "page.%d.", index);
     unsigned int filter_length = strlen(filter);
     struct dirent *entry;
+    // TODO: Use scandir to get sorted/filteres results
     while ((entry = readdir(dir)) != NULL) {
         unsigned int name_length = strlen(entry->d_name);
         if (strncmp(filter, entry->d_name, filter_length) == 0) {
@@ -229,9 +267,16 @@ void trace2mpt(const char *output_base, const char *trace_dir,
 
     // Process memory pages
     for (unsigned int i = 0; i < num_pages; i++) {
-        printf("\rProcessing page %d/%d", i + 1, num_pages);
+        printf("\rchop-trace2mpt: Processing page %d/%d", i + 1, num_pages);
         fflush(stdout);
         unsigned long address = strtol(pages[i] + filter_length, NULL, 16);
+
+        if (max_address != 0 && address >= max_address) {
+            printf("\rchop-trace2mpt: Processing page %d/%d skip\n", i + 1, num_pages);
+            fflush(stdout);
+            continue;
+        }
+
         sprintf(path, "%s/%s", trace_dir, pages[i]);
         readFile(path, &data, &data_size, false);
         MemorySegment *segment =
@@ -244,24 +289,38 @@ void trace2mpt(const char *output_base, const char *trace_dir,
         free(data);
     }
 
-    printf("\nDone.\n");
-
     fclose(mpt);
     fclose(mps);
+
+    if (compressed) {
+        char cmd[PATH_LEN+12];
+        snprintf(cmd, PATH_LEN+12, "gzip -f -9 %s", mpt_path);
+        if (system(cmd) != 0 ) printf("\nchop-trace2mpt: Unable to compress"); 
+        snprintf(cmd, PATH_LEN+12, "gzip -f -9 %s", mps_path);
+        if (system(cmd) != 0 ) printf("\nchop-trace2mpt: Unable to compress"); 
+    }
+
+    printf("\nchop-trace2mpt: mpt: %s%s", mpt_path, compressed ? ".gz" : "");
+    printf("\nchop-trace2mpt: mps: %s%s", mps_path, compressed ? ".gz" : "");
+    printf("\nchop-trace2mpt: Trace %u done.\n", index);
+
 }
 
 void print_usage() {
     printf(
         "Usage: chop-trace2mpt [-i <id>] -o <out> [-h] [--trace-dir <dir>] [--gzip]\n"
         "Options:\n"
-        "  -h,--help          Display this help and exit\n"
-        "  -i,--id <id>       Trace id. If not provided all id in the directory will be processed.\n"
-        "  -o,--output <out>  Output base path. i.e. (<out>.<id>.mpt <out>.<id>.mps will be generated)\n"
-        "  --trace-dir <dir>  Path to trace directory (default: ./trace_data)\n"
-        "  --gzip             Zip trace output files\n");
+        "  -h,--help            Display this help and exit\n"
+        "  -i,--id <id>         Trace id. If not provided all id in the directory will be processed.\n"
+        "  -o,--output <out>    Output base path. i.e. (<out>.<id>.mpt <out>.<id>.mps will be generated)\n"
+        "  --trace-dir <dir>    Path to trace directory (default: ./trace_data)\n"
+        "  --max-address value  Pages above this address will not be dumped to the generated MPT\n"
+        "  --gzip               Zip trace output files\n");
 }
 
 int main(int argc, const char **argv) {
+
+    // TODO: Use getopt libc interface for argument parsing
 
     if (argc == 2 && (strcmp(argv[1], "-h") == 0 || strcmp(argv[1], "--help") == 0)) {
         print_usage();
@@ -273,21 +332,30 @@ int main(int argc, const char **argv) {
     const char *output_base = NULL;
     const char *trace_dir = "./trace_data";
     bool compressed = false;
+    unsigned long long int max_address = 0;
 
     enum {
-        EXPECTING_OPT, EXPECTING_ID, EXPECTING_OUTPUT_BASE, EXPECTING_TRACE_DIR
+        EXPECTING_OPT, EXPECTING_ID, EXPECTING_OUTPUT_BASE, EXPECTING_TRACE_DIR,
+        EXPECTING_ADDRESS
     } state = EXPECTING_OPT;
 
     for (int i = 1; i < argc; i++) {
         const char *arg = argv[i];
+
+        if (strcmp(arg, "-h") == 0 || strcmp(arg, "--help") == 0) {
+            print_usage();
+            return 0;
+        }
+
         switch (state) {
             case EXPECTING_OPT:
                 if (strcmp(arg, "-i") == 0) state = EXPECTING_ID;
                 else if (strcmp(arg, "-o") == 0) state = EXPECTING_OUTPUT_BASE;
                 else if (strcmp(arg, "--trace-dir") == 0) state = EXPECTING_TRACE_DIR;
-                else if (strcmp(arg, "--gzip")) compressed = true;
+                else if (strcmp(arg, "--max-address") == 0) state = EXPECTING_ADDRESS;
+                else if (strcmp(arg, "--gzip") == 0) compressed = true;
                 else {
-                    fprintf(stderr, "Unknown option: %s", arg);
+                    fprintf(stderr, "chop-trace2mpt: Unknown option: %s\n", arg);
                     print_usage();
                     return 2;
                 }
@@ -295,6 +363,10 @@ int main(int argc, const char **argv) {
             case EXPECTING_ID:
                 id = atoi(arg);
                 id_provided = true;
+                state = EXPECTING_OPT;
+                break;
+            case EXPECTING_ADDRESS:
+                max_address = strtoll(arg, NULL, 0);
                 state = EXPECTING_OPT;
                 break;
             case EXPECTING_OUTPUT_BASE:
@@ -308,26 +380,35 @@ int main(int argc, const char **argv) {
         }
     }
 
-
     if (output_base == NULL) {
-        fprintf(stderr, "Missing required option(s): -o\n");
+        fprintf(stderr, "chop-trace2mpt: Missing required option(s): -o\n");
         print_usage();
         return 2;
     }
 
     if (id_provided) {
-        trace2mpt(output_base, trace_dir, id, false);
+        printf("chop-trace2mpt: Processing trace id: %d\n", id);
+        trace2mpt(output_base, trace_dir, id, max_address, compressed);
     } else {
         DIR *dir;
         dir = opendir(trace_dir);
-        assert(dir);
+        if (dir == NULL) {
+            fprintf(stderr, "chop-trace2mpt: Unable to open dir '%s'\n", trace_dir);
+            fprintf(stderr, "chop-trace2mpt: Error: %s\n",strerror(errno));
+            exit(EXIT_FAILURE);
+        }
         struct dirent *entry;
+        // TODO: Use scandir instead of readdir to get sorted entries
+        int count = 0;
         while ((entry = readdir(dir)) != NULL) {
             if (strncmp("info.", entry->d_name, 5) == 0) {
                 unsigned int index = strtoul(entry->d_name + 5, NULL, 10);
-                trace2mpt(output_base, trace_dir, index, false);
+                printf("chop-trace2mpt: Processing trace id: %d\n", index);
+                trace2mpt(output_base, trace_dir, index, max_address, compressed);
+                ++count;
             }
         }
         closedir(dir);
+        printf("chop-trace2mpt: Total traces processed: %d\n", count);
     }
 }

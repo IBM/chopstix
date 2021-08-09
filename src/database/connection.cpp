@@ -76,9 +76,18 @@ Query Connection::query(const std::string &q) {
 }
 
 void Connection::exec(const std::string &q) {
+    int ret = _exec(q, false);
+    checkx(ret == SQLITE_OK, "Error executing query: %s\n", errmsg());
+}
+
+std::string Connection::exec_safe(const std::string &q) {
+    int ret = _exec(q, true);
+    return errmsg();
+}
+
+int Connection::_exec(const std::string &q, bool safe) {
     checkx(is_open(), " not open");
-    int ret = sqlite3_exec(h_, q.c_str(), 0, 0, nullptr);
-    checkx(ret == 0, "Unable to execute query: %s\n%s", errmsg(), q);
+    return sqlite3_exec(h_, q.c_str(), nullptr, nullptr, nullptr);
 }
 
 void Connection::transact(const std::function<void(void)> &action) {
@@ -87,7 +96,9 @@ void Connection::transact(const std::function<void(void)> &action) {
     exec("end transaction;");
 }
 
-std::string Connection::errmsg() { return sqlite3_errmsg(h_); }
+std::string Connection::errmsg() {
+    return sqlite3_errmsg(h_);
+}
 
 long Connection::last_rowid() { return sqlite3_last_insert_rowid(h_); }
 

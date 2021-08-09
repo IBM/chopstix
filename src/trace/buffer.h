@@ -32,11 +32,11 @@ struct TraceBuffer {
     void start_trace(int trace_id, bool isNewInvocation);
     void stop_trace(int trace_id);
     void save_page(long page_addr);
+    void write_back();
 
   private:
     static constexpr long buf_size = 4096;
     void write(long dat);
-    void write_back();
 
     long pos_ = 0;
     long buf_[buf_size];

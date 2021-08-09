@@ -18,7 +18,7 @@
 #
 # ----------------------------------------------------------------------------
 #
-# 
+#
 # ChopStiX CI support scripts
 #
 # Author: Ramon Bertran Monfort <rbertra@us.ibm.com>
@@ -39,12 +39,21 @@ if [ $# -eq 0 ]; then
     dir=/tmp/libpfm
 fi
 
-if [ $# -eq 1 ]; then
-    dir="$1"
-    dir=$(readlink -m "$dir")
-elif [ $# -gt 1 ]; then
-    echo "Usage: $0 <install_dir>"
+if [ $# -gt 2 ]; then
+    echo "Usage: $0 [<install_dir> [-debug]]"
     exit 1
+fi
+
+dir="$1"
+dir=$(readlink -m "$dir")
+
+debug=""
+if [ $# -eq 2 ]; then
+    if [ "$2" != "-debug" ]; then
+        echo "Usage: $0 [<install_dir> [-debug]]"
+        exit 1
+    fi
+    debug="-DCMAKE_BUILD_TYPE=Debug"
 fi
 
 if [ ! -d "$dir" ]; then
@@ -59,18 +68,18 @@ if [ ! -d "$dir" ]; then
     fi
 fi
 
-tmp=$(mktemp -d)
+tmp="$(mktemp -d)"
 cd "$tmp"
 
 "$base_dir/scripts/ci/install_libpfm.sh" "$dir"
-cmake "$base_dir" -DCHOPSTIX_PERFMON_PREFIX="$dir" -DCMAKE_INSTALL_PREFIX="$dir" -DCHOPSTIX_BUILD_SQLITE=ON
-make -j 
+cmake "$base_dir" -DCHOPSTIX_PERFMON_PREFIX="$dir" -DCMAKE_INSTALL_PREFIX="$dir" -DCHOPSTIX_BUILD_SQLITE=ON $debug
+make -j
 make -j install
 
 cd - || exit 1
 rm -fr "$tmp"
 
-echo "ChopStiX installed in $dir" 
+echo "ChopStiX installed in $dir"
 echo "Execute: 'source $dir/share/chopstix/setup.sh' to set up the ChopStix environment"
 
 # vim: set tabstop=4 softtabstop=4 shiftwidth=4 expandtab

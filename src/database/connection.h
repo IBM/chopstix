@@ -56,6 +56,7 @@ class Connection {
 
     Query query(const std::string &q);
     void exec(const std::string &q);
+    std::string exec_safe(const std::string &);
     void transact(const std::function<void(void)> &action);
 
     handle_type handle() { return h_; }
@@ -75,6 +76,7 @@ class Connection {
 
   private:
     handle_type h_ = nullptr;
+    int _exec(const std::string &q, bool safe = false);
 };
 
 }  // namespace chopstix

@@ -82,6 +82,7 @@ class Process {
     void attach();
     void detach(int sig = 0);
     void step(int sig = 0);
+    void steps(long steps);
 
     long peek(long addr);
     void poke(long addr, long data);

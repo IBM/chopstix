@@ -1,5 +1,6 @@
 .vimrc
 .vscode
+install
 tags
 build*/
 !scripts/build
