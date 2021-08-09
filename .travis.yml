@@ -31,7 +31,6 @@ env:
         - CHOPSTIX_BUILD_TESTS=ON
         - CTEST_OUTPUT_ON_FAILURE=1
     jobs:
-        - CHOPSTIX_POWER_SUPPORT=ON CHOPSTIX_BUILD_SQLITE=ON CACHE_NAME=POWER
         - CHOPSTIX_POWERLE_SUPPORT=ON CHOPSTIX_BUILD_SQLITE=ON CACHE_NAME=POWERLE
         - CHOPSTIX_SYSZ_SUPPORT=ON CHOPSTIX_BUILD_SQLITE=ON CACHE_NAME=Z
         - CHOPSTIX_X86_SUPPORT=ON CHOPSTIX_BUILD_SQLITE=ON CACHE_NAME=X86_SQLITE
@@ -43,25 +42,20 @@ before_install:
     - env
     - if [ "$CHOPSTIX_BUILD_SQLITE" == "OFF" ]; then sudo apt-get install libsqlite3-dev -y ; fi
     - if [ "$CHOPSTIX_SYSZ_SUPPORT" == "ON" ]; then sudo apt-get install gcc-s390x-linux-gnu g++-s390x-linux-gnu -y ; fi
-    - if [ "$CHOPSTIX_POWER_SUPPORT" == "ON" ]; then sudo scripts/ci/install_advanced_toolchain.sh ; fi
     - if [ "$CHOPSTIX_POWERLE_SUPPORT" == "ON" ]; then sudo apt-get install gcc-powerpc64le-linux-gnu g++-powerpc64le-linux-gnu -y ; fi
 install:
     - set -e
     - echo "Install"
-    - if [ "$CHOPSTIX_POWER_SUPPORT" == "ON" ]; then export PATH=$PATH:$(find /opt/ -maxdepth 1 -name at* -type d)/bin ; fi;
-    - if [ "$CHOPSTIX_POWER_SUPPORT" == "ON" ]; then CC=powerpc64-linux-gnu-gcc ARCH=ppc scripts/ci/install_libpfm.sh ; fi
-    - if [ "$CHOPSTIX_POWER_SUPPORT" == "ON" ]; then CC=powerpc64-linux-gnu-gcc CHOST=powerpc64-linux-gnu scripts/ci/install_zlib.sh ; fi 
     - if [ "$CHOPSTIX_POWERLE_SUPPORT" == "ON" ]; then CC=powerpc64le-linux-gnu-gcc ARCH=ppc scripts/ci/install_libpfm.sh ; fi
-    - if [ "$CHOPSTIX_POWERLE_SUPPORT" == "ON" ]; then CC=powerpc64le-linux-gnu-gcc CHOST=powerpc64le-linux-gnu scripts/ci/install_zlib.sh ; fi 
+    - if [ "$CHOPSTIX_POWERLE_SUPPORT" == "ON" ]; then CC=powerpc64le-linux-gnu-gcc CHOST=powerpc64le-linux-gnu scripts/ci/install_zlib.sh ; fi
     - if [ "$CHOPSTIX_SYSZ_SUPPORT" == "ON" ]; then CC=s390x-linux-gnu-gcc ARCH=s390x scripts/ci/install_libpfm.sh ; fi
-    - if [ "$CHOPSTIX_SYSZ_SUPPORT" == "ON" ]; then CC=s390x-linux-gnu-gcc CHOST=s390x-linux-gnu scripts/ci/install_zlib.sh ; fi 
+    - if [ "$CHOPSTIX_SYSZ_SUPPORT" == "ON" ]; then CC=s390x-linux-gnu-gcc CHOST=s390x-linux-gnu scripts/ci/install_zlib.sh ; fi
     - if [ "$CHOPSTIX_X86_SUPPORT" == "ON" ]; then scripts/ci/install_libpfm.sh ; fi
 script:
     - set -e
     - echo "Script"
     - mkdir build
     - cd build
-    - if [ "$CHOPSTIX_POWER_SUPPORT" == "ON" ]; then cmake .. -DZLIB_ROOT=/tmp/zlib -DCMAKE_TOOLCHAIN_FILE=../scripts/cross/cross_ppc64.cmake ; fi
     - if [ "$CHOPSTIX_POWERLE_SUPPORT" == "ON" ]; then cmake .. -DZLIB_ROOT=/tmp/zlib -DCMAKE_TOOLCHAIN_FILE=../scripts/cross/cross_ppc64le.cmake ; fi
     - if [ "$CHOPSTIX_SYSZ_SUPPORT" == "ON" ]; then cmake .. -DZLIB_ROOT=/tmp/zlib -DCMAKE_TOOLCHAIN_FILE=../scripts/cross/cross_s390x.cmake ; fi
     - if [ "$CHOPSTIX_X86_SUPPORT" == "ON" ]; then cmake .. ; fi
