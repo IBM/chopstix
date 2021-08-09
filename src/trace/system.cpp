@@ -191,11 +191,18 @@ void System::save_page(unsigned long page_addr) {
         unsigned long breakpoint_page =
             (unsigned long) breakpoint.address & page_mask;
         if (breakpoint_page == page) {
-            log::debug("System::save_page: fixing breakpoint at 0x%x",
+            log::verbose("System::save_page: fixing breakpoint at 0x%x",
                        breakpoint.address);
             syscall(SYS_lseek, fd, breakpoint.address & offset_mask, SEEK_SET);
-            w = syscall(SYS_write, fd, &breakpoint.original_content, sizeof(long));
-            assert(w == sizeof(long) &&
+            ssize_t size = sizeof(long);
+            if (((breakpoint.address + size - 1) & page_mask) != (breakpoint.address & page_mask))
+            {
+                log::debug("System::save_page: page overflow %x bytes", size);
+                size = size - ((breakpoint.address + size) & offset_mask);
+            }
+
+            w = syscall(SYS_write, fd, &breakpoint.original_content, size);
+            assert(w == size &&
                    "System::save_page: Unable to restore breakpoint contents");
         }
     }
