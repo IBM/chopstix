@@ -20,7 +20,6 @@ addons:
             - shellcheck
             - linux-tools-generic
             - zlib1g-dev
-            # - linux-tools-4.4.0-87-generic
 notifications:
     email:
         on_success: change
@@ -32,6 +31,7 @@ env:
         - CTEST_OUTPUT_ON_FAILURE=1
     jobs:
         - CHOPSTIX_POWERLE_SUPPORT=ON CHOPSTIX_BUILD_SQLITE=ON CACHE_NAME=POWERLE
+        - CHOPSTIX_RISCV_SUPPORT=ON CHOPSTIX_BUILD_SQLITE=ON CACHE_NAME=RISCV
         - CHOPSTIX_SYSZ_SUPPORT=ON CHOPSTIX_BUILD_SQLITE=ON CACHE_NAME=Z
         - CHOPSTIX_X86_SUPPORT=ON CHOPSTIX_BUILD_SQLITE=ON CACHE_NAME=X86_SQLITE
         - CHOPSTIX_X86_SUPPORT=ON CHOPSTIX_BUILD_SQLITE=OFF CACHE_NAME=X86
@@ -41,13 +41,16 @@ before_install:
     - shellcheck -x -s sh $(find . -name \*.sh) $(find . -name \*.sh.in) ./tools/chop-* ./test/drivers/* ./test/daxpy/*spec
     - env
     - if [ "$CHOPSTIX_BUILD_SQLITE" == "OFF" ]; then sudo apt-get install libsqlite3-dev -y ; fi
-    - if [ "$CHOPSTIX_SYSZ_SUPPORT" == "ON" ]; then sudo apt-get install gcc-s390x-linux-gnu g++-s390x-linux-gnu -y ; fi
     - if [ "$CHOPSTIX_POWERLE_SUPPORT" == "ON" ]; then sudo apt-get install gcc-powerpc64le-linux-gnu g++-powerpc64le-linux-gnu -y ; fi
+    - if [ "$CHOPSTIX_RISCV_SUPPORT" == "ON" ]; then sudo apt-get install gcc-8-riscv64-linux-gnu gcc-riscv64-linux-gnu g++-8-riscv64-linux-gnu g++-riscv64-linux-gnu -y ; fi
+    - if [ "$CHOPSTIX_SYSZ_SUPPORT" == "ON" ]; then sudo apt-get install gcc-s390x-linux-gnu g++-s390x-linux-gnu -y ; fi
 install:
     - set -e
     - echo "Install"
     - if [ "$CHOPSTIX_POWERLE_SUPPORT" == "ON" ]; then CC=powerpc64le-linux-gnu-gcc ARCH=ppc scripts/ci/install_libpfm.sh ; fi
     - if [ "$CHOPSTIX_POWERLE_SUPPORT" == "ON" ]; then CC=powerpc64le-linux-gnu-gcc CHOST=powerpc64le-linux-gnu scripts/ci/install_zlib.sh ; fi
+    - if [ "$CHOPSTIX_RISCV_SUPPORT" == "ON" ]; then CC=riscv64-linux-gnu-gcc-8 ARCH=riscv64 scripts/ci/install_libpfm.sh ; fi
+    - if [ "$CHOPSTIX_RISCV_SUPPORT" == "ON" ]; then CC=riscv64-linux-gnu-gcc-8 CHOST=riscv64 scripts/ci/install_zlib.sh ; fi
     - if [ "$CHOPSTIX_SYSZ_SUPPORT" == "ON" ]; then CC=s390x-linux-gnu-gcc ARCH=s390x scripts/ci/install_libpfm.sh ; fi
     - if [ "$CHOPSTIX_SYSZ_SUPPORT" == "ON" ]; then CC=s390x-linux-gnu-gcc CHOST=s390x-linux-gnu scripts/ci/install_zlib.sh ; fi
     - if [ "$CHOPSTIX_X86_SUPPORT" == "ON" ]; then scripts/ci/install_libpfm.sh ; fi
@@ -57,6 +60,7 @@ script:
     - mkdir build
     - cd build
     - if [ "$CHOPSTIX_POWERLE_SUPPORT" == "ON" ]; then cmake .. -DZLIB_ROOT=/tmp/zlib -DCMAKE_TOOLCHAIN_FILE=../scripts/cross/cross_ppc64le.cmake ; fi
+    - if [ "$CHOPSTIX_RISCV_SUPPORT" == "ON" ]; then cmake .. -DZLIB_ROOT=/tmp/zlib -DCMAKE_TOOLCHAIN_FILE=../scripts/cross/cross_riscv64.cmake ; fi
     - if [ "$CHOPSTIX_SYSZ_SUPPORT" == "ON" ]; then cmake .. -DZLIB_ROOT=/tmp/zlib -DCMAKE_TOOLCHAIN_FILE=../scripts/cross/cross_s390x.cmake ; fi
     - if [ "$CHOPSTIX_X86_SUPPORT" == "ON" ]; then cmake .. ; fi
     - make -j2
