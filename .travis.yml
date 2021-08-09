@@ -8,7 +8,7 @@ cache:
     timeout: 1000
 os:
     - linux
-dist: xenial
+dist: bionic
 compiler:
     - gcc
 addons:
