@@ -1,5 +1,4 @@
 //#define _GNU_SOURCE
-#include <assert.h>
 #include <dirent.h>
 #include <stdbool.h>
 #include <stdio.h>
@@ -83,7 +82,10 @@ void parseMemorySegments(char *data, size_t data_size,
 
 void readCompressedFile(const char *path, char **data, size_t *data_size) {
     gzFile fp = gzopen(path, "rb");
-    assert(fp != NULL);
+    if (fp == NULL) {
+        fprintf(stderr, "chop-trace2mpt: Error: Unable to open %s\n", path);
+        exit(EXIT_FAILURE);
+    }
     size_t buffer_size = READ_BUFFER_BS;
     *data = malloc(buffer_size);
     size_t offset = 0;
@@ -101,13 +103,21 @@ void readCompressedFile(const char *path, char **data, size_t *data_size) {
 
 void readRegularFile(const char *path, char **data, size_t *data_size) {
     FILE *fp = fopen(path, "rb");
-    assert(fp != NULL);
+    if (fp == NULL) {
+        fprintf(stderr, "chop-trace2mpt: Error: Unable to open %s\n", path);
+        fprintf(stderr, "chop-trace2mpt: Error: %s\n", strerror(errno));
+        exit(EXIT_FAILURE);
+    }
     fseek(fp, 0L, SEEK_END);
     *data_size = ftell(fp);
     rewind(fp);
     *data = malloc(*data_size);
     size_t w = fread(*data, *data_size, 1, fp);
-    assert((*data_size * w) == *data_size);
+    if ((*data_size * w) != *data_size) {
+        fprintf(stderr, "chop-trace2mpt: Error: Unable to read all contents of %s\n", path);
+        fprintf(stderr, "chop-trace2mpt: Error: Expecting: %ld bytes, %ld readed\n", (*data_size * w),  *data_size);
+        exit(EXIT_FAILURE);
+    }
     fclose(fp);
 }
 
@@ -145,7 +155,11 @@ void format_data(FILE *mps, const char *data, size_t data_size,
 
 void format_code(FILE *mpt, const char *data, size_t data_size,
                  unsigned long address) {
-    assert(data_size % 16 == 0);
+    if ((data_size % 16) != 0) {
+        fprintf(stderr, "chop-trace2mpt: Data size not multiple of 16 bytes\n");
+        exit(EXIT_FAILURE);
+    }
+
     uint32_t *words = (uint32_t *) data;
     unsigned int word_groups = data_size / 16;
     for (unsigned int i = 0; i < word_groups; i++) {
@@ -180,7 +194,7 @@ void trace2mpt(const char *output_base, const char *trace_dir,
 
     if (mpt == NULL) {
         fprintf(stderr, "chop-trace2mpt: Unable to write to '%s'\n", mpt_path);
-        fprintf(stderr, "chop-trace2mpt: Error: %s\n",strerror(errno));
+        fprintf(stderr, "chop-trace2mpt: Error: %s\n", strerror(errno));
         exit(EXIT_FAILURE);
     }
 
@@ -226,7 +240,11 @@ void trace2mpt(const char *output_base, const char *trace_dir,
     unsigned int num_pages = 0;
     DIR *dir;
     dir = opendir(trace_dir);
-    assert(dir);
+    if (dir == NULL) {
+        fprintf(stderr, "chop-trace2mpt: Error: Unable to open %s\n", trace_dir);
+        fprintf(stderr, "chop-trace2mpt: Error: %s\n", strerror(errno));
+        exit(EXIT_FAILURE);
+    }
     char filter[16];
     sprintf(filter, "page.%d.", index);
     unsigned int filter_length = strlen(filter);
