@@ -22,7 +22,7 @@
 set -eu
 
 usage() {
-    echo "Usage: $(basename "$0") db_file score_min_goal max_functions min_size"
+    echo "Usage: $(basename "$0") db_file score_min_goal max_functions min_size [-functions]"
     echo ""
     echo "    This helper script finds the parameters to find"
     echo "    the right settings that maximize the coverage "
@@ -31,7 +31,8 @@ usage() {
     echo "    db_file: ChopStiX database file"
     echo "    score_min_goal: Minimum coverage"
     echo "    max_functions: Maximum number of functions"
-    echo "    min_size: Minimum size of functions (in instructions)" 
+    echo "    min_size: Minimum size of functions (in instructions)"
+    echo "    -functions: execute the command and list the selected function names only"
     echo ""
 }
 
@@ -39,7 +40,12 @@ score_min_goal=50
 score_max_func=20
 score_min_size=50
 
-if [ $# -ne 4 ]; then
+if [ $# -lt 4 ]; then
+    usage
+    exit 1
+fi
+
+if [ $# -gt 5 ]; then
     usage
     exit 1
 fi
@@ -53,6 +59,16 @@ fi
 score_min_goal="$2"
 score_max_func="$3"
 score_min_size="$4"
+
+function=0
+if [ $# -eq 5 ]; then
+    if [ $5 != "-functions" ]; then
+        usage
+        exit 1
+    else
+        function=1
+    fi
+fi
 
 tmp="$(mktemp)"
 tmp2="$(mktemp)"
@@ -93,18 +109,25 @@ if [ "$(wc -l < "$tmp2")" -eq 0 ]; then
     exit 1
 fi
 
-echo "--------------------------------------"
-echo "Valid configuration" 
-echo "--------------------------------------"
-echo "MINSCORE MINSIZE FUNCTIONS COVERAGE" > "$tmp"
-sort -b -n -r -k 4,4 < "$tmp2" >> "$tmp"
 winner="$(sort -b -n -r -k 4,4 < "$tmp2" | head -n 1)"
-column -t < "$tmp"
-echo "--------------------------------------"
-echo "Best score: $(echo "$winner" | cut -d' ' -f 4)"
-echo "--------------------------------------"
+
+if [ $function -eq 0 ]; then
+    echo "--------------------------------------"
+    echo "Valid configuration"
+    echo "--------------------------------------"
+    echo "MINSCORE MINSIZE FUNCTIONS COVERAGE" > "$tmp"
+    sort -b -n -r -k 4,4 < "$tmp2" >> "$tmp"
+    column -t < "$tmp"
+    echo "--------------------------------------"
+    echo "Best score: $(echo "$winner" | cut -d' ' -f 4)"
+    echo "--------------------------------------"
+
+    echo "Command to execute"
+    echo "--------------------------------------"
+    echo "chop list functions -data $db -min $(echo "$winner" | cut -d' ' -f 1) -minsize $(echo "$winner" | cut -d' ' -f 2) -limit $(echo "$winner" | cut -d' ' -f 3)"
+else
+    chop list functions -data $db -min $(echo "$winner" | cut -d' ' -f 1) -minsize $(echo "$winner" | cut -d' ' -f 2) -limit $(echo "$winner" | cut -d' ' -f 3) | cut -f 2 | grep -v "^NAME$"
+fi
+
 rm -f "$tmp" "$tmp2"
-echo "Command to execute" 
-echo "--------------------------------------"
-echo "chop list functions -data $db -min $(echo "$winner" | cut -d' ' -f 1) -minsize $(echo "$winner" | cut -d' ' -f 2) -limit $(echo "$winner" | cut -d' ' -f 3)" 
 exit 0
