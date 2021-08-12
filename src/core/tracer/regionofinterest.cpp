@@ -91,9 +91,9 @@ void TracerRegionOfInterestState::handle_signal(Process &child, int signal) {
         // continue
         if (!child.exited()) {
             if (!in_support && !in_vdso && !sig_return) {
-                log::debug("TracerRegionOfInterestState:: system call %d from PC 0x%x", sc_nr,
+                log::verbose("TracerRegionOfInterestState:: system call %d from PC 0x%x", sc_nr,
                           cur_pc);
-                log::debug("TracerRegionOfInterestState:: split trace at PC 0x%x", cur_pc);
+                log::verbose("TracerRegionOfInterestState:: split trace at PC 0x%x", cur_pc);
                 tracer->stop_trace();
                 tracer->start_trace(false);
 

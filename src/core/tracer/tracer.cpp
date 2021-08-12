@@ -273,7 +273,11 @@ void Tracer::start_trace(bool isInvocationStart) {
 
     log::debug("Tracer:: start_trace start");
     log::verbose("Tracer:: start_trace: Start capturing trace %d", trace_id);
-    if(tracing_enabled) {
+
+    if (trace_options.max_traces > 0 && trace_id >= trace_options.max_traces ) {
+        log::info("Max number of traces reached");
+        running = false;
+    } else if (tracing_enabled) {
         log::debug("Tracer::start_trace tracing enabled");
         capture_trace();
 
