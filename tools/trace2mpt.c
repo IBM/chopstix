@@ -266,15 +266,18 @@ void trace2mpt(const char *output_base, const char *trace_dir,
     closedir(dir);
 
     // Process memory pages
+    bool default_address_found = false;
     for (unsigned int i = 0; i < num_pages; i++) {
         printf("\rchop-trace2mpt: Processing page %d/%d", i + 1, num_pages);
         fflush(stdout);
         unsigned long address = strtol(pages[i] + filter_length, NULL, 16);
 
         if (max_address != 0 && address >= max_address) {
-            printf("\rchop-trace2mpt: Processing page %d/%d skip\n", i + 1, num_pages);
-            fflush(stdout);
-            continue;
+            if (default_address < address && default_address >= (address + data_size)) {
+                printf("\rchop-trace2mpt: Processing page %d/%d skip\n", i + 1, num_pages);
+                fflush(stdout);
+                continue;
+            }
         }
 
         sprintf(path, "%s/%s", trace_dir, pages[i]);
@@ -283,6 +286,10 @@ void trace2mpt(const char *output_base, const char *trace_dir,
             findSegment(address, segments, segment_count);
         if (segment != NULL && segment->type == SEGMENT_CODE) {
             format_code(mpt, data, data_size, address);
+            if (default_address >= address && default_address < (address + data_size)) {
+                printf("%ld, %lx\n", data_size, address);
+                default_address_found = true;
+            }
         } else {
             format_data(mps, data, data_size, address);
         }
@@ -292,12 +299,26 @@ void trace2mpt(const char *output_base, const char *trace_dir,
     fclose(mpt);
     fclose(mps);
 
+    if (!default_address_found) {
+        fprintf(stderr, "\nchop-trace2mpt: Error: Default address 0x%lx not in code.\n", default_address);
+        fprintf(stderr, "chop-trace2mpt: Error: Check tracing execution.\n");
+        if (remove(mpt_path) != 0) {
+            fprintf(stderr, "chop-trace2mpt: Error: Unable to remove %s\n", mpt_path);
+            fprintf(stderr, "chop-trace2mpt: Error: %s\n", strerror(errno));
+        }
+        if (remove(mps_path) != 0) {
+            fprintf(stderr, "chop-trace2mpt: Error: Unable to remove %s\n", mps_path);
+            fprintf(stderr, "chop-trace2mpt: Error: %s\n", strerror(errno));
+        }
+        return;
+    }
+
     if (compressed) {
         char cmd[PATH_LEN+12];
         snprintf(cmd, PATH_LEN+12, "gzip -f -9 %s", mpt_path);
-        if (system(cmd) != 0 ) printf("\nchop-trace2mpt: Unable to compress"); 
+        if (system(cmd) != 0 ) printf("\nchop-trace2mpt: Unable to compress");
         snprintf(cmd, PATH_LEN+12, "gzip -f -9 %s", mps_path);
-        if (system(cmd) != 0 ) printf("\nchop-trace2mpt: Unable to compress"); 
+        if (system(cmd) != 0 ) printf("\nchop-trace2mpt: Unable to compress");
     }
 
     printf("\nchop-trace2mpt: mpt: %s%s", mpt_path, compressed ? ".gz" : "");
@@ -390,25 +411,28 @@ int main(int argc, const char **argv) {
         printf("chop-trace2mpt: Processing trace id: %d\n", id);
         trace2mpt(output_base, trace_dir, id, max_address, compressed);
     } else {
-        DIR *dir;
-        dir = opendir(trace_dir);
-        if (dir == NULL) {
+        struct dirent **namelist;
+        int n;
+
+        n = scandir(trace_dir, &namelist, NULL, alphasort);
+        if (n == -1) {
             fprintf(stderr, "chop-trace2mpt: Unable to open dir '%s'\n", trace_dir);
             fprintf(stderr, "chop-trace2mpt: Error: %s\n",strerror(errno));
             exit(EXIT_FAILURE);
         }
-        struct dirent *entry;
-        // TODO: Use scandir instead of readdir to get sorted entries
+
         int count = 0;
-        while ((entry = readdir(dir)) != NULL) {
-            if (strncmp("info.", entry->d_name, 5) == 0) {
-                unsigned int index = strtoul(entry->d_name + 5, NULL, 10);
-                printf("chop-trace2mpt: Processing trace id: %d\n", index);
-                trace2mpt(output_base, trace_dir, index, max_address, compressed);
-                ++count;
+        while (count < n) {
+            if (strncmp("info.", namelist[count]->d_name, 5) == 0) {
+               unsigned int index = strtoul(namelist[count]->d_name + 5, NULL, 10);
+               printf("chop-trace2mpt: Processing trace id: %d\n", index);
+               trace2mpt(output_base, trace_dir, index, max_address, compressed);
             }
+            free(namelist[count]);
+            ++count;
         }
-        closedir(dir);
+        free(namelist);
         printf("chop-trace2mpt: Total traces processed: %d\n", count);
     }
+    exit(EXIT_SUCCESS);
 }
