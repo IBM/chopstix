@@ -11,6 +11,8 @@ from src.distance import disjoint_sets
 
 class ClusteringInformation:
 
+    __slots__ = '_epsilon', '_invocation_sets', '_clusters', '_noise_invocations'
+
     def __init__(self, epsilon, invocation_sets, clusters, noise_invocations):
         self._epsilon = epsilon
         self._invocation_sets = invocation_sets
