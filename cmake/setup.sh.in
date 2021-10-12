@@ -37,9 +37,9 @@ _chop_add_path() {
     case "$PATH:" in
         $CHOPSTIX_INSTALL/bin:$1:*) ;;
         $CHOPSTIX_INSTALL/scripts:$1:*) ;;
-        $1:*) export PATH=$PATH
+        $1:*) export PATH="$PATH"
             ;;
-        *) export PATH=$1:$PATH
+        *) export PATH="$1:$PATH"
             ;;
     esac
 }
