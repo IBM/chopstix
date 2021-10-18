@@ -318,3 +318,8 @@ void chopstix_stop_trace() {
     __asm__(".long 0x00000000");
     // raise(SIGTRAP);
 }
+
+// Disable printf system calls during tracing
+int printf(const char* format, ...) {
+    return 0;
+}
