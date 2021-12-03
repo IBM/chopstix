@@ -167,6 +167,47 @@ def dbscan(trace, epsilon):
 
     return ClusteringInformation(epsilon, invocation_sets, clusters, noise_invocations)
 
+def dbscan_ipc_instr(invocations, epsilon):
+    data = []
+    for i in range(len(invocations)):
+        invocation = invocations[i]
+        done = False
+        for dp in data:
+            if not done and abs(1 - (invocation.metrics.instructions / dp[1])) < 0.01:
+                count = len(dp[0])
+                dp[0].append(invocation)
+                dp[1] = ((dp[1] * count) + invocation.metrics.instructions) / (count + 1)
+                dp[2] = ((dp[2] * count) + invocation.metrics.ipc) / (count + 1)
+                dp[3].append(i)
+                done = True
+        if done == False:
+            data.append([[invocation], invocation.metrics.instructions, invocation.metrics.ipc, [i]])
+
+    X = np.array([[dp[2] * 20, math.log(dp[1])] for dp in data])
+
+    db = DBSCAN(eps=epsilon, algorithm='kd_tree').fit(X)
+    core_samples_mask = np.zeros_like(db.labels_, dtype=bool)
+    core_samples_mask[db.core_sample_indices_] = True
+    labels = db.labels_
+
+    cluster_count = len(set(labels))
+
+    if -1 in labels:
+        cluster_count -= 1  # -1 represents noise points, not clusters
+
+    clusters = [[] for i in range(cluster_count)]
+    invocation_sets = [dp[3] for dp in data]
+    noise_invocations = []
+    for i in range(len(labels)):
+        label = labels[i]
+
+        if label == -1:
+            noise_invocations.append(i)
+        else:
+            clusters[label].append(i)
+
+    return ClusteringInformation(epsilon, invocation_sets, clusters, noise_invocations)
+
 def dbscan_ipc(invocations, epsilon):
     # init dbscan object
     dbs = DBSCAN1D(eps=epsilon)

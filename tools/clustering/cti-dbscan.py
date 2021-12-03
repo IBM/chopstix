@@ -5,7 +5,7 @@ import sys
 import random
 
 from src.trace import Trace
-from src.clustering import dbscan, estimate_dbscan_epsilon, dbscan_ipc
+from src.clustering import dbscan, estimate_dbscan_epsilon, dbscan_ipc, dbscan_ipc_instr
 from src.perfmetrics import load_invocations_from_file
 
 def use_trace(args):
@@ -35,6 +35,11 @@ def use_ipc(args):
     cluster_info = dbscan_ipc(invocations, args.epsilon)
     cluster_info.to_file(args.output)
 
+def use_ipc_instr(args):
+    invocations = load_invocations_from_file(args.perf_csv)
+    cluster_info = dbscan_ipc_instr(invocations, args.epsilon)
+    cluster_info.to_file(args.output)
+
 if __name__ == '__main__':
 
     parser = argparse.ArgumentParser(description="Cluster invocations using DBScan")
@@ -54,6 +59,13 @@ if __name__ == '__main__':
     parser_ipc = subparsers.add_parser('ipc', add_help=False,
             description="Cluster using measured IPC per invocation")
     parser_ipc.set_defaults(function=use_ipc)
+    parser_ipc.add_argument('perf_csv', help='Captured performance profile.')
+    parser_ipc.add_argument('--epsilon', '-e', type=float, help='Epsilon parameter to pass to the DBSCAN clusterer', default=0.01)
+    parser_ipc.add_argument('--output', '-o', type=str, default='clusters.json', help="Output file")
+
+    parser_ipc = subparsers.add_parser('ipc-instr', add_help=False,
+            description="Cluster using measured IPC and retired instructions per invocation")
+    parser_ipc.set_defaults(function=use_ipc_instr)
     parser_ipc.add_argument('perf_csv', help='Captured performance profile.')
     parser_ipc.add_argument('--epsilon', '-e', type=float, help='Epsilon parameter to pass to the DBSCAN clusterer', default=0.01)
     parser_ipc.add_argument('--output', '-o', type=str, default='clusters.json', help="Output file")
