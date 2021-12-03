@@ -232,6 +232,7 @@ void trace2mpt(const char *output_base, const char *trace_dir,
         register_count++;
     }
     free(data);
+    fprintf(mps, "R PC 0x%lx\n", default_address);
     printf("chop-trace2mpt: Read %d registers.\n", register_count);
 
     // Find memory pages
