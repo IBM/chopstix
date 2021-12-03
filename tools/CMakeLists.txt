@@ -32,6 +32,7 @@ target_link_libraries(chop-trace2mpt ZLIB::ZLIB)
 install(PROGRAMS
     chop-marks-ppc64
     chop-marks-sysz
+    chop-marks-riscv
     chop-score-table
     DESTINATION bin)
 
