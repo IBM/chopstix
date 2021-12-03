@@ -14,6 +14,15 @@ class ClusteringInformation:
     __slots__ = '_epsilon', '_invocation_sets', '_clusters', '_noise_invocations'
 
     def __init__(self, epsilon, invocation_sets, clusters, noise_invocations):
+        for x in range(len(clusters)):
+            x_cluster = clusters[x]
+            for invocation_set in x_cluster:
+                for y in range(len(clusters)):
+                    if x == y:
+                        continue
+                    y_cluster = clusters[y]
+                    assert (invocation_set not in y_cluster), "Invocation Set %d is present in clusters %d and %d." % (invocation_set, x, y)
+
         self._epsilon = epsilon
         self._invocation_sets = invocation_sets
         self._clusters = clusters
@@ -213,7 +222,6 @@ def dbscan_ipc(invocations, epsilon):
     dbs = DBSCAN1D(eps=epsilon)
 
     ipcs = np.array([invocation.metrics.ipc for invocation in invocations])
-    print(ipcs)
 
     # get labels for each point
     labels = dbs.fit_predict(ipcs)

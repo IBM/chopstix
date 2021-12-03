@@ -133,7 +133,7 @@ if __name__ == '__main__':
                                         int(row[' Retired Memory Instructions']),
                                         int(row[' Data Cache Misses'])
                                     )
-                        invocation = int(file.name[len(function) + 1 : file.name.find('.')])
+                        invocation = int(file.name[len(function) + 1 : file.name.find('#')])
                         microbenchmarks.append(Microbenchmark(function, invocation, metrics))
 
             with open(join(benchmark_entry["results_path"], "benchmark_global.csv")) as file:

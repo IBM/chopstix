@@ -20,7 +20,7 @@ parser.add_argument('root_dir')
 parser.add_argument('benchmark_name')
 args = parser.parse_args()
 
-regex = re.compile('[a-zA-Z0-9_]*_([0-9]*)\..*\.csv')
+regex = re.compile('[a-zA-Z0-9_]*_([0-9]*)#.*\.csv')
 
 plots_current_page = 0
 fig = None
@@ -83,9 +83,17 @@ def gen_ipc_comparison(benchmark_name, pdf, global_ipc, benchmark, microbenchmar
     bench_ipc_handled = benchmark.get_metrics().ipc
     micro_ipc = 0
 
+    pairs = []
     for microbenchmark in microbenchmarks:
         weight = weight_of_microbenchmark(benchmark, microbenchmark)
         micro_ipc += weight * microbenchmark.metrics.ipc
+        pairs.append((weight, microbenchmark.metrics.ipc, microbenchmark.function_id, microbenchmark.invocation_id))
+
+    pairs.sort(key=lambda x: x[0], reverse=True)
+
+    print("Top 5 microbenchmarks")
+    for i in range(min(5, len(pairs))):
+        print("Weight: %f; IPC: %f; Function: %s; Invocation: %d" % pairs[i])
 
     ax.bar(["Benchmark IPC", "Benchmark IPC\nExcluding \"Others\"", "Microbenchmark\nweigthed IPC"],
            [bench_ipc, bench_ipc_handled, micro_ipc])
