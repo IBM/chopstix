@@ -22,6 +22,7 @@ import numpy as np
 from struct import iter_unpack
 from multiprocessing import Pool
 from math import ceil
+from src.misc import open_generic_fd
 import os
 import gc
 
@@ -37,13 +38,14 @@ class Trace:
 
     def __init__(self, filename, dmatrix_nproc = os.cpu_count()):
         print("Parsing trace...")
-        f = open(filename, 'rb')
+        f = open_generic_fd(filename, 'rb')
         raw_data = f.read()
         f.close()
 
         pages = iter_unpack('<q', raw_data)
         self.invocations = []
         current_invocation = None
+        current_subtrace = None
         for page, in pages:
             if page == -3:
                 if current_invocation is not None:
