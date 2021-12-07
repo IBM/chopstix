@@ -58,6 +58,9 @@ class Trace:
             elif page == -2:
                 current_invocation.add_subtrace(current_subtrace)
             else:
+                if current_subtrace is None:
+                    print("ERROR: Incorrect input trace format.")
+                    exit(os.EX_DATAERR)
                 current_subtrace.add_page(page)
 
         if current_invocation is not None:
