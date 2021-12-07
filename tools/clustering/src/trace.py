@@ -74,6 +74,7 @@ class Trace:
 
         print("Finding distinct invocations...")
         self.generate_invocation_sets()
+        print("Parsing trace... DONE!")
 
     def get_subtrace_count(self):
         return sum(len(invocation.subtraces) for invocation in self.invocations)
