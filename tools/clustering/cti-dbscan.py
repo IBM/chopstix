@@ -47,6 +47,7 @@ def use_trace(args):
         cluster_info = dbscan(trace, epsilon)
 
         cluster_info.to_file(args.output)
+        print("Results written to %s" % args.output)
 
 def use_ipc(args):
     invocations = load_invocations_from_file(args.perf_csv)
