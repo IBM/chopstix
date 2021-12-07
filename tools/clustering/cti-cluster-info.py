@@ -64,7 +64,8 @@ if __name__ == '__main__':
 
     parser = argparse.ArgumentParser(description="Inspect cluster data")
 
-    subparsers = parser.add_subparsers()
+    subparsers = parser.add_subparsers(dest='command')
+    subparsers.required = True
 
     parser_summary = subparsers.add_parser('summary',
             description="Give a summary of the clustering results")
