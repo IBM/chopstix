@@ -42,7 +42,7 @@ class Trace:
         raw_data = f.read()
         f.close()
 
-        pages = iter_unpack('<q', raw_data)
+        pages = iter_unpack('=q', raw_data)
         self.invocations = []
         current_invocation = None
         current_subtrace = None
