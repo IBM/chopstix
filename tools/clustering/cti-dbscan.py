@@ -62,30 +62,33 @@ if __name__ == '__main__':
 
     parser = argparse.ArgumentParser(description="Cluster invocations using DBScan")
 
-    subparsers = parser.add_subparsers()
+    subparsers = parser.add_subparsers(dest='command')
     subparsers.required = True
 
-    parser_trace = subparsers.add_parser('trace', add_help=False,
+    parser_trace = subparsers.add_parser('trace',
             description="Cluster using traces captured by ChopStiX")
     parser_trace.set_defaults(function=use_trace)
     parser_trace.add_argument('trace_files', nargs='+', help='Traces to cluster.')
     parser_trace.add_argument('--num-threads', '-n', type=int, help='Number of threads to use during the clustering')
     parser_trace.add_argument('--max-memory', type=int, help="Don't use more than this amount of memory during clustering")
     parser_trace.add_argument('--epsilon', '-e', type=float, help='Epsilon parameter to pass to the DBSCAN clusterer')
+    parser_trace.add_argument('--coverage', help="Clustering coverae, used to estimate epsilon if not provided.", type=float, default=0.9)
     parser_trace.add_argument('--output', '-o', type=str, default='clusters.json', help="Output file")
 
-    parser_ipc = subparsers.add_parser('ipc', add_help=False,
+    parser_ipc = subparsers.add_parser('ipc',
             description="Cluster using measured IPC per invocation")
     parser_ipc.set_defaults(function=use_ipc)
     parser_ipc.add_argument('perf_csv', help='Captured performance profile.')
     parser_ipc.add_argument('--epsilon', '-e', type=float, help='Epsilon parameter to pass to the DBSCAN clusterer', default=0.01)
+    parser_ipc.add_argument('--coverage', help="Clustering coverae, used to estimate epsilon if not provided.", type=float, default=0.9)
     parser_ipc.add_argument('--output', '-o', type=str, default='clusters.json', help="Output file")
 
-    parser_ipc = subparsers.add_parser('ipc-instr', add_help=False,
+    parser_ipc = subparsers.add_parser('ipc-instr',
             description="Cluster using measured IPC and retired instructions per invocation")
     parser_ipc.set_defaults(function=use_ipc_instr)
     parser_ipc.add_argument('perf_csv', help='Captured performance profile.')
     parser_ipc.add_argument('--epsilon', '-e', type=float, help='Epsilon parameter to pass to the DBSCAN clusterer', default=0.01)
+    parser_ipc.add_argument('--coverage', help="Clustering coverae, used to estimate epsilon if not provided.", type=float, default=0.9)
     parser_ipc.add_argument('--output', '-o', type=str, default='clusters.json', help="Output file")
 
     args = parser.parse_args()
