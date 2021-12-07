@@ -146,6 +146,9 @@ class ClusteringInformation:
 
 
 def estimate_dbscan_epsilon(trace, coverage):
+
+    assert 0 < coverage <= 1, "Coverage should be within the (0,1] range."
+
     n = trace.get_invocation_count()
 
     print("Finding eps parameter based on coverage of %f..." % coverage)
@@ -160,6 +163,7 @@ def estimate_dbscan_epsilon(trace, coverage):
     distanceLimit = distances[pointLimit]
     nextDist = uniquedist[1 + np.where(uniquedist == distanceLimit)[0]]
 
+    print("eps parameter based on coverage of %f set to %f" % (coverage, (distanceLimit + nextDist)/2))
     return (distanceLimit + nextDist)/2
 
 def dbscan(trace, epsilon):
