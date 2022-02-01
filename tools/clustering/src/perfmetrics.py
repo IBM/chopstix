@@ -19,6 +19,7 @@
 # ----------------------------------------------------------------------------
 #
 import csv
+import gzip
 
 class PerformanceMetrics:
     __slots__ = 'time', 'instructions', 'cycles', 'mem_instrs', 'misses'
@@ -72,19 +73,23 @@ class Invocation:
 def load_invocations_from_file(path):
     invocations = []
 
-    with open(path) as file:
-        reader = csv.DictReader(file)
-        index = 0
-        for row in reader:
-            invocation = Invocation(index, PerformanceMetrics(
-                    int(row[' Time Elapsed (us)']),
-                    int(row[' Retired Instructions']),
-                    int(row['Cycles']),
-                    int(row[' Retired Memory Instructions']),
-                    int(row[' Data Cache Misses'])
-                ))
-            index += 1
-            invocations.append(invocation)
+    ofunc=open
+    if path.endswith(".gz"):
+        ofunc=lambda x: (elem.decode() for elem in gzip.open(x))
+
+    fd = ofunc(path)
+    reader = csv.DictReader(fd)
+    index = 0
+    for row in reader:
+        invocation = Invocation(index, PerformanceMetrics(
+                int(row[' Time Elapsed (us)']),
+                int(row[' Retired Instructions']),
+                int(row['Cycles']),
+                int(row[' Retired Memory Instructions']),
+                int(row[' Data Cache Misses'])
+            ))
+        index += 1
+        invocations.append(invocation)
 
     return invocations
 
