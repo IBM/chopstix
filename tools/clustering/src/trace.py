@@ -26,27 +26,31 @@ from src.misc import open_generic_fd
 import os
 import gc
 
+
 def process_work(trace, start, end, n, distance_function):
-    matrix = np.zeros((end - start, n), 'float32')
+    matrix = np.zeros((end - start, n), "float32")
     for i in range(start, end):
         for j in range(0, n):
-            matrix[i-start, j] = distance_function(trace.invocation_sets[i], trace.invocation_sets[j])
+            matrix[i - start, j] = distance_function(
+                trace.invocation_sets[i], trace.invocation_sets[j]
+            )
     return matrix
+
 
 class Trace:
     distance_matrix_generated = False
 
-    def __init__(self, filename, dmatrix_nproc = os.cpu_count()):
+    def __init__(self, filename, dmatrix_nproc=os.cpu_count()):
         print("Parsing trace...")
-        f = open_generic_fd(filename, 'rb')
+        f = open_generic_fd(filename, "rb")
         raw_data = f.read()
         f.close()
 
-        pages = iter_unpack('=q', raw_data)
+        pages = iter_unpack("=q", raw_data)
         self.invocations = []
         current_invocation = None
         current_subtrace = None
-        for page, in pages:
+        for (page,) in pages:
             if page == -3:
                 if current_invocation is not None:
                     current_invocation.generate_pages()
@@ -108,9 +112,15 @@ class Trace:
 
             # Generate distance matrix in parallel
             print("Generating distance matrix with %d threads" % nprocs)
-            bs = ceil(n/nprocs)
+            bs = ceil(n / nprocs)
             pool = Pool(nprocs)
-            submatrices = pool.starmap(process_work, ((self, i, min(i + bs, n), n, distance_function) for i in range(0, n, bs)))
+            submatrices = pool.starmap(
+                process_work,
+                (
+                    (self, i, min(i + bs, n), n, distance_function)
+                    for i in range(0, n, bs)
+                ),
+            )
 
             # Concatenate submatrices
             self.distance_matrix = np.bmat(list(map(lambda x: [x], submatrices)))
@@ -119,7 +129,10 @@ class Trace:
         return self.distance_matrix
 
     def estimate_needed_memory(self):
-        return (self.get_invocation_set_count()**2) * 8 # 8 bytes per element (double)
+        return (
+            self.get_invocation_set_count() ** 2
+        ) * 8  # 8 bytes per element (double)
+
 
 class Invocation:
     def __init__(self, index):
@@ -136,12 +149,14 @@ class Invocation:
                 self.pages.add(page)
         self.hash = hash(tuple(self.pages))
 
+
 class SubTrace:
     def __init__(self):
         self.pages = []
 
     def add_page(self, address):
         self.pages.append(address)
+
 
 # Set of Invocations which use the same memory pages
 class InvocationSet:

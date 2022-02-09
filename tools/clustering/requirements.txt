@@ -2,3 +2,5 @@ scikit-learn
 matplotlib
 numpy
 dbscan1d
+kneed
+black

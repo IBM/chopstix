@@ -28,23 +28,36 @@ import matplotlib.pyplot as plt
 
 from src.trace import Trace
 from src.clustering import dbscan, ClusteringInformation
-from src.perfmetrics import PerformanceMetrics, Benchmark, load_invocations_from_file, Microbenchmark, Function, weight_of_microbenchmark
+from src.perfmetrics import (
+    PerformanceMetrics,
+    Benchmark,
+    load_invocations_from_file,
+    Microbenchmark,
+    Function,
+    weight_of_microbenchmark,
+)
+
 
 def load_function_data(results_path, benchmark):
     with open(join(results_path, "functions.txt")) as file:
         lines = file.readlines()[1:]
 
         for line in lines:
-            _, name, _, _, weight, _, _ = line.split('\t')
+            _, name, _, _, weight, _, _ = line.split("\t")
 
             weight = float(weight[:-1]) / 100
 
-            cluster_info = ClusteringInformation.from_file(join(results_path, name + "_cluster.json"))
-            invocations = load_invocations_from_file(join(results_path, name, "benchmark.csv"))
+            cluster_info = ClusteringInformation.from_file(
+                join(results_path, name + "_cluster.json")
+            )
+            invocations = load_invocations_from_file(
+                join(results_path, name, "benchmark.csv")
+            )
 
             function = Function(cluster_info, invocations, weight)
 
             benchmark.add_function(name, function)
+
 
 def bar_plot(ax, data, colors=None, total_width=0.8, single_width=1, legend=True):
     """Draws a bar plot with multiple bars per data point.
@@ -84,7 +97,7 @@ def bar_plot(ax, data, colors=None, total_width=0.8, single_width=1, legend=True
 
     # Check if colors where provided, otherwhise use the default color cycle
     if colors is None:
-        colors = plt.rcParams['axes.prop_cycle'].by_key()['color']
+        colors = plt.rcParams["axes.prop_cycle"].by_key()["color"]
 
     # Number of bars per group
     n_bars = len(data)
@@ -102,22 +115,29 @@ def bar_plot(ax, data, colors=None, total_width=0.8, single_width=1, legend=True
 
         # Draw a bar for every value of that type
         for x, y in enumerate(values):
-            bar = ax.bar(x + x_offset, y, width=bar_width * single_width, color=colors[i % len(colors)])
+            bar = ax.bar(
+                x + x_offset,
+                y,
+                width=bar_width * single_width,
+                color=colors[i % len(colors)],
+            )
 
         # Add a handle to the last drawn bar, which we'll need for the legend
         bars.append(bar[0])
 
     # Draw legend if we need
     if legend:
-        ax.legend(bars, data.keys(), loc='lower right')
+        ax.legend(bars, data.keys(), loc="lower right")
 
-if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description="Report the average CPI of a set of microbenchmarks (properly weighted)")
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(
+        description="Report the average CPI of a set of microbenchmarks (properly weighted)"
+    )
 
     parser.add_argument("json")
 
     args = parser.parse_args()
-
 
     benchmark_ipcs = []
     micro_ipcs = []
@@ -137,39 +157,47 @@ if __name__ == '__main__':
             for function in benchmark.functions:
                 function_results_path = join(benchmark_entry["results_path"], function)
                 for file in scandir(function_results_path):
-                    if not file.name.startswith("benchmark") and file.name.endswith("_global.csv"):
+                    if not file.name.startswith("benchmark") and file.name.endswith(
+                        "_global.csv"
+                    ):
                         with open(file.path) as f:
                             reader = csv.DictReader(f)
                             index = 0
                             metrics = None
                             for row in reader:
-                                assert(metrics == None)
+                                assert metrics == None
                                 metrics = PerformanceMetrics(
-                                        int(row[' Time Elapsed (us)']),
-                                        int(row[' Retired Instructions']),
-                                        int(row['Cycles']),
-                                        int(row[' Retired Memory Instructions']),
-                                        int(row[' Data Cache Misses'])
-                                    )
-                        invocation = int(file.name[len(function) + 1 : file.name.find('#')])
-                        microbenchmarks.append(Microbenchmark(function, invocation, metrics))
+                                    int(row[" Time Elapsed (us)"]),
+                                    int(row[" Retired Instructions"]),
+                                    int(row["Cycles"]),
+                                    int(row[" Retired Memory Instructions"]),
+                                    int(row[" Data Cache Misses"]),
+                                )
+                        invocation = int(
+                            file.name[len(function) + 1 : file.name.find("#")]
+                        )
+                        microbenchmarks.append(
+                            Microbenchmark(function, invocation, metrics)
+                        )
 
-            with open(join(benchmark_entry["results_path"], "benchmark_global.csv")) as file:
+            with open(
+                join(benchmark_entry["results_path"], "benchmark_global.csv")
+            ) as file:
                 reader = csv.DictReader(file)
                 index = 0
                 metrics = None
                 for row in reader:
-                    assert(metrics == None)
+                    assert metrics == None
                     metrics = PerformanceMetrics(
-                            int(row[' Time Elapsed (us)']),
-                            int(row[' Retired Instructions']),
-                            int(row['Cycles']),
-                            int(row[' Retired Memory Instructions']),
-                            int(row[' Data Cache Misses'])
-                        )
+                        int(row[" Time Elapsed (us)"]),
+                        int(row[" Retired Instructions"]),
+                        int(row["Cycles"]),
+                        int(row[" Retired Memory Instructions"]),
+                        int(row[" Data Cache Misses"]),
+                    )
                     benchmark_ipc = metrics.ipc
 
-            benchmark_ipcs.append(benchmark_ipc/benchmark.get_metrics().ipc)
+            benchmark_ipcs.append(benchmark_ipc / benchmark.get_metrics().ipc)
 
             print("-------------- %s ----------------" % benchmark_entry["name"])
 
@@ -177,35 +205,40 @@ if __name__ == '__main__':
             for microbenchmark in microbenchmarks:
                 weight = weight_of_microbenchmark(benchmark, microbenchmark)
                 microbenchmark_ipc += weight * microbenchmark.metrics.ipc
-                print("=> Microbenchmark (function %s, invocation %d)" % (microbenchmark.function_id, microbenchmark.invocation_id))
+                print(
+                    "=> Microbenchmark (function %s, invocation %d)"
+                    % (microbenchmark.function_id, microbenchmark.invocation_id)
+                )
                 print("Microbenchmark weight: %f" % weight)
                 print("Microbenchmark IPC: %f" % microbenchmark.metrics.ipc)
-                print("Microbenchmark weighted IPC: %f" % (weight * microbenchmark.metrics.ipc))
+                print(
+                    "Microbenchmark weighted IPC: %f"
+                    % (weight * microbenchmark.metrics.ipc)
+                )
 
             print("Micro IPC avg: %f" % microbenchmark_ipc)
             print("Bench IPC avg: %f" % benchmark.get_metrics().ipc)
 
-            micro_ipcs.append(microbenchmark_ipc/benchmark.get_metrics().ipc)
+            micro_ipcs.append(microbenchmark_ipc / benchmark.get_metrics().ipc)
 
-            #excluding_ipcs.append(benchmark.get_metrics().ipc)
+            # excluding_ipcs.append(benchmark.get_metrics().ipc)
             excluding_ipcs.append(1)
-
 
     chart_data = {
         "Benchmark": benchmark_ipcs,
         "Benchmark (excl. others)": excluding_ipcs,
-        "Microbenchmarks (weighted)": micro_ipcs
+        "Microbenchmarks (weighted)": micro_ipcs,
     }
 
     fig, ax = plt.subplots()
     fig.set_size_inches(8.27, 4)
     ax.set_xticks(range(len(labels)))
     ax.set_xticklabels(labels)
-    ax.set_xlabel('Benchmark')
-    ax.set_ylabel('Normalized IPC')
-    ax.set_title('Summary of benchmark & microbenchmark IPCs')
-    ax.grid(axis='y')
-    bar_plot(ax, chart_data, total_width=.8, single_width=.9)
+    ax.set_xlabel("Benchmark")
+    ax.set_ylabel("Normalized IPC")
+    ax.set_title("Summary of benchmark & microbenchmark IPCs")
+    ax.grid(axis="y")
+    bar_plot(ax, chart_data, total_width=0.8, single_width=0.9)
     plt.show()
 
     """

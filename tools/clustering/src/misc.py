@@ -21,17 +21,18 @@
 import bz2
 import gzip
 
-def open_generic_fd(filename, mode):                                               
-                                                                                   
-    if filename.endswith(".gz"):                                                   
-        if 'b' not in mode:                                                        
-            mode += 'b'                                                            
-        fd = gzip.open(filename, mode, compresslevel=9)                            
-    elif filename.endswith(".bz2"):                                                
-        if 'b' not in mode:                                                        
-            mode += 'b'                                                            
-        fd = bz2.BZ2File(filename, mode, compresslevel=9)                          
-    else:                                                                          
-        fd = open(filename, mode)                                                  
-                                                                                   
-    return fd                 
+
+def open_generic_fd(filename, mode):
+
+    if filename.endswith(".gz"):
+        if "b" not in mode:
+            mode += "b"
+        fd = gzip.open(filename, mode, compresslevel=9)
+    elif filename.endswith(".bz2"):
+        if "b" not in mode:
+            mode += "b"
+        fd = bz2.BZ2File(filename, mode, compresslevel=9)
+    else:
+        fd = open(filename, mode)
+
+    return fd

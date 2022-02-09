@@ -26,10 +26,25 @@ from src.trace import Trace
 from src.clustering import dbscan, estimate_dbscan_epsilon
 
 parser = argparse.ArgumentParser(description="ChopStix trace visualization tool.")
-parser.add_argument('trace_file', help="Input trace bin file to process.")
-parser.add_argument('--clustered', '-c', help="Cluster invocations according the the --epsilon and --coverage parameters.", action='store_true')
-parser.add_argument('--epsilon', '-e', help="Epsilon parameter for the DBSCAN clustering algorithm. If not provided, it is automatically estimated using the --coverage parameter.", type=float)
-parser.add_argument('--coverage', help="Clustering coverae, used to estimate epsilon if not provided.", type=float, default=0.9)
+parser.add_argument("trace_file", help="Input trace bin file to process.")
+parser.add_argument(
+    "--clustered",
+    "-c",
+    help="Cluster invocations according the the --epsilon and --coverage parameters.",
+    action="store_true",
+)
+parser.add_argument(
+    "--epsilon",
+    "-e",
+    help="Epsilon parameter for the DBSCAN clustering algorithm. If not provided, it is automatically estimated using the --coverage parameter.",
+    type=float,
+)
+parser.add_argument(
+    "--coverage",
+    help="Clustering coverae, used to estimate epsilon if not provided.",
+    type=float,
+    default=0.9,
+)
 args = parser.parse_args()
 
 trace = Trace(args.trace_file)
@@ -62,6 +77,6 @@ else:
 
 plt.xlabel("Invocation ID")
 plt.ylabel("Page Address")
-#plt.legend(loc='upper left')
+# plt.legend(loc='upper left')
 plt.grid(True)
 plt.show()
