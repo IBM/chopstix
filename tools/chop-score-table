@@ -55,8 +55,10 @@ if [ ! -f "$db" ]; then
     echo "$db not found!"
     exit 1
 fi
+
 db="$(mktemp)"
-cp -f "$1" "$db"
+tmp="$(mktemp)"
+tmp2="$(mktemp)"
 
 score_min_goal="$2"
 score_max_func="$3"
@@ -66,14 +68,16 @@ function=0
 if [ $# -eq 5 ]; then
     if [ "$5" != "-functions" ]; then
         usage
+        rm -f "$tmp" "$tmp2" "$db"
         exit 1
     else
         function=1
     fi
 fi
 
-tmp="$(mktemp)"
-tmp2="$(mktemp)"
+trap 'rm -f $db $tmp $tmp2' EXIT
+
+cp -f "$1" "$db"
 
 coverant=0
 for min in 5 1 0.1; do
@@ -125,6 +129,7 @@ rm -f "$tmp"
 
 if [ "$(wc -l < "$tmp2")" -eq 0 ]; then
     echo "No valid configurations found. Relax constraints."
+    rm -f "$tmp" "$tmp2" "$db"
     exit 1
 fi
 
