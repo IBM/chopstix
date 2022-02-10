@@ -28,6 +28,7 @@ import matplotlib.pyplot as plt
 
 from src.trace import Trace
 from src.clustering import dbscan, ClusteringInformation
+from src.misc import chop_print
 from src.perfmetrics import (
     PerformanceMetrics,
     Benchmark,

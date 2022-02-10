@@ -20,6 +20,8 @@
 #
 import bz2
 import gzip
+import sys
+import os
 
 
 def open_generic_fd(filename, mode):
@@ -36,3 +38,7 @@ def open_generic_fd(filename, mode):
         fd = open(filename, mode)
 
     return fd
+
+
+def chop_print(msg):
+    print("%s: %s" % (os.path.basename(sys.argv[0]), msg), file=sys.stderr)

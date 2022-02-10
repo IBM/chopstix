@@ -25,6 +25,7 @@ from statistics import mean, stdev
 
 from src.distance import disjoint_sets
 from src.trace import Trace
+from src.misc import chop_print
 
 parser = argparse.ArgumentParser(description="Inspect ChopStix traces")
 parser.add_argument("trace_file")

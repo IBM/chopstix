@@ -20,9 +20,14 @@
 #
 import numpy as np
 from math import sqrt
+from src.misc import chop_print
 
 
 def disjoint_sets(subtraceA, subtraceB):
     x = len(subtraceA.pages) - len(subtraceB.pages)
     y = len(np.setxor1d(subtraceA.pages, subtraceB.pages))
     return sqrt(x ** 2 + y ** 2)
+
+
+def distance_2d(a, b):
+    return math.sqrt(a ** 2 + b ** 2)

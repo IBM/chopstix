@@ -20,6 +20,7 @@
 #
 import argparse
 from src.clustering import ClusteringInformation
+from src.misc import chop_print
 
 
 def summary(args):

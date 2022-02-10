@@ -24,6 +24,7 @@ import numpy as np
 
 from src.trace import Trace
 from src.clustering import dbscan, estimate_dbscan_epsilon
+from src.misc import chop_print
 
 parser = argparse.ArgumentParser(description="ChopStix trace visualization tool.")
 parser.add_argument("trace_file", help="Input trace bin file to process.")

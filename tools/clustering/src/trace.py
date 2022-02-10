@@ -23,6 +23,7 @@ from struct import iter_unpack
 from multiprocessing import Pool
 from math import ceil
 from src.misc import open_generic_fd
+from src.misc import chop_print
 import os
 import gc
 

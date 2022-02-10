@@ -40,7 +40,9 @@ matplotlib.use("Agg")
 from matplotlib import pyplot as plt
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 
-from src.distance import disjoint_sets
+from src.distance import disjoint_sets, distance_2d
+from src.misc import chop_print
+from src.plot import instr_ipc_cluster_plot
 
 
 class ClusteringInformation:
@@ -194,7 +196,7 @@ def estimate_dbscan_epsilon(trace, coverage):
 
     n = trace.get_invocation_count()
 
-    print("Finding eps parameter based on coverage of %f..." % coverage)
+    chop_print("Finding eps parameter based on coverage of %f..." % coverage)
     distance_matrix = trace.get_distance_matrix(disjoint_sets)
     distances = []
     for i in range(n):
@@ -206,7 +208,7 @@ def estimate_dbscan_epsilon(trace, coverage):
     distanceLimit = distances[pointLimit]
     nextDist = uniquedist[1 + np.where(uniquedist == distanceLimit)[0]]
 
-    print(
+    chop_print(
         "eps parameter based on coverage of %f set to %f"
         % (coverage, (distanceLimit + nextDist) / 2)
     )
@@ -216,7 +218,7 @@ def estimate_dbscan_epsilon(trace, coverage):
 def dbscan(trace, epsilon):
     distance_matrix = trace.get_distance_matrix(disjoint_sets)
 
-    print("Clustering using parameters: eps = %f;" % epsilon)
+    chop_print("Clustering using parameters: eps = %f;" % epsilon)
     db = DBSCAN(metric="precomputed", eps=epsilon).fit(distance_matrix)
     core_samples_mask = np.zeros_like(db.labels_, dtype=bool)
     core_samples_mask[db.core_sample_indices_] = True
@@ -226,8 +228,8 @@ def dbscan(trace, epsilon):
     n_clusters_ = len(set(labels)) - (1 if -1 in labels else 0)
     n_noise_ = list(labels).count(-1)
 
-    print("Estimated number of clusters: %d" % n_clusters_)
-    print(
+    chop_print("Estimated number of clusters: %d" % n_clusters_)
+    chop_print(
         "Estimated number of noise points: %d (%f%%)"
         % (n_noise_, n_noise_ * 100 / trace.get_invocation_set_count())
     )
@@ -235,7 +237,7 @@ def dbscan(trace, epsilon):
         silhouette_score = metrics.silhouette_score(
             distance_matrix, labels, metric="precomputed"
         )
-        print("Silhouette Coefficient: %0.3f" % silhouette_score)
+        chop_print("Silhouette Coefficient: %0.3f" % silhouette_score)
 
     clusters = [[] for i in range(n_clusters_)]
     noise_invocations = []
@@ -254,7 +256,7 @@ def dbscan(trace, epsilon):
     return ClusteringInformation(epsilon, invocation_sets, clusters, noise_invocations)
 
 
-def dbscan_ipc_instr(invocations, epsilon):
+def dbscan_ipc_instr(invocations, epsilon, plot_path=None):
     data = []
     for i in range(len(invocations)):
         invocation = invocations[i]
@@ -302,14 +304,45 @@ def dbscan_ipc_instr(invocations, epsilon):
         else:
             clusters[label].append(i)
 
-    return ClusteringInformation(epsilon, invocation_sets, clusters, noise_invocations)
+    ipcs = np.array([invocation.metrics.ipc for invocation in invocations])
+    instr = np.array([invocation.metrics.instructions for invocation in invocations])
+    all_instr = sum(instr)
+
+    instr_coverage, inv_coverage, coverage, centroids = clustering_evaluation(
+        instr,
+        invocation_sets,
+        noise_invocations,
+        all_instr,
+        ipcs=ipcs,
+    )
+
+    instr_ipc_cluster_plot(
+        plot_path,
+        instr,
+        ipcs,
+        labels,
+        centroids,
+        instr_coverage,
+        inv_coverage,
+    )
+
+    extra_info = {}
+    extra_info["instr_coverage"] = instr_coverage
+    extra_info["inv_coverage"] = inv_coverage
+    extra_info["coverage"] = coverage
+
+    return ClusteringInformation(
+        epsilon, invocation_sets, clusters, noise_invocations, extra=extra_info
+    )
 
 
-def dbscan_ipc(invocations, epsilon):
+def dbscan_ipc(invocations, epsilon, plot_path=None):
     # init dbscan object
     dbs = DBSCAN1D(eps=epsilon)
 
     ipcs = np.array([invocation.metrics.ipc for invocation in invocations])
+    instr = np.array([invocation.metrics.instructions for invocation in invocations])
+    all_instr = sum(instr)
 
     # get labels for each point
     labels = dbs.fit_predict(ipcs)
@@ -329,21 +362,56 @@ def dbscan_ipc(invocations, epsilon):
         else:
             invocation_sets[label].append(i)
 
-    return ClusteringInformation(epsilon, invocation_sets, clusters, noise_invocations)
+    instr_coverage, inv_coverage, coverage, centroids = clustering_evaluation(
+        instr,
+        invocation_sets,
+        noise_invocations,
+        all_instr,
+        ipcs=ipcs,
+    )
+
+    instr_ipc_cluster_plot(
+        plot_path,
+        instr,
+        ipcs,
+        labels,
+        centroids,
+        instr_coverage,
+        inv_coverage,
+    )
+
+    extra_info = {}
+    extra_info["instr_coverage"] = instr_coverage
+    extra_info["inv_coverage"] = inv_coverage
+    extra_info["coverage"] = coverage
+
+    return ClusteringInformation(
+        epsilon, invocation_sets, clusters, noise_invocations, extra=extra_info
+    )
 
 
 def dbscan_instr(
     invocations,
-    epsilon,
+    epsilon=None,
     raw=False,
     msamples=None,
     rec_level=0,
-    plotname="plot",
+    plot_path=None,
     fplot=True,
+    uniq_value_threshold=50,
+    minimum_distance_percentage=0.1,
+    maximum_distance_percentage=5,
+    minimum_cluster_size_percentage=1,
+    minimum_cluster_count=10,
+    maximum_cluster_count=50,
 ):
 
-    # This algorithm assumes not outliers present in the input data set.
-    # To ensure that the input trace should be noise free.
+    #
+    # This algorithm assumes no outliers are present in the input data set.
+    # It usses DBSCAN as the clustering algorithm, and uses some heuristics
+    # and recursive greedy search to derive the minsamples as well as the
+    # epsilon parameters.
+    #
 
     if not raw:
         epsilon = None
@@ -351,6 +419,8 @@ def dbscan_instr(
     one_dim = True
     enable_weighted = False
     if one_dim:
+        # TODO: At the time of the implementation, DBSCAN1D does not support
+        # weighted parameter. Enable once suport is implemented.
         enable_weighted = False
 
     # Get data
@@ -368,22 +438,17 @@ def dbscan_instr(
 
     # Scale data to [0, 1] range
     # (will facilitate epsilon comparisons between different datasets)
-    print("scale", str(datetime.datetime.now()))
     scaled_instr = instr / max(instr)
 
     # Convert to a 2D np array
-    print("2d", str(datetime.datetime.now()))
     scaled_2D = np.vstack((scaled_instr, scaled_instr)).T
 
-    # Heuristic, if the range of unique value is very small, in absolute
-    # terms simply set a very small epsilon to define that many
-    # cluster.
     #
-    # Set to 50
+    # Heuristic, if the range of unique value is very small, in absolute
+    # terms simply set a very small epsilon to define that many clusters.
     #
     uniq_values = len(set(instr.flatten()))
-    print("samples", len(instr))
-    if uniq_values < 50:
+    if uniq_values < uniq_value_threshold:
         epsilon = 0.00001
 
     #
@@ -402,7 +467,6 @@ def dbscan_instr(
         if one_dim:
             nndata = np.sort(scaled_instr)
             distances = np.zeros(len(nndata))
-            print("1d neig", str(datetime.datetime.now()))
             distances[0] = nndata[1] - nndata[0]
             distances[1:-1] = [
                 min(nndata[x + 1] - nndata[x], nndata[x] - nndata[x - 1])
@@ -413,32 +477,27 @@ def dbscan_instr(
         else:
             nndata = scaled_2D
             neigh = NearestNeighbors(n_neighbors=2, algorithm="kd_tree")
-            print("fit neig 1", str(datetime.datetime.now()))
             nbrs = neigh.fit(nndata)
-            print("fit neig 2", str(datetime.datetime.now()))
             distances, indices = nbrs.kneighbors(nndata)
-            print("sort", str(datetime.datetime.now()))
             distances = np.sort(distances, axis=0)
             distances = distances[:, 1]
 
         #
-        # Filter out very small variations <0.1%
+        # Filter out very small variations
         #
         for idx in range(len(distances)):
-            if distances[idx] < 0.001:
+            if distances[idx] < (minimum_distance_percentage / 100):
                 distances[idx] = 0
 
     #
-    # With euclidean distance, assume a 5% variability
+    # Maximum distance
     #
-    percent = 5
+    percent = maximum_distance_percentage / 100
     if one_dim:
-        threshold = percent / 100
+        threshold = percent
     else:
-        threshold = math.sqrt(2 * ((percent / 100) ** 2))
+        threshold = distance_2d(percent, percent)
 
-    print(max(distances))
-    print(threshold)
     if epsilon is not None:
         pass
     else:
@@ -454,51 +513,6 @@ def dbscan_instr(
         # Institute, Berkeley, CA
         #
 
-        if False:
-            # Assume 20% of stability. I.e. points within very small distance
-            s = max(int(len(distances) * 0.2), 1)
-
-            print("knee", s, str(datetime.datetime.now()))
-            kl = KneeLocator(
-                np.arange(0, len(distances)),
-                distances,
-                curve="convex",
-                direction="increasing",
-                online=True,
-                S=s,
-            )
-
-            # Assume a symmetric/round knee
-            knee = kl.knee + int(((len(distances) - kl.knee) / 2)) + 1
-            if knee >= len(distances):
-                knee = len(distances) - 1
-
-            epsilon = distances[knee]
-            print("good", s, kl.knee, knee, epsilon)
-
-            nzero = distances.nonzero()[0]
-            displ = nzero[0]
-            if displ > s:
-                displ = displ - s
-
-            print("knee", s, displ, str(datetime.datetime.now()))
-            kl = KneeLocator(
-                np.arange(0, len(distances[displ:])),
-                distances[displ:],
-                curve="convex",
-                direction="increasing",
-                online=True,
-                S=s,
-            )
-
-            # Assume a symmetric/round knee
-            knee = kl.knee + int(((len(distances[displ:]) - kl.knee) / 2)) + 1
-            if knee >= len(distances):
-                knee = len(distances) - 1
-
-            epsilon = distances[displ:][knee]
-            print("new", s, kl.knee + displ, knee + displ, epsilon)
-
         #
         # Optimize KneeLocator by removing zeroes
         #
@@ -513,14 +527,12 @@ def dbscan_instr(
             displ = nzero[0]
             distances = distances[int(displ) * 0.8 :]
 
+        # TODO: distance plot
         # plt.plot(distances)
         # plt.show()
 
-        print(len(distances))
-
         s = max(int(len(distances) * 0.1), 1)
 
-        print("a knee", s, str(datetime.datetime.now()))
         kl = KneeLocator(
             np.arange(0, len(distances)),
             distances,
@@ -536,9 +548,6 @@ def dbscan_instr(
             knee = len(distances) - 1
 
         epsilon = distances[knee]
-        print("b good", s, kl.knee, knee, epsilon)
-
-    print("epsilon", epsilon)
 
     #
     # Do the clustering
@@ -556,22 +565,21 @@ def dbscan_instr(
     #   19.
     #
 
-    # A cluster should be defined if at least it contains a 1% of the samples
-    # This implies that at most we define at 100 clusters
+    # A cluster should be defined if at least it contains a X % of the samples
     if msamples is None:
-        msamples = max(int(len(instr) * 0.1), 1)
-    print("msamples", msamples)
+        msamples = max(int(len(instr) * (minimum_cluster_size_percentage / 100)), 1)
 
-    # Compute weights according to the number of instructions and msamples
-    # There are invocations that are sufficiently large to be considered a
-    # non noise (core sample) regardless of the msamples around them.
-    #
-    # If a sample contains more than 5% of the total instructions, is
-    # considered a cpre sample
     if enable_weighted:
+        # Compute weights according to the number of instructions and msamples
+        # There are invocations that are sufficiently large to be considered a
+        # non noise (core sample) regardless of the msamples around them.
+        #
+        # If a sample contains more than 5% of the total instructions, is
+        # considered a core sample
+        #
+        # TODO: Expose the 5% as a parameter
         weights = (instr / (all_instr * 0.05)) * msamples
 
-    print("dbscan", str(datetime.datetime.now()))
     if not one_dim:
         db = DBSCAN(eps=epsilon, min_samples=msamples, algorithm="kd_tree")
         if enable_weighted:
@@ -591,14 +599,10 @@ def dbscan_instr(
     # plt.scatter(scaled_2D[:,0], scaled_2D[:,1], c=vectorizer(labels))
     # plt.show()
 
-    # print(instr)
-    # print(labels)
-
     # Compute invocation information
     cluster_count = len(set(labels))
     if -1 in labels:
         cluster_count -= 1  # -1 represents noise points, not clusters
-    print("labels", cluster_count)
 
     clusters = [[i] for i in range(cluster_count)]
     invocation_sets = [[] for i in range(cluster_count)]
@@ -613,16 +617,15 @@ def dbscan_instr(
     assert cluster_count == len(invocation_sets)
 
     #
-    # Evaluate and tune
+    # Evaluate and call recursivelly if solution does not look good
     #
-
-    if cluster_count < 10:
+    if cluster_count < minimum_cluster_count:
         if len(noise_invocations) < 10 and cluster_count == 1 and rec_level < 10:
             # All in the same cluster? Reduce epsilon and msamples
             if fplot == True:
                 return dbscan_instr(
                     invocations,
-                    epsilon / 10,
+                    epsilon=epsilon / 10,
                     msamples=msamples / 10,
                     rec_level=rec_level + 1,
                     plotname=plotname,
@@ -631,7 +634,7 @@ def dbscan_instr(
             else:
                 return dbscan_instr(
                     instr,
-                    epsilon / 10,
+                    epsilon=epsilon / 10,
                     raw=True,
                     msamples=msamples / 10,
                     rec_level=rec_level + 1,
@@ -639,7 +642,7 @@ def dbscan_instr(
                     fplot=fplot,
                 )
 
-        if len(noise_invocations) < (50 - cluster_count):
+        if len(noise_invocations) < (maximum_cluster_count - cluster_count):
             # Take all noise and convert to clusters
             for noise_invocation in noise_invocations:
                 noise_invocations.remove(noise_invocation)
@@ -656,7 +659,7 @@ def dbscan_instr(
             invmap = dict(invmap)
             cinfo = dbscan_instr(
                 [val for val in values],
-                None,
+                epsilon=None,
                 raw=True,
                 rec_level=rec_level + 1,
                 plotname=plotname,
@@ -674,7 +677,7 @@ def dbscan_instr(
                 cluster_count = cluster_count + 1
                 assert cluster_count == len(invocation_sets)
 
-    instr_coverage, inv_coverage, coverage, centroids = dbscan_instr_eval(
+    instr_coverage, inv_coverage, coverage, centroids = clustering_evaluation(
         instr, invocation_sets, noise_invocations, all_instr
     )
 
@@ -684,13 +687,6 @@ def dbscan_instr(
     extra_info["coverage"] = coverage
 
     if fplot == True:
-
-        print("instr coverage", instr_coverage)
-        print("invocation coverage", inv_coverage)
-        print("clusters", cluster_count)
-        print("coverage", coverage)
-
-        # plot the final result
         for label, indexes in zip(clusters, invocation_sets):
             for index in indexes:
                 labels[index] = label[0]
@@ -698,10 +694,8 @@ def dbscan_instr(
         for index in noise_invocations:
             labels[index] = -1
 
-        # dbscan_instr_plot(plotname + "instr", instr, instr, labels, centroids)
-        # dbscan_instr_plot(plotname + "ipcs", ipcs, ipcs, labels, centroids)
-        dbscan_instr_plot(
-            plotname + "xy",
+        instr_ipc_cluster_plot(
+            plot_path,
             instr,
             ipcs,
             labels,
@@ -719,122 +713,36 @@ def dbscan_instr(
     )
 
 
-def dbscan_instr_plot(
-    plotname,
-    x,
-    y,
-    labels,
-    centroids,
-    instr_coverage,
-    inv_coverage,
-    custom_range=None,
+def brute_force_2d_density(
+    invocations,
+    epsilon=None,
+    plot_path=None,
+    max_clusters=20,
+    min_clusters_weight_percentage=1,
+    target_coverage_percentage=90,
+    outlier_percent=1,
+    outlier_minsize_threshold=1000,
+    minimum_granularity_percentage=1,
+    granularity_step_percentage=1,
 ):
-
-    # colors = ['royalblue', 'maroon', 'forestgreen', 'mediumorchid', 'tan', 'deeppink', 'olive', 'goldenrod', 'lightcyan', 'navy']
-    colors = list(matplotlib.colors.CSS4_COLORS.keys())
-    colors.remove("red")
-
-    if custom_range is not None:
-        to_delete = []
-        for idx, (xval, yval, label) in enumerate(zip(x, y, labels)):
-            if xval > custom_range[0][1]:
-                to_delete.append(idx)
-                continue
-            if yval > custom_range[1][1]:
-                to_delete.append(idx)
-
-        x = np.delete(x, to_delete)
-        y = np.delete(y, to_delete)
-        labels = np.delete(labels, to_delete)
-        centroids = dict(centroids)
-        for cent in centroids:
-            centroids[cent] = centroids[cent] - len(
-                [elem for elem in to_delete if elem < centroids[cent]]
-            )
-
-    vectorizer = np.vectorize(lambda x: colors[x % len(colors)])
-
-    # fig, ax = plt.subplots(figsize=(5.5, 5.5))
-    fig, ax = plt.subplots()
-    title = "Benchmark:" + plotname.split("/")[-4]
-    title += " Function:" + plotname.split("/")[-2]
-
-    # the scatter plot:
-    ax.scatter(x, y, c=vectorizer(labels), s=1)
-
-    if len(centroids.values()) > 0:
-        ax.scatter(
-            [x[idx] for idx in centroids.values()],
-            [y[idx] for idx in centroids.values()],
-            c="red",
-            s=10,
-            marker="*",
-        )
-
-    ax.set_xlabel("Instr")
-    ax.set_ylabel("IPC")
-
-    # create new axes on the right and on the top of the current axes
-    divider = make_axes_locatable(ax)
-    # below height and pad are in inches
-    ax_histx = divider.append_axes("top", 1.2, pad=0.1, sharex=ax)
-    ax_histy = divider.append_axes("right", 1.2, pad=0.1, sharey=ax)
-
-    text = "Method: densitygrid\n"
-    text += "Clusters: %d\n" % len(centroids.keys())
-    text += "%% Invocations: %2.2f%%\n" % (inv_coverage * 100)
-    text += "%% Instructions: %2.2f%%\n" % (instr_coverage * 100)
-
-    ax.annotate(text, xy=(1.05, 1.2), xycoords="axes fraction")
-
-    # make some labels invisible
-    ax_histx.xaxis.set_tick_params(labelbottom=False)
-    ax_histy.yaxis.set_tick_params(labelleft=False)
-
-    # now determine nice limits by hand:
-    bins = np.arange(0, max(x) * 1.02, max(x) / 100.0)
-    ax_histx.hist(x, bins=bins, density=True, stacked=True)
-    ax_histx.set_title(title)
-
-    bins = np.arange(0, max(y) * 1.02, max(y) / 100.0)
-    ax_histy.hist(y, bins=bins, orientation="horizontal", density=True, stacked=True)
-
-    # the xaxis of ax_histx and yaxis of ax_histy are shared with ax,
-    # thus there is no need to manually adjust the xlim and ylim of these
-    # axis.
-
-    # ax_histx.set_yticks([0, 0.5, 1])
-    # ax_histy.set_xticks([0, 0.5, 1])
-
-    # plt.show()
-    plt.savefig(plotname + ".jpg")
-    print("plotting", plotname + ".jpg")
-
-
-def brute_force_2d_density(invocations, epsilon, plotname="plot"):
-
-    max_clusters = 20
-    min_clusters_weight = 0.01
-    target_coverage = 0.9
-    size = 3
 
     instr = np.array([invocation.metrics.instructions for invocation in invocations])
     ipcs = np.array([invocation.metrics.ipc for invocation in invocations])
 
     if len(instr) == 0:
-        print("no samples")
+        chop_print("Input trace is empty. Exiting...")
         exit(0)
 
     if min(instr) == 0:
-        print("sample with 0 instruction")
+        chop_print("Input trace contains samples with 0 instructions. Exiting...")
         exit(0)
 
-    # Remove the outliers (1% top and bottom data points),
-    # only if many data # points (>1000) are provided.
+    # Remove the outliers (X% top and bottom data points),
+    # only if data # points above a threshold are provided.
     hist_range = [[min(instr), max(instr)], [min(ipcs), max(ipcs)]]
     all_instr = sum(instr)
-    if len(instr) > 1000:
-        idx = int(len(instr) * 0.001)
+    if len(instr) > outlier_minsize_threshold:
+        idx = int(len(instr) * (outlier_percent / 100))
         hist_range = [
             [min(sorted(instr)[idx:]) * 0.9, max(sorted(instr)[0:-idx]) * 1.1],
             [min(sorted(ipcs)[idx:]) * 0.9, max(sorted(ipcs)[0:-idx]) * 1.1],
@@ -847,10 +755,13 @@ def brute_force_2d_density(invocations, epsilon, plotname="plot"):
     assert min(ipcs) >= 0
 
     coverage = 0
-    cbins = 101
+    step = int(granularity_step_percentage / minimum_granularity_percentage)
+    if step < 1:
+        step = 1
+    cbins = int(100 / minimum_granularity_percentage) + step
 
-    while coverage < target_coverage:
-        cbins = cbins - 1
+    while coverage < (target_coverage_percentage / 100):
+        cbins = max(cbins - step, 1)
         hist, xedges, yedges = np.histogram2d(
             instr, ipcs, bins=cbins, weights=weights, range=hist_range
         )
@@ -872,9 +783,11 @@ def brute_force_2d_density(invocations, epsilon, plotname="plot"):
     combined = sorted(combined, key=lambda x: x[0])
 
     #
-    # Cluters with at least 1% of the sampled instructions
+    # Cluters with at least X % of the sampled instructions are considered
     #
-    combined = [xy for xy in combined if xy[0] >= min_clusters_weight]
+    combined = [
+        xy for xy in combined if xy[0] >= (min_clusters_weight_percentage / 100)
+    ]
 
     if len(combined) > max_clusters:
         combined = combined[-max_clusters:]
@@ -931,8 +844,6 @@ def brute_force_2d_density(invocations, epsilon, plotname="plot"):
                 xidx = xidx - 1
             if 0 <= xidx < len(xranges):
                 assert xranges[xidx][0] <= instr[sample] < xranges[xidx][1]
-        # else:
-        #    print("nofix")
 
         if yidx >= cbins or yidx < 0:
             # outlier
@@ -944,23 +855,6 @@ def brute_force_2d_density(invocations, epsilon, plotname="plot"):
                 yidx = yidx - 1
             if 0 <= yidx < len(yranges):
                 assert yranges[yidx][0] <= ipcs[sample] < yranges[yidx][1]
-        # else:
-        #    print("nofixy")
-
-        # yi = -1
-        # xi = -1
-
-        # for xi, (xr1, xr2) in enumerate(xranges):
-        # if not xr1 <= instr[sample] < xr2:
-        #    continue
-
-        # for yi, (yr1, yr2) in enumerate(yranges):
-        #    if yr1 <= ipcs[sample] < yr2:
-        #        break
-
-        # print(xi, xidx, cbins)
-        # assert(xi == xidx)
-        # assert(yi == yidx)
 
         labels.append(labeldict.get((xidx, yidx), -1))
         if labels[-1] == -1:
@@ -971,7 +865,7 @@ def brute_force_2d_density(invocations, epsilon, plotname="plot"):
     for label in range(len(clusters)):
         assert label in labels, label
 
-    instr_coverage, inv_coverage, coverage, centroids = dbscan_instr_eval(
+    instr_coverage, inv_coverage, coverage, centroids = clustering_evaluation(
         instr,
         invocation_sets,
         noise_invocations,
@@ -980,8 +874,8 @@ def brute_force_2d_density(invocations, epsilon, plotname="plot"):
         custom_range=hist_range[0],
     )
 
-    dbscan_instr_plot(
-        plotname + "densexy",
+    instr_ipc_cluster_plot(
+        plot_path,
         instr,
         ipcs,
         labels,
@@ -996,14 +890,12 @@ def brute_force_2d_density(invocations, epsilon, plotname="plot"):
     extra_info["inv_coverage"] = inv_coverage
     extra_info["coverage"] = coverage
 
-    print("clusters", len(clusters))
-
     return ClusteringInformation(
         epsilon, invocation_sets, clusters, noise_invocations, extra=extra_info
     )
 
 
-def dbscan_instr_eval(
+def clustering_evaluation(
     instr, invocation_sets, noise_invocations, all_instr, ipcs=None, custom_range=None
 ):
     # Evaluate the percentage of instructions in a cluster as well as the
@@ -1036,6 +928,11 @@ def dbscan_instr_eval(
         if ipcs is not None:
             gmean2 = np.exp(np.log([ipcs[i] for i in invocation_sets[label]]).mean())
 
+        #
+        # Do sorting in place, and sort the cluster by distance to the
+        # center (by IPC and # instructions
+        #
+
         centroid = None
         centroid_diff = None
 
@@ -1044,7 +941,7 @@ def dbscan_instr_eval(
             diff = abs(instr[i] - gmean)
             if ipcs is not None:
                 diff2 = abs(ipcs[i] - gmean2)
-                diff = math.sqrt(diff ** 2 + diff2 ** 2)
+                diff = distance_2d(diff, diff2)
 
             if centroid is None:
                 centroid = i
@@ -1053,6 +950,7 @@ def dbscan_instr_eval(
             if diff < centroid_diff:
                 centroid = i
                 centroid_diff = diff
+
         centroids[label] = centroid
 
     # Coverage in instr

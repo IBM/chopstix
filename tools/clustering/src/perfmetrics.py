@@ -20,6 +20,7 @@
 #
 import csv
 import gzip
+from src.misc import chop_print
 
 
 class PerformanceMetrics:

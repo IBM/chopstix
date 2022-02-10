@@ -28,6 +28,7 @@ import os
 import argparse
 import re
 from src.clustering import dbscan, ClusteringInformation
+from src.misc import chop_print
 from src.perfmetrics import (
     PerformanceMetrics,
     Benchmark,
