@@ -441,7 +441,7 @@ if __name__ == "__main__":
     )
     subparser.add_argument(
         "--minimum-granularity-percentage",
-        help="Initial granularity in the 2D cluster grid. If 2%$ is defined, the 2D grid (#instructions vs IPC) will be divided in a 50x50 grid. So each, square in the grid is 2%% of the range of each metric. Setting it very low can increase the number of clusters defined but it also increases the runtime. ",
+        help="Initial granularity in the 2D cluster grid. If 2%% is defined, the 2D grid (#instructions vs IPC) will be divided in a 50x50 grid. So each, square in the grid is 2%% of the range of each metric. Setting it very low can increase the number of clusters defined but it also increases the runtime. Decrease it if the number of clusters defined is too low.",
         type=float,
         default=1,
     )

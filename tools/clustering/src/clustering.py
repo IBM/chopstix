@@ -336,6 +336,7 @@ def dbscan_ipc_instr(
     extra_info["instr_coverage"] = instr_coverage
     extra_info["inv_coverage"] = inv_coverage
     extra_info["coverage"] = coverage
+    extra_info["centroids"] = centroids
 
     return ClusteringInformation(
         epsilon, invocation_sets, clusters, noise_invocations, extra=extra_info
@@ -395,6 +396,7 @@ def dbscan_ipc(
     extra_info["instr_coverage"] = instr_coverage
     extra_info["inv_coverage"] = inv_coverage
     extra_info["coverage"] = coverage
+    extra_info["centroids"] = centroids
 
     return ClusteringInformation(
         epsilon, invocation_sets, clusters, noise_invocations, extra=extra_info
@@ -722,6 +724,7 @@ def dbscan_instr(
     extra_info["instr_coverage"] = instr_coverage
     extra_info["inv_coverage"] = inv_coverage
     extra_info["coverage"] = coverage
+    extra_info["centroids"] = centroids
 
     if fplot == True:
         for label, indexes in zip(clusters, invocation_sets):
@@ -934,6 +937,7 @@ def brute_force_2d_density(
     extra_info["instr_coverage"] = instr_coverage
     extra_info["inv_coverage"] = inv_coverage
     extra_info["coverage"] = coverage
+    extra_info["centroids"] = centroids
 
     return ClusteringInformation(
         epsilon, invocation_sets, clusters, noise_invocations, extra=extra_info
