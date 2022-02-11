@@ -92,7 +92,13 @@ def use_ipc_dbscan(args):
             exit(1)
 
     invocations = load_invocations_from_file(args.perf_invok_csv)
-    cluster_info = dbscan_ipc(invocations, args.epsilon, plot_path=args.plot_path)
+    cluster_info = dbscan_ipc(
+        invocations,
+        args.epsilon,
+        plot_path=args.plot_path,
+        benchmark_name=args.benchmark_name,
+        function_name=args.function_name,
+    )
     cluster_info.to_file(args.output)
     chop_print("Results written to %s" % args.output)
 
@@ -105,7 +111,13 @@ def use_ipc_instr_dbscan(args):
             exit(1)
 
     invocations = load_invocations_from_file(args.perf_invok_csv)
-    cluster_info = dbscan_ipc_instr(invocations, args.epsilon, plot_path=args.plot_path)
+    cluster_info = dbscan_ipc_instr(
+        invocations,
+        args.epsilon,
+        plot_path=args.plot_path,
+        benchmark_name=args.benchmark_name,
+        function_name=args.function_name,
+    )
     cluster_info.to_file(args.output)
     chop_print("Results written to %s" % args.output)
 
@@ -158,6 +170,8 @@ def use_instr_dbscan(args):
         minimum_cluster_size_percentage=args.minimum_cluster_size_percentage,
         minimum_cluster_count=args.minimum_cluster_count,
         maximum_cluster_count=args.maximum_cluster_count,
+        benchmark_name=args.benchmark_name,
+        function_name=args.function_name,
     )
     cluster_info.to_file(args.output)
     chop_print("Results written to %s" % args.output)
@@ -196,7 +210,7 @@ def use_instr_ipc_2d_density(args):
     invocations = load_invocations_from_file(args.perf_invok_csv)
     cluster_info = brute_force_2d_density(
         invocations,
-        args.epsilon,
+        None,
         plot_path=args.plot_path,
         max_clusters=args.max_clusters,
         min_clusters_weight_percentage=args.min_clusters_weight_percentage,
@@ -205,6 +219,8 @@ def use_instr_ipc_2d_density(args):
         outlier_minsize_threshold=args.outlier_minsize_threshold,
         minimum_granularity_percentage=args.minimum_granularity_percentage,
         granularity_step_percentage=args.granularity_step_percentage,
+        benchmark_name=args.benchmark_name,
+        function_name=args.function_name,
     )
     cluster_info.to_file(args.output)
     chop_print("Results written to %s" % args.output)
@@ -273,6 +289,18 @@ if __name__ == "__main__":
         default=None,
         help="Plot path. If defined, generated plots will have this prefix",
     )
+    subparser.add_argument(
+        "--benchmark-name",
+        type=str,
+        default="Unk",
+        help="Benchmark name to be used if plots are generated",
+    )
+    subparser.add_argument(
+        "--function-name",
+        type=str,
+        default="Unk",
+        help="Function name to be used if plots are generated",
+    )
 
     subparser = subparsers.add_parser(
         "ipc-instr",
@@ -296,6 +324,18 @@ if __name__ == "__main__":
         type=str,
         default=None,
         help="Plot path. If defined, generated plots will have this prefix",
+    )
+    subparser.add_argument(
+        "--benchmark-name",
+        type=str,
+        default="Unk",
+        help="Benchmark name to be used if plots are generated",
+    )
+    subparser.add_argument(
+        "--function-name",
+        type=str,
+        default="Unk",
+        help="Function name to be used if plots are generated",
     )
 
     subparser = subparsers.add_parser(
@@ -350,9 +390,21 @@ if __name__ == "__main__":
         default=None,
         help="Plot path. If defined, generated plots will have this prefix",
     )
+    subparser.add_argument(
+        "--benchmark-name",
+        type=str,
+        default="Unk",
+        help="Benchmark name to be used if plots are generated",
+    )
+    subparser.add_argument(
+        "--function-name",
+        type=str,
+        default="Unk",
+        help="Function name to be used if plots are generated",
+    )
 
     subparser = subparsers.add_parser(
-        "instr_density",
+        "instr_ipc_density",
         description="Cluster using measured retired instructions and IPC per invocation using 2D density",
     )
     subparser.set_defaults(function=use_instr_ipc_2d_density)
@@ -409,6 +461,23 @@ if __name__ == "__main__":
         default=None,
         help="Plot path. If defined, generated plots will have this prefix",
     )
+    subparser.add_argument(
+        "--benchmark-name",
+        type=str,
+        default="Unk",
+        help="Benchmark name to be used if plots are generated",
+    )
+    subparser.add_argument(
+        "--function-name",
+        type=str,
+        default="Unk",
+        help="Function name to be used if plots are generated",
+    )
 
     args = parser.parse_args()
+    args = vars(args)
+    for k, v in args.copy().items():
+        args[k.replace("-", "_")] = v
+    args = argparse.Namespace(**args)
     args.function(args)
+    exit(0)

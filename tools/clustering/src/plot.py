@@ -24,6 +24,23 @@ import numpy as np
 import matplotlib
 
 matplotlib.use("Agg")
+matplotlib.rcParams["font.family"] = "monospace"
+matplotlib.rcParams["axes.grid"] = True
+matplotlib.rcParams["axes.labelsize"] = 8
+matplotlib.rcParams["axes.labelweight"] = "bold"
+matplotlib.rcParams["axes.titlesize"] = 11
+matplotlib.rcParams["axes.titleweight"] = "heavy"
+matplotlib.rcParams["savefig.dpi"] = 600
+matplotlib.rcParams["xtick.labelsize"] = 6
+matplotlib.rcParams["ytick.labelsize"] = 6
+matplotlib.rcParams["xtick.minor.visible"] = True
+matplotlib.rcParams["ytick.minor.visible"] = True
+# matplotlib.rcParams['grid.alpha'] = 0.1
+matplotlib.rcParams["grid.color"] = "grey"
+matplotlib.rcParams["grid.linestyle"] = "dotted"
+matplotlib.rcParams["grid.linewidth"] = 1
+
+
 from matplotlib import pyplot as plt
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 from pathlib import Path
@@ -39,8 +56,11 @@ def instr_ipc_cluster_plot(
     instr_coverage,
     inv_coverage,
     custom_range=None,
+    benchmark_name="unk",
+    function_name="unk",
+    method="unk",
 ):
-    if plot_path is None:
+    if plotpath is None:
         return
 
     Path(os.path.dirname(plotpath)).mkdir(parents=True, exist_ok=True)
@@ -69,8 +89,8 @@ def instr_ipc_cluster_plot(
     vectorizer = np.vectorize(lambda x: colors[x % len(colors)])
 
     fig, ax = plt.subplots()
-    title = "Benchmark:" + plotname.split("/")[-4]
-    title += " Function:" + plotname.split("/")[-2]
+    title = "Benchmark:" + benchmark_name
+    title += "\nFunction:" + function_name
 
     ax.scatter(x, y, c=vectorizer(labels), s=1)
 
@@ -83,7 +103,7 @@ def instr_ipc_cluster_plot(
             marker="*",
         )
 
-    ax.set_xlabel("Instr")
+    ax.set_xlabel("Instructions")
     ax.set_ylabel("IPC")
 
     # create new axes on the right and on the top of the current axes
@@ -92,12 +112,13 @@ def instr_ipc_cluster_plot(
     ax_histx = divider.append_axes("top", 1.2, pad=0.1, sharex=ax)
     ax_histy = divider.append_axes("right", 1.2, pad=0.1, sharey=ax)
 
-    text = "Method: 2D density\n"
+    text = "Method: %s\n" % method
     text += "Clusters: %d\n" % len(centroids.keys())
-    text += "%% Invocations: %2.2f%%\n" % (inv_coverage * 100)
-    text += "%% Instructions: %2.2f%%\n" % (instr_coverage * 100)
+    text += "\nCoverage:\n"
+    text += "- %%Invocations: %2.2f%%\n" % (inv_coverage * 100)
+    text += "- %%Instructions: %2.2f%%\n" % (instr_coverage * 100)
 
-    ax.annotate(text, xy=(1.05, 1.2), xycoords="axes fraction")
+    ax.annotate(text, xy=(1.02, 1.20), xycoords="axes fraction", fontsize=7)
 
     # make some labels invisible
     ax_histx.xaxis.set_tick_params(labelbottom=False)
@@ -115,7 +136,16 @@ def instr_ipc_cluster_plot(
     # thus there is no need to manually adjust the xlim and ylim of these
     # axis.
 
-    # ax_histx.set_yticks([0, 0.5, 1])
-    # ax_histy.set_xticks([0, 0.5, 1])
+    ax_histx.set_ylabel("Instr. Frequency")
+    ax_histx.set_yticks([])
+    ax_histy.set_xlabel("IPC Frequency")
+    ax_histy.set_xticks([])
 
-    plt.savefig(plotpath + ".instr_vs_ipc_cluster.jpg")
+    fname = plotpath + ".%s.%s.%s.instr_vs_ipc_cluster.jpg" % (
+        benchmark_name,
+        function_name,
+        method,
+    )
+    fname = fname.replace(" ", "_")
+    plt.savefig(fname, dpi=600)
+    chop_print("Plot saved in '%s'" % fname)

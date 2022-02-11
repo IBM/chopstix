@@ -163,19 +163,19 @@ class ClusteringInformation:
     def to_file(self, path):
         json_obj = {
             "epsilon": self._epsilon,
-            "invocation_sets": self._invocation_sets,
+            "extra": self._extra,
             "clusters": self._clusters,
             "noise_invocations": self._noise_invocations,
-            "extra": self._extra,
+            "invocation_sets": self._invocation_sets,
         }
 
-        with open(path, "w") as file:
-            json.dump(json_obj, file)
+        with open(path, "w") as mfile:
+            json.dump(json_obj, mfile, indent=2)
 
     @staticmethod
     def from_file(path):
-        with open(path, "r") as file:
-            json_obj = json.load(file)
+        with open(path, "r") as mfile:
+            json_obj = json.load(mfile)
 
         extra = None
         if "extra" in json_obj:
@@ -256,7 +256,10 @@ def dbscan(trace, epsilon):
     return ClusteringInformation(epsilon, invocation_sets, clusters, noise_invocations)
 
 
-def dbscan_ipc_instr(invocations, epsilon, plot_path=None):
+def dbscan_ipc_instr(
+    invocations, epsilon, plot_path=None, benchmark_name="Unk", function_name="Unk"
+):
+
     data = []
     for i in range(len(invocations)):
         invocation = invocations[i]
@@ -324,6 +327,9 @@ def dbscan_ipc_instr(invocations, epsilon, plot_path=None):
         centroids,
         instr_coverage,
         inv_coverage,
+        benchmark_name=benchmark_name,
+        function_name=function_name,
+        method="DBSCAN IPC/Instr",
     )
 
     extra_info = {}
@@ -336,7 +342,9 @@ def dbscan_ipc_instr(invocations, epsilon, plot_path=None):
     )
 
 
-def dbscan_ipc(invocations, epsilon, plot_path=None):
+def dbscan_ipc(
+    invocations, epsilon, plot_path=None, benchmark_name="Unk", function_name="Unk"
+):
     # init dbscan object
     dbs = DBSCAN1D(eps=epsilon)
 
@@ -378,6 +386,9 @@ def dbscan_ipc(invocations, epsilon, plot_path=None):
         centroids,
         instr_coverage,
         inv_coverage,
+        benchmark_name=benchmark_name,
+        function_name=function_name,
+        method="DBSCAN IPC",
     )
 
     extra_info = {}
@@ -404,6 +415,8 @@ def dbscan_instr(
     minimum_cluster_size_percentage=1,
     minimum_cluster_count=10,
     maximum_cluster_count=50,
+    benchmark_name="Unk",
+    function_name="Unk",
 ):
 
     #
@@ -628,8 +641,16 @@ def dbscan_instr(
                     epsilon=epsilon / 10,
                     msamples=msamples / 10,
                     rec_level=rec_level + 1,
-                    plotname=plotname,
                     fplot=fplot,
+                    plot_path=plot_path,
+                    uniq_value_threshold=uniq_value_threshold,
+                    minimum_distance_percentage=minimum_distance_percentage,
+                    maximum_distance_percentage=maximum_distance_percentage,
+                    minimum_cluster_size_percentage=minimum_cluster_size_percentage,
+                    minimum_cluster_count=minimum_cluster_count,
+                    maximum_cluster_count=maximum_cluster_count,
+                    benchmark_name=benchmark_name,
+                    function_name=function_name,
                 )
             else:
                 return dbscan_instr(
@@ -638,8 +659,16 @@ def dbscan_instr(
                     raw=True,
                     msamples=msamples / 10,
                     rec_level=rec_level + 1,
-                    plotname=plotname,
                     fplot=fplot,
+                    plot_path=plot_path,
+                    uniq_value_threshold=uniq_value_threshold,
+                    minimum_distance_percentage=minimum_distance_percentage,
+                    maximum_distance_percentage=maximum_distance_percentage,
+                    minimum_cluster_size_percentage=minimum_cluster_size_percentage,
+                    minimum_cluster_count=minimum_cluster_count,
+                    maximum_cluster_count=maximum_cluster_count,
+                    benchmark_name=benchmark_name,
+                    function_name=function_name,
                 )
 
         if len(noise_invocations) < (maximum_cluster_count - cluster_count):
@@ -662,8 +691,16 @@ def dbscan_instr(
                 epsilon=None,
                 raw=True,
                 rec_level=rec_level + 1,
-                plotname=plotname,
                 fplot=False,
+                plot_path=plot_path,
+                uniq_value_threshold=uniq_value_threshold,
+                minimum_distance_percentage=minimum_distance_percentage,
+                maximum_distance_percentage=maximum_distance_percentage,
+                minimum_cluster_size_percentage=minimum_cluster_size_percentage,
+                minimum_cluster_count=minimum_cluster_count,
+                maximum_cluster_count=maximum_cluster_count,
+                benchmark_name=benchmark_name,
+                function_name=function_name,
             )
             new_invocations_sets = cinfo.get_all_invocation_sets()
 
@@ -702,6 +739,9 @@ def dbscan_instr(
             centroids,
             instr_coverage,
             inv_coverage,
+            benchmark_name=benchmark_name,
+            function_name=function_name,
+            method="DBSCAN Instr",
         )
 
     assert len(invocation_sets) == len(clusters)
@@ -724,6 +764,8 @@ def brute_force_2d_density(
     outlier_minsize_threshold=1000,
     minimum_granularity_percentage=1,
     granularity_step_percentage=1,
+    benchmark_name="Unk",
+    function_name="Unk",
 ):
 
     instr = np.array([invocation.metrics.instructions for invocation in invocations])
@@ -883,6 +925,9 @@ def brute_force_2d_density(
         instr_coverage,
         inv_coverage,
         custom_range=hist_range,
+        benchmark_name=benchmark_name,
+        function_name=function_name,
+        method="2D Density",
     )
 
     extra_info = {}
@@ -906,6 +951,8 @@ def clustering_evaluation(
     coverage = {}
     centroids = {}
 
+    noise_invocations.sort(key=lambda x: instr[x], reverse=True)
+
     if custom_range is None:
         coverage[-1] = sum(instr[i] for i in noise_invocations) / all_instr
     else:
@@ -928,33 +975,19 @@ def clustering_evaluation(
         if ipcs is not None:
             gmean2 = np.exp(np.log([ipcs[i] for i in invocation_sets[label]]).mean())
 
-        #
-        # Do sorting in place, and sort the cluster by distance to the
-        # center (by IPC and # instructions
-        #
-
-        centroid = None
-        centroid_diff = None
-
-        for i in invocation_sets[label]:
-
-            diff = abs(instr[i] - gmean)
+        def diff_func(x):
+            idiff = abs(instr[x] - gmean)
             if ipcs is not None:
-                diff2 = abs(ipcs[i] - gmean2)
-                diff = distance_2d(diff, diff2)
+                idiff2 = abs(ipcs[x] - gmean2)
+                idiff = distance_2d(idiff, idiff2)
+            return idiff
 
-            if centroid is None:
-                centroid = i
-                centroid_diff = diff
-                continue
-            if diff < centroid_diff:
-                centroid = i
-                centroid_diff = diff
-
-        centroids[label] = centroid
+        invocation_sets[label].sort(key=lambda x: diff_func(x))
+        centroids[label] = invocation_sets[label][0]
 
     # Coverage in instr
     instr_coverage = 1 - coverage[-1]
+
     # Coverage in % invocations
     if custom_range is None:
         inv_coverage = 1 - (len(noise_invocations) / len(instr))
@@ -964,7 +997,7 @@ def clustering_evaluation(
                 [
                     x
                     for x in noise_invocations
-                    if instr[i] >= custom_range[0] and instr[i] < custom_range[1]
+                    if instr[x] >= custom_range[0] and instr[x] < custom_range[1]
                 ]
             )
             / max(
@@ -973,8 +1006,7 @@ def clustering_evaluation(
                         [
                             x
                             for x in instr
-                            if instr[i] >= custom_range[0]
-                            and instr[i] < custom_range[1]
+                            if x >= custom_range[0] and x < custom_range[1]
                         ]
                     ),
                     len(instr),
