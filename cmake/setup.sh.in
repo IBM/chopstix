@@ -32,6 +32,9 @@ export CHOPSTIX_INSTALL=@CMAKE_INSTALL_PREFIX@
 export CHOPSTIX_SHARE=$CHOPSTIX_INSTALL/share/chopstix
 export CHOPSTIX_VERSION=@CHOPSTIX_VERSION@
 
+# Activate ChopStiX virtualenv 
+. $CHOPSTIX_INSTALL/bin/activate
+
 # Setup path variable
 _chop_add_path() {
     case "$PATH:" in

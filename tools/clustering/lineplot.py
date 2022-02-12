@@ -41,19 +41,6 @@ import math
 
 plt.rcParams.update({"font.size": 10})
 
-parser = argparse.ArgumentParser(
-    description="Generate line plots from benchmark/microbenchmark evaluation"
-)
-parser.add_argument("root_dir")
-parser.add_argument("benchmark_name")
-args = parser.parse_args()
-
-regex = re.compile("[a-zA-Z0-9_]*_([0-9]*)#.*\.csv")
-
-plots_current_page = 0
-fig = None
-subfigs = None
-
 
 def new_page(pdf):
     global subfigs, fig, plots_current_page
@@ -316,7 +303,20 @@ def load_metrics(file):
     return metrics
 
 
-if __name__ == "__main__":
+def main():
+    parser = argparse.ArgumentParser(
+        description="Generate line plots from benchmark/microbenchmark evaluation"
+    )
+    parser.add_argument("root_dir")
+    parser.add_argument("benchmark_name")
+    args = parser.parse_args()
+
+    regex = re.compile("[a-zA-Z0-9_]*_([0-9]*)#.*\.csv")
+
+    plots_current_page = 0
+    fig = None
+    subfigs = None
+
     root_dir = args.root_dir
     benchmark_name = args.benchmark_name
     benchmark = Benchmark()
@@ -384,3 +384,7 @@ if __name__ == "__main__":
 
         if fig != None:
             pp.savefig(fig)
+
+
+if __name__ == "__main__":
+    main()

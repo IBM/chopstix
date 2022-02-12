@@ -74,8 +74,7 @@ def invocation(args):
         print("Invocation %d belongs to cluster %d" % (args.invocation_id, result))
 
 
-if __name__ == "__main__":
-
+def main():
     parser = argparse.ArgumentParser(description="Inspect cluster data")
 
     subparsers = parser.add_subparsers(dest="command")
@@ -115,3 +114,7 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
     args.function(args)
+
+
+if __name__ == "__main__":
+    main()

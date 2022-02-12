@@ -40,3 +40,5 @@ install (TARGETS
     chop-trace2mpt
     DESTINATION bin
 )
+
+add_subdirectory (clustering)

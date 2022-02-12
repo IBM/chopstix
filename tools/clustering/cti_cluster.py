@@ -61,7 +61,7 @@ def use_trace(args):
         trace = Trace(trace_file, args.num_threads)
 
         if args.max_memory != None:
-            needed = trace.estimate_needed_memory() / (1024 ** 2)
+            needed = trace.estimate_needed_memory() / (1024**2)
             if needed > args.max_memory:
                 chop_print(
                     "Need more memory than allowed to process trace: %d out of %d"
@@ -226,7 +226,7 @@ def use_instr_ipc_2d_density(args):
     chop_print("Results written to %s" % args.output)
 
 
-if __name__ == "__main__":
+def main():
 
     parser = argparse.ArgumentParser(description="Cluster invocations")
 
@@ -481,3 +481,7 @@ if __name__ == "__main__":
     args = argparse.Namespace(**args)
     args.function(args)
     exit(0)
+
+
+if __name__ == "__main__":
+    main()

@@ -131,7 +131,7 @@ def bar_plot(ax, data, colors=None, total_width=0.8, single_width=1, legend=True
         ax.legend(bars, data.keys(), loc="lower right")
 
 
-if __name__ == "__main__":
+def main():
     parser = argparse.ArgumentParser(
         description="Report the average CPI of a set of microbenchmarks (properly weighted)"
     )
@@ -260,3 +260,7 @@ if __name__ == "__main__":
     ax.legend( (ser1[0], ser2[0], ser3[0]), ('Benchmark', 'Microbenchmarks (weighted)', 'Benchmark (excl. others)') )
     plt.show()
     """
+
+
+if __name__ == "__main__":
+    main()

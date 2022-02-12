@@ -26,7 +26,8 @@ from src.clustering import ClusteringInformation
 from src.perfmetrics import load_invocations_from_file, aggregate_metrics, Function
 from src.misc import chop_print
 
-if __name__ == "__main__":
+
+def main():
     parser = argparse.ArgumentParser(
         description="Report the weight of a microbenchmark"
     )
@@ -57,3 +58,7 @@ if __name__ == "__main__":
 
     function = Function(cluster_info, invocations, weight)
     print(function.get_weight_of_invocation(args.invocation))
+
+
+if __name__ == "__main__":
+    main()
