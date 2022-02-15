@@ -25,18 +25,18 @@ message (STATUS "Virtualenv program found: ${VIRTUALENV}")
 
 set(SETUP_PY "${CMAKE_CURRENT_SOURCE_DIR}/setup.py")
 set(DEPS     "${CMAKE_CURRENT_SOURCE_DIR}/*.py" "${CMAKE_CURRENT_SOURCE_DIR}/src/*.py")
-set(OUTPUT   "${CMAKE_CURRENT_BINARY_DIR}/build")
+set(OUTPUT   "${CMAKE_CURRENT_BINARY_DIR}/")
 
 # message(FATAL_ERROR ${OUTPUT})
 
 add_custom_command(OUTPUT ${OUTPUT}/timestamp
-				   COMMAND ${PYTHON} setup.py build --build-base ${OUTPUT}
-				   COMMAND ${CMAKE_COMMAND} -E touch ${OUTPUT}/timestamp
-				   WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
-				   DEPENDS ${DEPS})
+                   COMMAND cp -fr ${CMAKE_CURRENT_SOURCE_DIR}/*.py ${CMAKE_CURRENT_SOURCE_DIR}/*.txt ${CMAKE_CURRENT_SOURCE_DIR}/*.md ${CMAKE_CURRENT_SOURCE_DIR}/src ${CMAKE_CURRENT_BINARY_DIR}
+                   COMMAND ${CMAKE_COMMAND} -E touch ${OUTPUT}/timestamp
+                   WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+                   DEPENDS ${DEPS})
 
 add_custom_target(target ALL DEPENDS ${OUTPUT}/timestamp)
 
 install(CODE "execute_process(COMMAND ${VIRTUALENV} --prompt=\\(chopstix\\) ${CMAKE_INSTALL_PREFIX})")
 install(CODE "execute_process(COMMAND sh -c \". ${CMAKE_INSTALL_PREFIX}/bin/activate && pip install -r ${CMAKE_CURRENT_SOURCE_DIR}/requirements.txt\")")
-install(CODE "execute_process(COMMAND sh -c \". ${CMAKE_INSTALL_PREFIX}/bin/activate && ${SETUP_PY} install --prefix ${CMAKE_INSTALL_PREFIX}\" WORKING_DIRECTORY ${OUTPUT}/lib)")
+install(CODE "execute_process(COMMAND sh -c \". ${CMAKE_INSTALL_PREFIX}/bin/activate && pip3 install --no-deps --prefix ${CMAKE_INSTALL_PREFIX} ${CMAKE_CURRENT_BINARY_DIR}\" WORKING_DIRECTORY ${OUTPUT})")
