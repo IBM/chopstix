@@ -31,9 +31,7 @@ export CHOPSTIX_BUILD=@PROJECT_BINARY_DIR@
 export CHOPSTIX_INSTALL=@CMAKE_INSTALL_PREFIX@
 export CHOPSTIX_SHARE=$CHOPSTIX_INSTALL/share/chopstix
 export CHOPSTIX_VERSION=@CHOPSTIX_VERSION@
-
-# Activate ChopStiX virtualenv 
-. $CHOPSTIX_INSTALL/bin/activate
+export LD_LIBRARY_PATH=$CHOPSTIX_INSTALL/lib
 
 # Setup path variable
 _chop_add_path() {
@@ -54,11 +52,6 @@ unset -f _chop_add_path
 set +e
 command -v mp_mpt2elf >/dev/null 2>&1
 error=$?
-set -e
-
-set +e
-command -v mp_mpt2elf.py >/dev/null 2>&1
-error=$((error+$?))
 set -e
 
 WARNING=0
