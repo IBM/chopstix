@@ -4,3 +4,4 @@ numpy
 dbscan1d
 kneed
 black
+microprobe_all
