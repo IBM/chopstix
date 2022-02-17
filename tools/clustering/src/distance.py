@@ -1,7 +1,8 @@
+#!/usr/bin/env python3
 #
 # ----------------------------------------------------------------------------
 #
-# Copyright 2019 IBM Corporation
+# Copyright 2021 CHOPSTIX Authors
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -17,28 +18,16 @@
 #
 # ----------------------------------------------------------------------------
 #
+import numpy as np
+from math import sqrt
+from src.misc import chop_print
 
-add_executable(chop-detrace
-    detrace.c
-)
 
-add_executable(chop-trace2mpt
-    trace2mpt.c
-)
+def disjoint_sets(subtraceA, subtraceB):
+    x = len(subtraceA.pages) - len(subtraceB.pages)
+    y = len(np.setxor1d(subtraceA.pages, subtraceB.pages))
+    return sqrt(x**2 + y**2)
 
-find_package(ZLIB REQUIRED)
-target_link_libraries(chop-trace2mpt ZLIB::ZLIB)
 
-install(PROGRAMS
-    chop-marks-ppc64
-    chop-marks-sysz
-    chop-score-table
-    DESTINATION bin)
-
-install (TARGETS
-    chop-detrace
-    chop-trace2mpt
-    DESTINATION bin
-)
-
-add_subdirectory (clustering)
+def distance_2d(a, b):
+    return sqrt(a**2 + b**2)

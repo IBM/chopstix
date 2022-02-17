@@ -58,7 +58,7 @@ void Connection::open(const std::string &filename) {
         close();
     }
     int ret = sqlite3_open(filename.c_str(), &h_);
-    checkx(ret == SQLITE_OK, "Unable to open db: %s", errmsg());
+    checkx(ret == SQLITE_OK, "Unable to open db %s: %s", filename.c_str(), errmsg());
 }
 
 void Connection::close() {

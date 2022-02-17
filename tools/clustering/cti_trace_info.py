@@ -1,7 +1,8 @@
+#!/usr/bin/env python3
 #
 # ----------------------------------------------------------------------------
 #
-# Copyright 2019 IBM Corporation
+# Copyright 2021 CHOPSTIX Authors
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -17,28 +18,23 @@
 #
 # ----------------------------------------------------------------------------
 #
+import argparse
+from src.trace import Trace
+from src.misc import chop_print
 
-add_executable(chop-detrace
-    detrace.c
-)
 
-add_executable(chop-trace2mpt
-    trace2mpt.c
-)
+def main():
+    parser = argparse.ArgumentParser(description="Inspect ChopStix traces")
+    parser.add_argument("trace_file")
+    args = parser.parse_args()
 
-find_package(ZLIB REQUIRED)
-target_link_libraries(chop-trace2mpt ZLIB::ZLIB)
+    trace = Trace(args.trace_file)
 
-install(PROGRAMS
-    chop-marks-ppc64
-    chop-marks-sysz
-    chop-score-table
-    DESTINATION bin)
+    print("Trace parsed.")
+    print("Subtrace Count:   ", trace.get_subtrace_count())
+    print("Invocation Count: ", trace.get_invocation_count())
+    print("Distinct Invocations Count: ", trace.get_invocation_set_count())
 
-install (TARGETS
-    chop-detrace
-    chop-trace2mpt
-    DESTINATION bin
-)
 
-add_subdirectory (clustering)
+if __name__ == "__main__":
+    main()

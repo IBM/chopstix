@@ -51,11 +51,15 @@ if [ $# -gt 5 ]; then
 fi
 
 db="$1"
-
 if [ ! -f "$db" ]; then
     echo "$db not found!"
     exit 1
 fi
+
+db="$(mktemp)"
+tmp="$(mktemp)"
+tmp2="$(mktemp)"
+
 score_min_goal="$2"
 score_max_func="$3"
 score_min_size="$4"
@@ -64,18 +68,37 @@ function=0
 if [ $# -eq 5 ]; then
     if [ "$5" != "-functions" ]; then
         usage
+        rm -f "$tmp" "$tmp2" "$db"
         exit 1
     else
         function=1
     fi
 fi
 
-tmp="$(mktemp)"
-tmp2="$(mktemp)"
+trap 'rm -f $db $tmp $tmp2' EXIT
+
+cp -f "$1" "$db"
 
 coverant=0
 for min in 5 1 0.1; do
-    for size in 1000 $(seq 1000 -50 1) 0; do
+
+    set +e
+    chop list functions -data "$db" -min "$min" -limit "$score_max_func" -summary > "$tmp" 2> /dev/null
+    set -e
+
+    if [ "$(wc -l "$tmp" | cut -d ' ' -f 1)" -eq 0 ]; then
+        funct=0
+        cover=0
+    else
+        funct=$(grep Results < "$tmp" | cut -d' ' -f 2)
+        cover=$(grep Score < "$tmp" | cut -d' ' -f 2)
+    fi
+
+    if [ "$(echo "$cover" | cut -d '.' -f 1)" -lt "$score_min_goal" ]; then
+        continue
+    fi
+
+    for size in 1000 $(seq 1 50 1001) 0; do
 
         if [ "$size" -lt "$score_min_size" ]; then
             continue
@@ -106,6 +129,7 @@ rm -f "$tmp"
 
 if [ "$(wc -l < "$tmp2")" -eq 0 ]; then
     echo "No valid configurations found. Relax constraints."
+    rm -f "$tmp" "$tmp2" "$db"
     exit 1
 fi
 
@@ -129,5 +153,5 @@ else
     chop list functions -data "$db" -min "$(echo "$winner" | cut -d' ' -f 1)" -minsize "$(echo "$winner" | cut -d' ' -f 2)" -limit "$(echo "$winner" | cut -d' ' -f 3)" | cut -f 2 | grep -v "^NAME$"
 fi
 
-rm -f "$tmp" "$tmp2"
+rm -f "$tmp" "$tmp2" "$db"
 exit 0
