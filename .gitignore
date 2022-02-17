@@ -5,3 +5,4 @@ tags
 build*/
 !scripts/build
 *.swp
+__pycache__

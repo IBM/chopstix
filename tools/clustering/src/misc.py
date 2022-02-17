@@ -1,7 +1,8 @@
+#!/usr/bin/env python3
 #
 # ----------------------------------------------------------------------------
 #
-# Copyright 2019 IBM Corporation
+# Copyright 2021 CHOPSTIX Authors
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -17,28 +18,27 @@
 #
 # ----------------------------------------------------------------------------
 #
+import bz2
+import gzip
+import sys
+import os
 
-add_executable(chop-detrace
-    detrace.c
-)
 
-add_executable(chop-trace2mpt
-    trace2mpt.c
-)
+def open_generic_fd(filename, mode):
 
-find_package(ZLIB REQUIRED)
-target_link_libraries(chop-trace2mpt ZLIB::ZLIB)
+    if filename.endswith(".gz"):
+        if "b" not in mode:
+            mode += "b"
+        fd = gzip.open(filename, mode, compresslevel=9)
+    elif filename.endswith(".bz2"):
+        if "b" not in mode:
+            mode += "b"
+        fd = bz2.BZ2File(filename, mode, compresslevel=9)
+    else:
+        fd = open(filename, mode)
 
-install(PROGRAMS
-    chop-marks-ppc64
-    chop-marks-sysz
-    chop-score-table
-    DESTINATION bin)
+    return fd
 
-install (TARGETS
-    chop-detrace
-    chop-trace2mpt
-    DESTINATION bin
-)
 
-add_subdirectory (clustering)
+def chop_print(msg):
+    print("%s: %s" % (os.path.basename(sys.argv[0]), msg), file=sys.stderr)
