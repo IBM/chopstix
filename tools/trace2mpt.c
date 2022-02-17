@@ -23,7 +23,7 @@ instructions=\n\
 ";
 
 typedef enum {
-    SEGMENT_CODE, SEGMENT_DATA
+    SEGMENT_CODE, SEGMENT_DATA, SEGMENT_UNKNOWN
 } MemorySegmentType;
 
 typedef struct {
@@ -69,7 +69,14 @@ void parseMemorySegments(char *data, size_t data_size,
         char perms[5];
         sscanf(line, "%lx-%lx %s", &segments[index].start,
                &segments[index].end, perms);
-        segments[index].type = perms[2] == 'x' ? SEGMENT_CODE : SEGMENT_DATA;
+	if (perms[2] == 'x') {
+            segments[index].type = SEGMENT_CODE;
+	} else if (perms[0] == 'r') {
+            segments[index].type = SEGMENT_DATA;
+	} else {
+            // Data can't even be read, so dump will be empty anyway
+            segments[index].type = SEGMENT_UNKNOWN;
+	}
         index++;
         line = strtok(NULL, "\n");
     }
@@ -232,6 +239,7 @@ void trace2mpt(const char *output_base, const char *trace_dir,
         register_count++;
     }
     free(data);
+    fprintf(mps, "R PC 0x%lx\n", default_address);
     printf("chop-trace2mpt: Read %d registers.\n", register_count);
 
     // Find memory pages
@@ -284,14 +292,20 @@ void trace2mpt(const char *output_base, const char *trace_dir,
         readFile(path, &data, &data_size, false);
         MemorySegment *segment =
             findSegment(address, segments, segment_count);
-        if (segment != NULL && segment->type == SEGMENT_CODE) {
-            format_code(mpt, data, data_size, address);
-            if (default_address >= address && default_address < (address + data_size)) {
-                printf("%ld, %lx\n", data_size, address);
-                default_address_found = true;
-            }
-        } else {
-            format_data(mps, data, data_size, address);
+
+        if (segment != NULL) {
+	    if (segment->type == SEGMENT_CODE) {
+		format_code(mpt, data, data_size, address);
+                if (default_address >= address && default_address < (address + data_size)) {
+                    printf("%ld, %lx\n", data_size, address);
+                    default_address_found = true;
+                }
+	    } else if (segment->type == SEGMENT_DATA) {
+            	format_data(mps, data, data_size, address);
+	    } else {
+		printf("Page at address %lx has unknown contents\n", address);
+		printf("Skipping...\n");
+	    }
         }
         free(data);
     }
