@@ -6,6 +6,10 @@ cache:
     directories:
         - toolchain
     timeout: 1000
+arch:
+    - amd64
+    - ppc64le
+    - s390x
 os:
     - linux
 dist: bionic
@@ -35,6 +39,10 @@ env:
         - CHOPSTIX_SYSZ_SUPPORT=ON CHOPSTIX_BUILD_SQLITE=ON CACHE_NAME=Z
         - CHOPSTIX_X86_SUPPORT=ON CHOPSTIX_BUILD_SQLITE=ON CACHE_NAME=X86_SQLITE
         - CHOPSTIX_X86_SUPPORT=ON CHOPSTIX_BUILD_SQLITE=OFF CACHE_NAME=X86
+stages:
+  - build
+  - test
+  - install
 before_install:
     - set -e
     - echo "Before install"
@@ -46,7 +54,7 @@ before_install:
     - if [ "$CHOPSTIX_SYSZ_SUPPORT" == "ON" ]; then sudo apt-get install gcc-s390x-linux-gnu g++-s390x-linux-gnu -y ; fi
 install:
     - set -e
-    - echo "Install"
+    - echo "Install Dependencies"
     - if [ "$CHOPSTIX_POWERLE_SUPPORT" == "ON" ]; then CC=powerpc64le-linux-gnu-gcc ARCH=ppc scripts/ci/install_libpfm.sh ; fi
     - if [ "$CHOPSTIX_POWERLE_SUPPORT" == "ON" ]; then CC=powerpc64le-linux-gnu-gcc CHOST=powerpc64le-linux-gnu scripts/ci/install_zlib.sh ; fi
     - if [ "$CHOPSTIX_RISCV_SUPPORT" == "ON" ]; then CC=riscv64-linux-gnu-gcc-8 ARCH=riscv64 scripts/ci/install_libpfm.sh ; fi
@@ -54,15 +62,28 @@ install:
     - if [ "$CHOPSTIX_SYSZ_SUPPORT" == "ON" ]; then CC=s390x-linux-gnu-gcc ARCH=s390x scripts/ci/install_libpfm.sh ; fi
     - if [ "$CHOPSTIX_SYSZ_SUPPORT" == "ON" ]; then CC=s390x-linux-gnu-gcc CHOST=s390x-linux-gnu scripts/ci/install_zlib.sh ; fi
     - if [ "$CHOPSTIX_X86_SUPPORT" == "ON" ]; then scripts/ci/install_libpfm.sh ; fi
-script:
-    - set -e
-    - echo "Script"
-    - mkdir build
-    - cd build
-    - if [ "$CHOPSTIX_POWERLE_SUPPORT" == "ON" ]; then cmake .. -DZLIB_ROOT=/tmp/zlib -DCMAKE_TOOLCHAIN_FILE=../scripts/cross/cross_ppc64le.cmake ; fi
-    - if [ "$CHOPSTIX_RISCV_SUPPORT" == "ON" ]; then cmake .. -DZLIB_ROOT=/tmp/zlib -DCMAKE_TOOLCHAIN_FILE=../scripts/cross/cross_riscv64.cmake ; fi
-    - if [ "$CHOPSTIX_SYSZ_SUPPORT" == "ON" ]; then cmake .. -DZLIB_ROOT=/tmp/zlib -DCMAKE_TOOLCHAIN_FILE=../scripts/cross/cross_s390x.cmake ; fi
-    - if [ "$CHOPSTIX_X86_SUPPORT" == "ON" ]; then cmake .. ; fi
-    - make -j2
-    - sudo make install
-    # - if [ "$CHOPSTIX_X86_SUPPORT" == "ON" ]; then make test ; fi
+jobs:
+  include:
+    - stage: build
+      script:
+      - set -e
+      - echo "Build"
+      - mkdir build
+      - cd build
+      - if [ "$CHOPSTIX_POWERLE_SUPPORT" == "ON" ]; then cmake .. -DZLIB_ROOT=/tmp/zlib -DCMAKE_TOOLCHAIN_FILE=../scripts/cross/cross_ppc64le.cmake ; fi
+      - if [ "$CHOPSTIX_RISCV_SUPPORT" == "ON" ]; then cmake .. -DZLIB_ROOT=/tmp/zlib -DCMAKE_TOOLCHAIN_FILE=../scripts/cross/cross_riscv64.cmake ; fi
+      - if [ "$CHOPSTIX_SYSZ_SUPPORT" == "ON" ]; then cmake .. -DZLIB_ROOT=/tmp/zlib -DCMAKE_TOOLCHAIN_FILE=../scripts/cross/cross_s390x.cmake ; fi
+      - if [ "$CHOPSTIX_X86_SUPPORT" == "ON" ]; then cmake .. ; fi
+      - make -j2
+    - stage: test
+      script:
+      - set -e
+      - echo "Test"
+      - cd build
+      - make test
+    - stage: install
+      script:
+      - set -e
+      - echo "Install ChopStiX"
+      - cd build
+      - sudo make install
