@@ -1,23 +1,23 @@
-#!/usr/bin/bash
+#!/bin/bash
 
 csv_file=$(mktemp)
 log_stdout_file=$(mktemp)
 log_stderr_file=$(mktemp)
 machine=$(uname -m)
 
-function cleanup {
-    rm $csv_file $log_stdout_file $log_stderr_file
+cleanup() {
+    rm "$csv_file" "$log_stdout_file" "$log_stderr_file"
 }
 
-if [ "$machine" == "riscv64" ]; then
+if [ "$machine" = "riscv64" ]; then
     marks_cmd=chop-marks-riscv
     return_instr="8082"
     return_instr_len=4
-elif [ "$machine" == "ppc64le" ]; then
+elif [ "$machine" = "ppc64le" ]; then
     marks_cmd=chop-marks-ppc64
     return_instr="4e800020"
     return_instr_len=8
-elif [ "$machine" == "s390x" ]; then
+elif [ "$machine" = "s390x" ]; then
     marks_cmd=chop-marks-sysz
     return_instr="07fe"
     return_instr_len=4
@@ -27,11 +27,11 @@ else
     exit 1
 fi
 
-string_offset=$((8 - $return_instr_len))
-string_length=$((8 + $return_instr_len))
+string_offset=$((8 - return_instr_len))
+string_length=$((8 + return_instr_len))
 
 function mkbreakpoint {
-    for i in $(seq 1 $1); do echo -n "0"; done
+    for i in $(seq 1 "$1"); do echo -n "0"; done
 }
 
 string_breakpoint=$(mkbreakpoint $return_instr_len)
@@ -42,7 +42,7 @@ if [ $# -ne 0 ]; then
     marks_cmd=$1/$marks_cmd
 fi
 
-if ! hash $marks_cmd &> /dev/null; then
+if ! hash "$marks_cmd" &> /dev/null; then
     echo "ChopStiX marks command ($marks_cmd) not found"
     cleanup
     exit 1
@@ -50,20 +50,19 @@ fi
 
 echo "Testing accurate breakpoint positioning by placing a breakpoint sandwiched in between function code. Only the return instruction should be \"occluded\" by the breakpoint. The instructions before and after should be O.K."
 
-./sandwich_return 1> $log_stdout_file
-if [ $? -ne 0 ]; then
+if ! ./sandwich_return 1> "$log_stdout_file"; then
     echo "Couldn't execute test program"
     echo "logs:"
-    cat $log_stdout_file
+    cat "$log_stdout_file"
     cleanup
     exit 1
 fi
 
 echo "Binary contents of the test program are OK."
 
-output=$(cat $log_stdout_file)
+output=$(cat "$log_stdout_file")
 
-if [ "$machine" == "s390x" ]; then
+if [ "$machine" = "s390x" ]; then
     if [ "${output}" != "${return_instr}deadbeefdead" ]; then
         # "deadbeef" is the hard-coded sentinel in the binary
         # Because there is no breakpoint, the instruction appears in the binary dump
@@ -85,7 +84,7 @@ else
     fi
 fi
 
-timeout 5 ./chop-perf-invok -o $csv_file $($marks_cmd ./sandwich_return sandwich_return) -- ./sandwich_return 2> $log_stderr_file 1> $log_stdout_file
+timeout 5 ./chop-perf-invok -o "$csv_file" $($marks_cmd ./sandwich_return sandwich_return) -- ./sandwich_return 2> "$log_stderr_file" 1> "$log_stdout_file"
 
 ret_val=$?
 if [ $ret_val -ne 0 ]; then
@@ -95,7 +94,7 @@ if [ $ret_val -ne 0 ]; then
         echo "chop-perf-invok returned an error exit code"
     fi
     echo "logs:"
-    cat $log_stderr_file
+    cat "$log_stderr_file"
     cleanup
     exit 1
 fi
@@ -105,24 +104,24 @@ echo "Return code OK."
 if [ ! -f "$csv_file" ]; then
     echo "chop-perf-invok didn't create an output file"
     echo "logs:"
-    cat $log_stderr_file
+    cat "$log_stderr_file"
     cleanup
     exit 1
 fi
 
-row_count=$(wc -l $csv_file | cut -d' ' -f 1)
+row_count=$(wc -l "$csv_file" | cut -d' ' -f 1)
 
-if [ $row_count -ne 2 ]; then
+if [ "$row_count" -ne 2 ]; then
     echo "Output file contains unexpected number of rows (Expected 2, got $row_count)"
     echo "Logs:"
-    echo $log_stderr_file
+    echo "$log_stderr_file"
     cleanup
     exit 1
 fi
 
 echo "Row count OK."
 
-output=$(cat $log_stdout_file)
+output=$(cat "$log_stdout_file")
 
 if [ "$machine" == "s390x" ]; then
     if [ "${output}" != "${string_breakpoint}deadbeefdead" ]; then
