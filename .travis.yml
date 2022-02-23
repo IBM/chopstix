@@ -5,6 +5,7 @@ cache:
     ccache: true
     directories:
         - toolchain
+        - /tmp/libpfm
     timeout: 1000
 os:
     - linux
