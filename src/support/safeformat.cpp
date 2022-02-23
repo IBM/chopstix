@@ -38,7 +38,7 @@ template <typename T>
 char *print_int(char *ptr, T num, T base) {
     bool set_minus = false;
     if (num < 0) {
-        num * -1;
+        num = num * -1;
         set_minus = true;
     }
     do {
