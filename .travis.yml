@@ -62,6 +62,7 @@ jobs:
           name: Build and test
           script:
               - set -e
+              - scripts/ci/install_libpfm.sh
               - mkdir build
               - cd build
               - ../configure
