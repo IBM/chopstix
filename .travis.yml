@@ -60,6 +60,31 @@ jobs:
               - shellcheck -x -s sh $(find . -name \*.sh) $(find . -name \*.sh.in) ./tools/chop-* ./test/drivers/* ./test/daxpy/*spec
         - stage: build_and_test
           name: Build and test
+          arch: amd64
+          script:
+              - set -e
+              - scripts/ci/install_libpfm.sh
+              - mkdir build
+              - cd build
+              - ../configure
+              - make -j2
+              - make test
+              - make install
+        - stage: build_and_test
+          name: Build and test
+          arch: ppc64le 
+          script:
+              - set -e
+              - scripts/ci/install_libpfm.sh
+              - mkdir build
+              - cd build
+              - ../configure
+              - make -j2
+              - make test
+              - make install
+        - stage: build_and_test
+          name: Build and test
+          arch: s390x
           script:
               - set -e
               - scripts/ci/install_libpfm.sh
