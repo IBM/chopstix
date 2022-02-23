@@ -34,37 +34,40 @@ set(CMAKE_C_FLAGS_RELEASE "-O0 -no-pie -fno-pic")
 set(CMAKE_C_FLAGS_MINSIZEREL "-O0 -no-pie -fno-pic")
 set(CMAKE_C_FLAGS_RELWITHDEBINFO "-O0 -no-pie -fno-pic")
 
-add_executable(vector_add test_programs/vector_add.c)
+if (CHOPSTIX_BUILD_TESTS) 
 
-if( ${CMAKE_HOST_SYSTEM_PROCESSOR} STREQUAL "riscv64" )
-    add_executable(sandwich_return
-        test_programs/sandwiched_return_riscv.s
-        test_programs/sandwiched_return.c
-    )
-elseif( ${CMAKE_HOST_SYSTEM_PROCESSOR} STREQUAL "ppc64le" )
-    add_executable(sandwich_return
-        test_programs/sandwiched_return.c
-        test_programs/sandwiched_return_ppc64.s
-    )
-elseif( ${CMAKE_HOST_SYSTEM_PROCESSOR} STREQUAL "s390x" )
-    add_executable(sandwich_return
-        test_programs/sandwiched_return.c
-        test_programs/sandwiched_return_s390x.s
-    )
-else ()
-    message(WARNING "No perf-invok tests for architecture ${CMAKE_HOST_SYSTEM_PROCESSOR} available.")
-endif ()
+    add_executable(vector_add test_programs/vector_add.c)
 
-add_test(
-    NAME test_generic_invocation
-    COMMAND ${CMAKE_SOURCE_DIR}/tools/perf-invok/tests/test_vector_add.sh ${CMAKE_SOURCE_DIR}/tools
-    WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/tools/perf-invok
-)
+    if( ${CMAKE_HOST_SYSTEM_PROCESSOR} STREQUAL "riscv64" )
+        add_executable(sandwich_return
+            test_programs/sandwiched_return_riscv.s
+            test_programs/sandwiched_return.c
+        )
+    elseif( ${CMAKE_HOST_SYSTEM_PROCESSOR} STREQUAL "ppc64le" )
+        add_executable(sandwich_return
+            test_programs/sandwiched_return.c
+            test_programs/sandwiched_return_ppc64.s
+        )
+    elseif( ${CMAKE_HOST_SYSTEM_PROCESSOR} STREQUAL "s390x" )
+        add_executable(sandwich_return
+            test_programs/sandwiched_return.c
+            test_programs/sandwiched_return_s390x.s
+        )
+    else ()
+        message(STATUS "No perf-invok tests for architecture ${CMAKE_HOST_SYSTEM_PROCESSOR} available.")
+    endif ()
 
-if (TARGET sandwich_return)
     add_test(
-        NAME test_sandwich_return
-        COMMAND ${CMAKE_SOURCE_DIR}/tools/perf-invok/tests/test_sandwich_return.sh ${CMAKE_SOURCE_DIR}/tools
+        NAME test_generic_invocation
+        COMMAND ${CMAKE_SOURCE_DIR}/tools/perf-invok/tests/test_vector_add.sh ${CMAKE_SOURCE_DIR}/tools
         WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/tools/perf-invok
     )
+
+    if (TARGET sandwich_return)
+        add_test(
+            NAME test_sandwich_return
+            COMMAND ${CMAKE_SOURCE_DIR}/tools/perf-invok/tests/test_sandwich_return.sh ${CMAKE_SOURCE_DIR}/tools
+            WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/tools/perf-invok
+        )
+    endif()
 endif()

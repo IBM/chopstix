@@ -28,7 +28,6 @@ notifications:
 env:
     global:
         - CHOPSTIX_PERFMON_PREFIX=/tmp/libpfm
-        - CHOPSTIX_BUILD_TESTS=ON
         - CTEST_OUTPUT_ON_FAILURE=1
 stages:
   - shell_conventions

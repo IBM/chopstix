@@ -34,7 +34,7 @@ cmake --version >/dev/null || { echo "You need to install CMake to build ChopSti
 
 PROJECT_DIR=`dirname "$0"`
 
-TEMP=$(getopt -o 'h' -l 'help,prefix:,enable-x86,enable-sysz,enable-power,enable-powerle,enable-riscv,disable-x86,disable-sysz,disable-power,disable-powerle,disable-riscv,build-sqlite,with-sqlite:,with-perfmon:,build-tests,build-examples,build-type:,profile-cpu' -n 'configure' -- "$@")
+TEMP=$(getopt -o 'h' -l 'help,prefix:,enable-x86,enable-sysz,enable-power,enable-powerle,enable-riscv,disable-x86,disable-sysz,disable-power,disable-powerle,disable-riscv,build-sqlite,with-sqlite:,with-perfmon:,no-build-tests,no-build-examples,build-type:,profile-cpu' -n 'configure' -- "$@")
 
 eval set -- "$TEMP"
 
@@ -57,8 +57,8 @@ while true ; do
         --build-sqlite) BUILD_OPTIONS="$BUILD_OPTIONS -DCHOPSTIX_BUILD_SQLITE=ON" ; shift ;;
         --with-sqlite) BUILD_OPTIONS="$BUILD_OPTIONS -DCHOPSTIX_SQLITE_PREFIX=$2" ; shift 2 ;;
         --with-perfmon) BUILD_OPTIONS="$BUILD_OPTIONS -DCHOPSTIX_PERFMON_PREFIX=$2" ; shift 2 ;;
-        --build-tests) BUILD_OPTIONS="$BUILD_OPTIONS -DCHOPSTIX_BUILD_TESTS=ON" ; shift ;;
-        --build-examples) BUILD_OPTIONS="$BUILD_OPTIONS -DCHOPSTIX_BUILD_EXAMPLES=ON" ; shift ;;
+        --no-build-tests) BUILD_OPTIONS="$BUILD_OPTIONS -DCHOPSTIX_BUILD_TESTS=OFF" ; shift ;;
+        --no-build-examples) BUILD_OPTIONS="$BUILD_OPTIONS -DCHOPSTIX_BUILD_EXAMPLES=OFF" ; shift ;;
         --build-type) BUILD_OPTIONS="$BUILD_OPTIONS -DCMAKE_BUILD_TYPE=$2" ; shift 2 ;;
         --profile-cpu) BUILD_OPTIONS="$BUILD_OPTIONS -DCHOPSTIX_PROFILE_CPU=ON" ; shift ;;
         --) shift ; break ;;
