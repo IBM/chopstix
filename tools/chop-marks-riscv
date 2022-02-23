@@ -18,4 +18,5 @@ then
     END=$(find_ret_address "$NEXT_FUNC")
 fi
 
+# shellcheck disable=SC2039
 echo "-begin $BEGIN -end $END"
