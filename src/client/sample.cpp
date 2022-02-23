@@ -82,7 +82,8 @@ static void setup_events(event_list &events, long pid) {
     if (getopt("freq")) leader.set_freq(getopt("freq").as_int());
 
     for (auto &evt : events) {
-        evt.open(pid, -1, leader.fd());
+        log::debug("Opening event '%s'", evt.name());
+        evt.open(pid, -1, leader.fd(), 0);
     }
 
     leader.enable();
