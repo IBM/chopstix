@@ -37,7 +37,7 @@ elif [ "$machine" = "s390x" ]; then
 else
     echo "Unsupported architecture: $machine"
     cleanup
-    exit 1
+    exit 0
 fi
 
 if [ $# -ne 0 ]; then
