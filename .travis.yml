@@ -46,26 +46,26 @@ jobs:
           cache: false                                                             
           script:                                                                  
               - set -e                                                             
-    		  - shellcheck -x -s sh $(find . -name \*.sh) $(find . -name \*.sh.in) ./tools/chop-* ./test/drivers/* ./test/daxpy/*spec
-		- stage: build_and_test
+              - shellcheck -x -s sh $(find . -name \*.sh) $(find . -name \*.sh.in) ./tools/chop-* ./test/drivers/* ./test/daxpy/*spec
+        - stage: build_and_test
           name: Build and test
-		  script:
-			  - set -e
-			  - mkdir build
-			  - cd build
-			  - ../configure
-			  - make -j2
-		- stage: test
-		  name: Test
-		  script:
-		      - set -e
-		      - echo "Test"
-		      - cd build
-		      - make test
-		- stage: install
-		  name: Install
-		  script:
-		      - set -e
-		      - echo "Install ChopStiX"
-		      - cd build
-		      - sudo make install
+          script:
+              - set -e
+              - mkdir build
+              - cd build
+              - ../configure
+              - make -j2
+        - stage: test
+          name: Test
+          script:
+              - set -e
+              - echo "Test"
+              - cd build
+              - make test
+        - stage: install
+          name: Install
+          script:
+              - set -e
+              - echo "Install ChopStiX"
+              - cd build
+              - sudo make install
