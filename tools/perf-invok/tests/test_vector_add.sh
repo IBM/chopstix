@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env sh
 
 csv_file=$(mktemp)
 log_file=$(mktemp)
