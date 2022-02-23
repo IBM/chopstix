@@ -46,7 +46,7 @@ SELECT * FROM block INNER JOIN func
 WHERE func.name = "$name";
 EOM
     num_blocks=$(wc -l < blocks)
-    echo Num_blocks detected in $name: $num_blocks
+    echo "Num_blocks detected in $name: $num_blocks"
     test "$num_blocks" -ge "$min" \
         || die "Error: $name has less than $min basic blocks ($num_blocks)"
     test "$num_blocks" -le "$max" \

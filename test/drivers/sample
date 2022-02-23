@@ -26,7 +26,6 @@ die() { echo "$*" >&2 ; exit 1 ; }
 echo "> checking events"
 command -v perf >/dev/null 2>&1 || die "Error: perf is not installed"
 
-test=$(printenv test)
 chop=$(printenv chop)
 testbin=$(printenv testbin)
 testdir=$(printenv testdir)
@@ -38,7 +37,7 @@ test_event() {
     
 test_event task-clock
 test_event cpu-clock
-test_event cycles
+# test_event cycles
 
 [ -n "$event" ] || die "Error: no test event available"
 
@@ -50,9 +49,10 @@ echo "using $event@$period"
 test_sample() {
     rm -rf chop.db
 
-    echo "> chop sample -events $event -period $period test-$test $*"
+    echo "> chop sample -events $event -period $period $testbin $*"
+    # shellcheck disable=SC2068
     /usr/bin/time -f"%U" -o exec_time \
-        "$chop" sample -events "$event" -period "$period" "$testbin $*"
+        "$chop" sample -events "$event" -period "$period" "$testbin" $@
     
     exec_time=$(cat exec_time)
     clock_freq=$(lscpu | awk '/^CPU MHz:/ {print $3;exit}')
