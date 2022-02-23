@@ -6,10 +6,6 @@ cache:
     directories:
         - toolchain
     timeout: 1000
-arch:
-    - amd64
-    - ppc64le
-    - s390x
 os:
     - linux
 dist: bionic
@@ -44,6 +40,21 @@ jobs:
         - stage: shell_conventions                                                 
           name: shell conventions                                                  
           cache: false                                                             
+          arch: amd64
+          script:                                                                  
+              - set -e                                                             
+              - shellcheck -x -s sh $(find . -name \*.sh) $(find . -name \*.sh.in) ./tools/chop-* ./test/drivers/* ./test/daxpy/*spec
+        - stage: shell_conventions                                                 
+          name: shell conventions                                                  
+          cache: false                                                             
+          arch: ppc64le
+          script:                                                                  
+              - set -e                                                             
+              - shellcheck -x -s sh $(find . -name \*.sh) $(find . -name \*.sh.in) ./tools/chop-* ./test/drivers/* ./test/daxpy/*spec
+        - stage: shell_conventions                                                 
+          name: shell conventions                                                  
+          cache: false                                                             
+          arch: s390x
           script:                                                                  
               - set -e                                                             
               - shellcheck -x -s sh $(find . -name \*.sh) $(find . -name \*.sh.in) ./tools/chop-* ./test/drivers/* ./test/daxpy/*spec
