@@ -27,7 +27,7 @@ if [ $# -ne 0 ]; then
     marks_cmd=$1/$marks_cmd
 fi
 
-if ! hash "$marks_cmd" &> /dev/null; then
+if ! hash "$marks_cmd" > /dev/null 2> /dev/null; then
     echo "ChopStiX marks command ($marks_cmd) not found"
     cleanup
     exit 1
@@ -35,7 +35,8 @@ fi
 
 echo "Testing basic functionality using a function with two distinct alternate behaviours (this might take a while)..."
 
-if ! ./chop-perf-invok -o "$csv_file" $($marks_cmd ./vector_add add) -- ./vector_add &> "$log_file"; then
+# shellcheck disable=SC2046
+if ! ./chop-perf-invok -o "$csv_file" $("$marks_cmd" ./vector_add add) -- ./vector_add > "$log_file" 2> "$log_file" ; then
     echo "chop-perf-invok returned an error exit code"
     echo "logs:"
     cat "$log_file"
@@ -82,7 +83,7 @@ echo "Output file header OK."
 odd_invocation=$(tail -n 1 "$csv_file" | cut -d',' -f 3)
 even_invocation=$(tail -n 2 "$csv_file" | head -n 1 | cut -d',' -f 3)
 
-if (( ! $(echo "$even_invocation * 100 > $odd_invocation * 0.95 && $even_invocation * 100 < $odd_invocation * 1.05" | bc -l) )); then
+if [ "$(echo "$even_invocation * 100 > $odd_invocation * 0.95 && $even_invocation * 100 < $odd_invocation * 1.05" | bc -l)" -ne 1 ] ; then
     echo "Expected odd invocations to have approximately 100 times (+- 5%) instructions than even invocations"
     echo "Instructions in odd invocations: $odd_invocation"
     echo "Instructions in even invocations: $even_invocation"
