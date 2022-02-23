@@ -31,7 +31,7 @@ testbin=$(printenv testbin)
 testdir=$(printenv testdir)
 
 echo "> chop disasm $test"
-"$chop disasm $testbin"
+"$chop" disasm "$testbin"
 
 echo "> checking database"
 test "$($chop list modules | wc -l)" -gt 0
@@ -46,6 +46,7 @@ SELECT * FROM block INNER JOIN func
 WHERE func.name = "$name";
 EOM
     num_blocks=$(wc -l < blocks)
+    echo Num_blocks detected in $name: $num_blocks
     test "$num_blocks" -ge "$min" \
         || die "Error: $name has less than $min basic blocks ($num_blocks)"
     test "$num_blocks" -le "$max" \
