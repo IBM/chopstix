@@ -91,6 +91,7 @@ if [ "$machine" = "s390x" ]; then
         exit 1
     fi
 else
+    string_offset=$((string_offset+1))
     echo "cut -c $string_offset-$((string_offset+string_length))"
     if [ "$(echo "${output}" | cut -c $string_offset-$((string_offset+string_length)))" != "deadbeef$return_instr" ]; then
         # "deadbeef" is the hard-coded sentinel in the binary
