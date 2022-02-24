@@ -91,6 +91,7 @@ if [ "$machine" = "s390x" ]; then
         exit 1
     fi
 else
+    echo "cut -c $string_offset-$((string_offset+string_length))"
     if [ "$(echo "${output}" | cut -c $string_offset-$((string_offset+string_length)))" != "deadbeef$return_instr" ]; then
         # "deadbeef" is the hard-coded sentinel in the binary
         # Because there is no breakpoint, the instruction appears in the binary dump
@@ -165,7 +166,6 @@ if [ "$machine" = "s390x" ]; then
         exit 1
     fi
 else
-    echo "cut -c $string_offset-$((string_offset+string_length))"
     if [ "$(echo "${output}" | cut -c $string_offset-$((string_offset+string_length)))" != "deadbeef$string_breakpoint" ]; then
         # Because this time the binary was run with a breakpoint in place, the
         # return instruction isn't present anymore and instead we find a bunch of
