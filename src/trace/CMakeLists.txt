@@ -34,7 +34,7 @@ install (
     DESTINATION lib
 )
 
-target_link_libraries(cxtrace INTERFACE -ldl)
+target_link_libraries(cxtrace INTERFACE libdl.a)
 target_link_libraries(cx-support)
 
 SET(SUPPORT_LIBRARY_CFLAGS "-DLOG_CHILD")
@@ -48,7 +48,7 @@ endif()
 SET(TEMP "${TEMP}${SUPPORT_LIBRARY_CFLAGS}" )
 set_target_properties(cxtrace PROPERTIES COMPILE_FLAGS ${TEMP} )
 
-SET(SUPPORT_LIBRARY_LDFLAGS "-static-libstdc++ -static-libgcc -ldl")
+SET(SUPPORT_LIBRARY_LDFLAGS "-static-libstdc++ -static-libgcc")
 get_target_property(TEMP2 cxtrace COMPILE_FLAGS)
 if(TEMP2 STREQUAL "TEMP-NOTFOUND")
   SET(TEMP2 "") # Set to empty string
@@ -56,7 +56,7 @@ else()
   SET(TEMP2 "${TEMP2} ") # A space to cleanly separate from existing content
 endif()
 # Append our values
-SET(TEMP2 "${TEMP2}${SUPPORT_LIBRARY_LDFLAGS} -ldl" )
+SET(TEMP2 "${TEMP2}${SUPPORT_LIBRARY_LDFLAGS}" )
 set_target_properties(cxtrace PROPERTIES LINK_FLAGS ${TEMP2} )
 
 # install (
