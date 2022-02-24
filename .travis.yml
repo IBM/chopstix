@@ -70,7 +70,7 @@ jobs:
               - ../configure
               - make -j2
               - make test
-              - make install
+              - sudo make install
         - stage: build_and_test
           name: Build and test
           arch: ppc64le 
@@ -83,7 +83,7 @@ jobs:
               - ../configure
               - make -j2
               - make test
-              - make install
+              - sudo make install
         - stage: build_and_test
           name: Build and test
           arch: s390x
@@ -96,7 +96,7 @@ jobs:
               - ../configure
               - make -j2
               - make test
-              - make install
+              - sudo make install
         - stage: test
           name: Test
           script:
