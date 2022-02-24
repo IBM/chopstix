@@ -72,11 +72,6 @@ if ! ./sandwich_return 1> "$log_stdout_file"; then
     echo "Couldn't execute test program"
     echo "logs:"
     cat "$log_stdout_file"
-    if [ "$(grep -c "$log_file" "Permission denied")" -ne 0 ]; then
-        echo "Exit code due to the lack of permissions"
-        cleanup
-        exit 0
-    fi
     cleanup
     exit 1
 fi
@@ -119,6 +114,11 @@ if [ $ret_val -ne 0 ]; then
     fi
     echo "logs:"
     cat "$log_stderr_file"
+    if [ "$(grep -c "$log_stderr_file" "Permission denied")" -ne 0 ]; then
+        echo "Exit code due to the lack of permissions"
+        cleanup
+        exit 0
+    fi
     cleanup
     exit 1
 fi
