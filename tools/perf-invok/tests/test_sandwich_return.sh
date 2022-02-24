@@ -91,12 +91,12 @@ if [ "$machine" = "s390x" ]; then
         exit 1
     fi
 else
-    if [ "$(echo "${output}" | cut -d $string_offset-$((string_offset+string_length)))" != "deadbeef$return_instr" ]; then
+    if [ "$(echo "${output}" | cut -c $string_offset-$((string_offset+string_length)))" != "deadbeef$return_instr" ]; then
         # "deadbeef" is the hard-coded sentinel in the binary
         # Because there is no breakpoint, the instruction appears in the binary dump
         echo "Unexpected binary contents in the test program. Did something from the test bench break?"
         echo "Expected: deadbeef$return_instr"
-        echo "Actual  : $(echo "${output}" | cut -d $string_offset-$((string_offset+string_length)))" 
+        echo "Actual  : $(echo "${output}" | cut -c $string_offset-$((string_offset+string_length)))" 
         cleanup
         exit 1
     fi
@@ -160,7 +160,7 @@ if [ "$machine" = "s390x" ]; then
         exit 1
     fi
 else
-    if [ "$(echo "${output}" | cut -d $string_offset-$((string_offset+string_length)))" != "deadbeef$string_breakpoint" ]; then
+    if [ "$(echo "${output}" | cut -c $string_offset-$((string_offset+string_length)))" != "deadbeef$string_breakpoint" ]; then
         # Because this time the binary was run with a breakpoint in place, the
         # return instruction isn't present anymore and instead we find a bunch of
         # zeroes (the breakpoint). 0xdeadbeef should still be present. If it isn't,
@@ -172,7 +172,7 @@ else
         echo "This could cause unexpected problems when, within the same function,"
         echo "there are instructions to be executed below the return instruction."
         echo "Expected: deadbeef$string_breakpoint"
-        echo "Actual  : $(echo "${output}" | cut -d $string_offset-$((string_offset+string_length)))"
+        echo "Actual  : $(echo "${output}" | cut -c $string_offset-$((string_offset+string_length)))"
         cleanup
         exit 1
     fi
