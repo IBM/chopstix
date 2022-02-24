@@ -64,10 +64,10 @@ jobs:
           script:
               - set -e
               - scripts/ci/install_libpfm.sh
-              - echo -1 | sudo tee /proc/sys/kernel/perf_event_paranoid 
+              - cat /proc/sys/kernel/perf_event_paranoid 
               - mkdir build
               - cd build
-              - ../configure
+              - ../configure --prefix /tmp/install
               - make -j2
               - make test
               - sudo make install
@@ -77,10 +77,10 @@ jobs:
           script:
               - set -e
               - scripts/ci/install_libpfm.sh
-              - echo -1 | sudo tee /proc/sys/kernel/perf_event_paranoid 
+              - cat /proc/sys/kernel/perf_event_paranoid 
               - mkdir build
               - cd build
-              - ../configure
+              - ../configure --prefix /tmp/install
               - make -j2
               - make test
               - sudo make install
@@ -90,10 +90,10 @@ jobs:
           script:
               - set -e
               - scripts/ci/install_libpfm.sh
-              - echo -1 | sudo tee /proc/sys/kernel/perf_event_paranoid 
+              - cat /proc/sys/kernel/perf_event_paranoid 
               - mkdir build
               - cd build
-              - ../configure
+              - ../configure --prefix /tmp/install
               - make -j2
               - make test
               - sudo make install
