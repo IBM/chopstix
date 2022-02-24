@@ -21,6 +21,9 @@ addons:
             - shellcheck
             - linux-tools-generic
             - zlib1g-dev
+            - g++-10
+        sources:
+            - ubuntu-toolchain-r-test
 notifications:
     email:
         on_success: change
