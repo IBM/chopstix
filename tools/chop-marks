@@ -31,7 +31,6 @@ elif [ "$machine" = "s390x" ]; then
     marks_cmd=chop-marks-sysz
 else
     echo "Unsupported architecture: $machine"
-    cleanup
     exit 0
 fi
 
