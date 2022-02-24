@@ -114,7 +114,7 @@ if [ $ret_val -ne 0 ]; then
     fi
     echo "logs:"
     cat "$log_stderr_file"
-    if [ "$(grep -c "$log_stderr_file" "Permission denied")" -ne 0 ]; then
+    if [ "$(grep -c "Permission denied" "$log_stderr_file")" -ne 0 ]; then
         echo "Exit code due to the lack of permissions"
         cleanup
         exit 0

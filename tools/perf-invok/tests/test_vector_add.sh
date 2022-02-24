@@ -48,7 +48,7 @@ if ! ./chop-perf-invok -o "$csv_file" $("$marks_cmd" ./vector_add add) -- ./vect
     echo "chop-perf-invok returned an error exit code"
     echo "logs:"
     cat "$log_file"
-    if [ "$(grep -c "$log_file" "Permission denied")" -ne 0 ]; then
+    if [ "$(grep -c "Permission denied" "$log_file")" -ne 0 ]; then
         echo "Exit code due to the lack of permissions"
         cleanup
         exit 0
