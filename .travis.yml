@@ -1,6 +1,5 @@
 language: cpp
 version: ~> 1.0
-sudo: required
 cache:
     apt: true
     ccache: true
@@ -39,28 +38,28 @@ jobs:
     fast_finish: true                                                              
     include:
         - stage: shell_conventions                                                 
-          name: shell conventions                                                  
+          name: shell conventions amd64                                              
           cache: false                                                             
           arch: amd64
           script:                                                                  
               - set -e                                                             
               - shellcheck -x -s sh $(find . -name \*.sh) $(find . -name \*.sh.in) ./tools/chop-* ./test/drivers/* ./test/daxpy/*spec
         - stage: shell_conventions                                                 
-          name: shell conventions                                                  
+          name: shell conventions ppc64le                                                 
           cache: false                                                             
           arch: ppc64le
           script:                                                                  
               - set -e                                                             
               - shellcheck -x -s sh $(find . -name \*.sh) $(find . -name \*.sh.in) ./tools/chop-* ./test/drivers/* ./test/daxpy/*spec
         - stage: shell_conventions                                                 
-          name: shell conventions                                                  
+          name: shell conventions s390x                                           
           cache: false                                                             
           arch: s390x
           script:                                                                  
               - set -e                                                             
               - shellcheck -x -s sh $(find . -name \*.sh) $(find . -name \*.sh.in) ./tools/chop-* ./test/drivers/* ./test/daxpy/*spec
         - stage: build_and_test
-          name: Build and test
+          name: Build and test amd64
           arch: amd64
           script:
               - set -e
@@ -73,7 +72,7 @@ jobs:
               - make test
               - sudo make install
         - stage: build_and_test
-          name: Build and test
+          name: Build and test ppc64le
           arch: ppc64le 
           script:
               - set -e
@@ -86,7 +85,7 @@ jobs:
               - make test
               - sudo make install
         - stage: build_and_test
-          name: Build and test
+          name: Build and test s390x
           arch: s390x
           script:
               - set -e
