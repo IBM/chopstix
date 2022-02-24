@@ -72,6 +72,11 @@ if ! ./sandwich_return 1> "$log_stdout_file"; then
     echo "Couldn't execute test program"
     echo "logs:"
     cat "$log_stdout_file"
+    if [ "$(grep -c "$log_file" "Permission denied")" -ne 0 ]; then
+        echo "Exit code due to the lack of permissions"
+        cleanup
+        exit 0
+    fi
     cleanup
     exit 1
 fi
@@ -160,6 +165,7 @@ if [ "$machine" = "s390x" ]; then
         exit 1
     fi
 else
+    echo "cut -c $string_offset-$((string_offset+string_length))"
     if [ "$(echo "${output}" | cut -c $string_offset-$((string_offset+string_length)))" != "deadbeef$string_breakpoint" ]; then
         # Because this time the binary was run with a breakpoint in place, the
         # return instruction isn't present anymore and instead we find a bunch of
