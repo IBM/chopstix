@@ -83,6 +83,7 @@ jobs:
               - cd build
               - ../configure --prefix /tmp/install
               - make -j2
+              - ldd src/trace/libcxtrace.so
               - make test
               - sudo make install
         - stage: build_and_test
@@ -97,5 +98,6 @@ jobs:
               - cd build
               - ../configure --prefix /tmp/install
               - make -j2
+              - ldd src/trace/libcxtrace.so
               - make test
               - sudo make install
