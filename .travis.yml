@@ -78,6 +78,7 @@ jobs:
               - set -e
               - scripts/ci/install_libpfm.sh
               - cat /proc/sys/kernel/perf_event_paranoid 
+              - locate libdl.so
               - mkdir build
               - cd build
               - ../configure --prefix /tmp/install
@@ -91,6 +92,7 @@ jobs:
               - set -e
               - scripts/ci/install_libpfm.sh
               - cat /proc/sys/kernel/perf_event_paranoid 
+              - locate libdl.so
               - mkdir build
               - cd build
               - ../configure --prefix /tmp/install
