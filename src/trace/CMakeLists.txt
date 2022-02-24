@@ -56,7 +56,7 @@ else()
   SET(TEMP2 "${TEMP2} ") # A space to cleanly separate from existing content
 endif()
 # Append our values
-SET(TEMP2 "${TEMP2}${SUPPORT_LIBRARY_LDFLAGS} ${DL_LIBRARY}" )
+SET(TEMP2 "${TEMP2}${SUPPORT_LIBRARY_LDFLAGS} ${DL_LIBRARY} -ldl" )
 set_target_properties(cxtrace PROPERTIES LINK_FLAGS ${TEMP2})
 
 # install (
