@@ -65,6 +65,7 @@ jobs:
               - mkdir build
               - cd build
               - ../configure --prefix /tmp/install
+              - grep -r ldl .
               - make -j2
               - make test
               - sudo make install
@@ -79,6 +80,7 @@ jobs:
               - mkdir build
               - cd build
               - ../configure --prefix /tmp/install
+              - grep -r ldl .
               - make -j2
               - ldd src/trace/libcxtrace.so
               - make test
@@ -94,6 +96,7 @@ jobs:
               - mkdir build
               - cd build
               - ../configure --prefix /tmp/install
+              - grep -r ldl .
               - make -j2
               - ldd src/trace/libcxtrace.so
               - make test
