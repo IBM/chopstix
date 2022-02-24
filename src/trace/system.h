@@ -45,6 +45,7 @@ struct System {
 
     void start_trace(bool isNewInvocation);
     void stop_trace();
+    volatile bool tracing = false;
 
     System(const System &) = delete;
     System &operator=(const System &) = delete;
@@ -62,7 +63,6 @@ struct System {
     void record_segv(unsigned long addr);
     void save_page(unsigned long page_addr);
 
-    volatile bool tracing = false;
     int trace_id = 0;
     long pagesize;
     int pagecount = 0;

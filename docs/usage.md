@@ -74,7 +74,7 @@ of a particular function. Let us assume that after sampling, we detected that
 _func1_ of _myapp_ is the hottest function. We want to trace the first 10
 invocation. To do so:
 
-    chop trace $(chop-marks-ppc64 myapp func1) -gzip myapp -max-traces 10 -trace-dir output_dir
+    chop trace $(chop-marks myapp func1) -gzip myapp -max-traces 10 -trace-dir output_dir
 
 The command above will generate 10 traces and will store the contents in 
 output_dir. Then, the output directory can be postprocessed to generate the 
@@ -85,6 +85,6 @@ corresponding mpts with the following command:
 The mpts generated can then be processed by Microprobe to generate microbenchmarks
 in different formats. 
 
-The _chop-marks-ppc64_ command is a help script to automatically detect the
+The _chop-marks_ command is a help script to automatically detect the
 addresses of the entry and exit poings of the function to be traced. Otherwise,
 that input have to be provided manually. 

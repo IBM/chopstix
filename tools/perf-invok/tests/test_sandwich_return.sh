@@ -28,16 +28,14 @@ cleanup() {
     rm "$csv_file" "$log_stdout_file" "$log_stderr_file"
 }
 
+marks_cmd=chop-marks
 if [ "$machine" = "riscv64" ]; then
-    marks_cmd=chop-marks-riscv
     return_instr="8082"
     return_instr_len=4
 elif [ "$machine" = "ppc64le" ]; then
-    marks_cmd=chop-marks-ppc64
     return_instr="4e800020"
     return_instr_len=8
 elif [ "$machine" = "s390x" ]; then
-    marks_cmd=chop-marks-sysz
     return_instr="07fe"
     return_instr_len=4
 else

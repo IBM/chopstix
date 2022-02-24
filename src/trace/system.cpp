@@ -39,12 +39,15 @@
 #include <sys/syscall.h>
 #include <ucontext.h>
 #include <unistd.h>
+#include <dlfcn.h>
 
 #define PERM_664 S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH
 
 namespace chopstix {
 
 System &sys_ = System::instance();
+
+bool hide_calls = true;
 
 System::System() {
     log::Logger::instance();
@@ -89,6 +92,9 @@ System::System() {
     int res_fd = syscall(SYS_openat, AT_FDCWD,fname, O_RDONLY);
     Memory::instance().restrict_map(res_fd);
     syscall(SYS_close, res_fd);
+
+
+    hide_calls = getenv("CHOPSTIX_OPT_HIDE_CALLS") != NULL;
 
     log::verbose("System:: End preload library initialization");
 }
@@ -214,6 +220,12 @@ void System::save_page(unsigned long page_addr) {
 
 void System::start_trace(bool isNewInvocation) {
 
+    // Flust I/O streams before doing anything
+    fflush(stdout);
+    fflush(stderr);
+    fsync(fileno(stdout));
+    fsync(fileno(stderr));
+
     log::debug("System: start_trace start (trace %d)", trace_id);
     check(tracing == false, "System: start_trace: Tracing already started");
 
@@ -243,6 +255,10 @@ void System::start_trace(bool isNewInvocation) {
     fclose(fp);
     log::debug("System: start_Trace: stored info of %d breakpoints", elements);
 
+    log::debug("Tracing: %d", true);
+    log::debug("Systen: start_trace end (trace %d)", trace_id);
+
+    // Protect pages at the end
     Memory::instance().update();
     log::debug("System: start_Trace: map updated");
     Memory::instance().protect_all();
@@ -250,18 +266,16 @@ void System::start_trace(bool isNewInvocation) {
     tracing = true;
     pagecount = 0;
 
-    // log::debug("Tracing: %d", tracing);
-     log::debug("Systen: start_trace end (trace %d)", trace_id);
 }
 
 void System::stop_trace() {
+    Memory::instance().unprotect_all();
     log::debug("System:: stop_trace start");
     log::debug("Tracing: %d", tracing);
     check(tracing == true, "System:: stop_trace: Tracing already stopped");
     tracing = false;
     tpagecount += pagecount;
 
-    Memory::instance().unprotect_all();
     log::debug("System:: stop_trace: Trace id: %d", trace_id);
 
     if (drytrace) {
@@ -319,7 +333,40 @@ void chopstix_stop_trace() {
     // raise(SIGTRAP);
 }
 
+//
 // Disable printf system calls during tracing
+//
 int printf(const char* format, ...) {
-    return 0;
+    if (chopstix::hide_calls && chopstix::sys_.tracing) return 0;
+	static int (*real_printf)(const char* format, ...) = nullptr;
+	va_list argptr;
+    va_start(argptr, format);
+    if (!real_printf) real_printf = (int (*)(const char*, ...)) dlsym(RTLD_NEXT, "printf");
+	int ret = real_printf(format);
+	va_end(argptr);
+    return ret;
+}
+
+int putchar(int c) {
+    if (chopstix::hide_calls && chopstix::sys_.tracing) return 0;
+	static int (*real_putchar)(int c) = nullptr;
+    if (!real_putchar) real_putchar = (int (*)(int c)) dlsym(RTLD_NEXT, "putchar");
+	int ret = real_putchar(c);
+    return ret;
+}
+
+int puts(const char *s) {
+    if (chopstix::hide_calls && chopstix::sys_.tracing) return 0;
+	static int (*real_puts)(const char* s) = nullptr;
+    if (!real_puts) real_puts = (int (*)(const char*)) dlsym(RTLD_NEXT, "puts");
+	int ret = real_puts(s);
+    return ret;
+}
+
+int printf(const char* format) {
+    if (chopstix::hide_calls && chopstix::sys_.tracing) return 0;
+	static int (*real_printf)(const char* format) = nullptr;
+    if (!real_printf) real_printf = (int (*)(const char*)) dlsym(RTLD_NEXT, "printf");
+	int ret = real_printf(format);
+    return ret;
 }

@@ -28,4 +28,4 @@ add_executable(test-daxpy
     daxpy.c
 )
 
-target_link_libraries(test-daxpy ${tracelib} m)
+target_link_libraries(test-daxpy m)

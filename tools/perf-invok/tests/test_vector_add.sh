@@ -28,17 +28,7 @@ cleanup() {
     rm "$csv_file" "$log_file"
 }
 
-if [ "$machine" = "riscv64" ]; then
-    marks_cmd=chop-marks-riscv
-elif [ "$machine" = "ppc64le" ]; then
-    marks_cmd=chop-marks-ppc64
-elif [ "$machine" = "s390x" ]; then
-    marks_cmd=chop-marks-sysz
-else
-    echo "Unsupported architecture: $machine"
-    cleanup
-    exit 0
-fi
+marks_cmd=chop-marks
 
 if [ $# -ne 0 ]; then
     # First argument is the root of the ChopStiX/tools folder, containing the

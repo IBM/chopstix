@@ -48,7 +48,7 @@ endif()
 SET(TEMP "${TEMP}${SUPPORT_LIBRARY_CFLAGS}" )
 set_target_properties(cxtrace PROPERTIES COMPILE_FLAGS ${TEMP} )
 
-SET(SUPPORT_LIBRARY_LDFLAGS "-static-libstdc++ -static-libgcc")
+SET(SUPPORT_LIBRARY_LDFLAGS "-static-libstdc++ -static-libgcc -ldl")
 get_target_property(TEMP2 cxtrace COMPILE_FLAGS)
 if(TEMP2 STREQUAL "TEMP-NOTFOUND")
   SET(TEMP2 "") # Set to empty string

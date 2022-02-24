@@ -33,6 +33,7 @@ install(PROGRAMS
     chop-marks-ppc64
     chop-marks-sysz
     chop-marks-riscv
+    chop-marks
     chop-score-table
     DESTINATION bin)
 

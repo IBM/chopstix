@@ -25,43 +25,50 @@ die() { echo "$*" >&2 ; exit 1 ; }
 
 test=$(printenv test)
 chop=$(printenv chop)
+chopm=$(printenv chopmarks)
 testbin=$(printenv testbin)
 testdir=$(printenv testdir)
+CHOPSTIX_OPT_PRELOAD_PATH=$(printenv cxtrace)
+
+export CHOPSTIX_OPT_PRELOAD_PATH
 
 test_run() {
     ver="$1" ; shift
-    echo "> test-$test $* ($ver)"
-    timeout "$TIMEOUT $testbin $*" > "output.$ver" || die "Error: test failed"
+    echo "> test-$test $@ ($ver)"
+    # shellcheck disable=SC2068
+    timeout "$TIMEOUT" "$testbin" $@ > "output.$ver" || die "Error: test failed"
+    echo "> test-$test $@ ($ver) OK"
 }
 
 test_trace_function() {
     fun="$1" ; shift
-    rm -rf chop.db
-    echo "> chop trace function -name $fun test-$test $*"
-    timeout "$TIMEOUT $chop trace function -name $fun $testbin $*" > "output.trace-$fun" || die "Error: test failed"
+    ver="$1" ; shift
+    rm -rf $CHOPSTIX_OPT_TRACE_DIR $CHOPSTIX_OPT_LOG_PATH
+    echo "> chop-marks $testbin $fun"
+    bpoints=$("$chopm" "$testbin" "$fun" | tr "\n" " ")
+    echo "> timeout $TIMEOUT $chop trace $bpoints $testbin $@" 
+    timeout "$TIMEOUT" "$chop" trace $bpoints "$testbin" $@ > "output.$ver" 
+    echo "> chop run ok"
 }
 
 test_trace() {
     fun="$1" ; shift
     rm -rf chop.db
-    objdump -d "$testbin" > "test-$test.s"
-    args=$(awk -v fun="$fun" '
-    $0 ~ fun">:" { gsub(/^0*/,"",$1); begin=$1; flag=1 }
-    flag && /\sret/ { gsub(/:/,"",$1); end=","$1 }
-    /^$/ { flag = 0 }
-    END { gsub(/^,/,"",end); print "-begin",begin,"-end",end }
-    ' "test-$test.s")
     echo "> chop trace $args test-$test $*"
-    timeout "$TIMEOUT $chop trace address $args $testbin $*" > "output.trace-$fun" || die "Error: test failed"
-
+    # shellcheck disable=SC2068
+    timeout "$TIMEOUT" "$chop" trace address "$args" "$testbin" $@ > "output.trace-$fun" || die "Error: test failed"
 }
 
 validate_output() {
-    diff -I '#.*' -q "output.$1" "output.$2"
-    echo "> output matches"
+    echo "> check output"
+    set +e
+    diff -a -I '#.*' "output.$1" "output.$2"
+    set -e
+    diff -a -I '#.*' -q "output.$1" "output.$2"
+    echo "> validate output ok"
 }
 
-export TIMEOUT=10s
+export TIMEOUT=60s
 
 # shellcheck disable=SC1090,SC1091
 . "$testdir/trace.spec"

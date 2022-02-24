@@ -75,6 +75,8 @@ unsigned long libc_addrs[] = {
     (unsigned long)&open,  // Space for NULL sep
     (unsigned long)&open,  // Space for NULL sep
     (unsigned long)&syscall,
+//    (unsigned long)&fsync,
+//    (unsigned long)&fflush,
 
 #ifdef PROTECTALLSYMBOLS
     (unsigned long)&open,
@@ -93,12 +95,40 @@ unsigned long libc_addrs[] = {
     (unsigned long)&bzero,
 #endif
 };
+
+char const *libc_names[] = {
+    "open",
+    "open",
+    "syscall",
+//    "fsync",
+//    "fflush",
+    
+#ifdef PROTECTALLSYMBOLS
+    "open",
+    "close",
+    "creat",
+    "mprotect",
+    "write",
+    "strcmp",
+    "gsignal",
+    "signal",
+    
+    //"strstr",
+    "__libc_init_first",
+    "__libc_start_main",
+    "explicit_bzero",
+    "bzero",
+#endif
+};
+
+
 int libc_count = sizeof(libc_addrs) / sizeof(unsigned long);
 // int libc_count = -1;
 
 namespace {
 // TODO Use safe_sscanf
 static int parse_region(char *line, mem_region *region) {
+    log::debug("Memory:: parse_region : %s", line);
     int ret = sscanf(line, REGION_FMT, REGION_UNWRAP(&region->));
     if (region->path[1] == '\0') region->path[0] = '\0';
     return ret;
@@ -203,8 +233,8 @@ Memory::Memory() {
         libc_addrs[i] = libc_addrs[i] / pagesize_ * pagesize_;
         log::debug(
             "Memory::Memory init: registering libc page for protected "
-            "function: %x",
-            (unsigned long)libc_addrs[i]);
+            "function: %x (%s)",
+            (unsigned long)libc_addrs[i], libc_names[i]);
     }
     std::sort(libc_addrs, libc_addrs + libc_count);
     auto it = std::unique(libc_addrs, libc_addrs + libc_count);
@@ -418,6 +448,7 @@ void Memory::restrict_map(int fd) {
     char line[1024];
     res_siz_ = 0;
     long n = 0;
+    log::debug("Memory:: restrict_map: parsing restrict_map");
     while (readline(fd, line, sizeof(line))) {
         checkx(n < REGIONS_MAX, "Too many memory regions");
         parse_region(line, res_ + n);
@@ -425,18 +456,18 @@ void Memory::restrict_map(int fd) {
         res_[n].addr[0] = 0;
         res_[n].addr[1] = 0;
     }
-    log::debug("Memory:: restict_map: parsed restrict_map (%d items)", n);
+    log::debug("Memory:: restrict_map: parsed restrict_map (%d items)", n);
     res_siz_ = n;
 }
 
 void Memory::protect_all() {
-    log::debug("Memory: proctect_all: protect all. Start.");
+    //log::debug("Memory: proctect_all: protect all. Start.");
     for (auto reg = begin(); reg != end(); ++reg) {
-        log::debug("Memory::protect_all: protect %x-%x %s %s", reg->addr[0],
-                   reg->addr[1], reg->perm, reg->path);
+        //log::debug("Memory::protect_all: protect %x-%x %s %s", reg->addr[0],
+        //           reg->addr[1], reg->perm, reg->path);
         protect_region(reg);
     }
-    log::debug("Memory: proctect_all: protect all. End.");
+    //log::debug("Memory: proctect_all: protect all. End.");
 }
 
 void Memory::unprotect_all() {
@@ -446,34 +477,36 @@ void Memory::unprotect_all() {
 }
 
 void Memory::protect_region(mem_region *reg) {
-    log::debug("Memory::protect_region: %x-%x %s %s (bits: %d)", reg->addr[0],
-               reg->addr[1], reg->perm, reg->path,
-               protect_bits(decode_perm(reg->perm)));
+    //log::debug("Memory::protect_region: %x-%x %s %s (bits: %d)", reg->addr[0],
+    //           reg->addr[1], reg->perm, reg->path,
+    //           protect_bits(decode_perm(reg->perm)));
+
     // int err = mprotect((void *)reg->addr[0], REGION_SIZE(reg),
     //                    protect_bits(decode_perm(reg->perm)));
 
     int err = syscall(SYS_mprotect, reg->addr[0], REGION_SIZE(reg),
                       protect_bits(decode_perm(reg->perm)));
 
-    log::debug("Memory::protect_region: %x-%x %s %s (bits: %d) OK",
-               reg->addr[0], reg->addr[1], reg->perm, reg->path,
-               protect_bits(decode_perm(reg->perm)));
+    //log::debug("Memory::protect_region: %x-%x %s %s (bits: %d) OK",
+    //           reg->addr[0], reg->addr[1], reg->perm, reg->path,
+    //           protect_bits(decode_perm(reg->perm)));
 
     check(!err, "Unable to protect region %x-%x %s %s", reg->addr[0],
           reg->addr[1], reg->perm, reg->path);
-    log::debug("Memory::protect_region: protected %d bytes at %x",
-               REGION_SIZE(reg), reg->addr[0]);
+
+    //log::debug("Memory::protect_region: protected %d bytes at %x",
+    //           REGION_SIZE(reg), reg->addr[0]);
 }
 
 void Memory::unprotect_region(mem_region *reg) {
-    log::debug("Memory::unprotect_region: %x-%x %s %s (bits: %d)", reg->addr[0],
-               reg->addr[1], reg->perm, reg->path, decode_perm(reg->perm));
+    //log::debug("Memory::unprotect_region: %x-%x %s %s (bits: %d)", reg->addr[0],
+    //           reg->addr[1], reg->perm, reg->path, decode_perm(reg->perm));
     int err = syscall(SYS_mprotect, (void *)reg->addr[0], REGION_SIZE(reg),
                       decode_perm(reg->perm));
-    if (err) {
-        log::warn("Unable to unprotect region %x-%x %s %s", reg->addr[0],
-                  reg->addr[1], reg->perm, reg->path);
-    }
+    //if (err) {
+    //    log::warn("Unable to unprotect region %x-%x %s %s", reg->addr[0],
+    //              reg->addr[1], reg->perm, reg->path);
+    //}
     // check(!err, "Unable to unprotect region %x-%x %s %s", reg->addr[0],
     //       reg->addr[1], reg->perm, reg->path);
 }
@@ -481,8 +514,8 @@ void Memory::unprotect_region(mem_region *reg) {
 mem_region *Memory::find_region(unsigned long page_addr) {
     log::debug("Memory::find_region: Region for address %x", page_addr);
     for (auto reg = begin(); reg != end(); ++reg) {
-        // log::debug("Memory::find_region: Check region %x-%x %s %s",
-        //    reg->addr[0], reg->addr[1], reg->perm, reg->path);
+         log::debug("Memory::find_region: Check region %x-%x %s %s",
+            reg->addr[0], reg->addr[1], reg->perm, reg->path);
 
         if (page_addr < reg->addr[0]) continue;
         if (page_addr >= reg->addr[1]) continue;
@@ -492,6 +525,8 @@ mem_region *Memory::find_region(unsigned long page_addr) {
 
         return reg;
     }
+
+    log::debug("Memory::find_region: No region found");
     return NULL;
 }
 
