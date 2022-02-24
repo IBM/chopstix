@@ -131,6 +131,11 @@ test_daxpy() {
     unset CHOPSTIX_OPT_TRACE
 }
 
+machine="$(uname -m)"
+if [ "$machine" = "x86_64" ]; then
+    exit 0
+fi
+
 test_daxpy 10000 1
 test_daxpy 1000 10
 test_daxpy 100 100
