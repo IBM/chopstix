@@ -45,7 +45,7 @@ else()
   SET(TEMP "${TEMP} ") # A space to cleanly separate from existing content
 endif()
 # Append our values
-SET(TEMP "${TEMP}${SUPPORT_LIBRARY_CFLAGS}" )
+SET(TEMP "${TEMP}${SUPPORT_LIBRARY_CFLAGS} " )
 set_target_properties(cxtrace PROPERTIES COMPILE_FLAGS ${TEMP} )
 
 SET(SUPPORT_LIBRARY_LDFLAGS "-static-libstdc++ -static-libgcc ${DL_LIBRARY} -ldl")
