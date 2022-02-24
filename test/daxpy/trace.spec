@@ -69,14 +69,14 @@ check_content() {
     it=0;
     while [ "$it" -lt "$num_iter" ]; do
         # shellcheck disable=SC2012
-        count=$(ls $CHOPSTIX_OPT_TRACE_DIR/page.$it.* | wc -l)
+        count=$(ls "$CHOPSTIX_OPT_TRACE_DIR"/page.$it.* | wc -l)
         test "$count" -ge $num_pages || \
             die "Error: expected $num_pages pages for iteration $it (found $count)"
-        test -f $CHOPSTIX_OPT_TRACE_DIR/maps.$it || \
+        test -f "$CHOPSTIX_OPT_TRACE_DIR/maps.$it" || \
             die "Error: no maps file for iteration $it"
-        test -f $CHOPSTIX_OPT_TRACE_DIR/info.$it || \
+        test -f "$CHOPSTIX_OPT_TRACE_DIR/info.$it" || \
             die "Error: no info file for iteration $it"
-        test -f $CHOPSTIX_OPT_TRACE_DIR/regs.$it || \
+        test -f "$CHOPSTIX_OPT_TRACE_DIR/regs.$it" || \
             die "Error: no regs file for iteration $it"
         it=$((it+1))
     done

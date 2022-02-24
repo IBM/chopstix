@@ -21,7 +21,6 @@
 
 csv_file=$(mktemp)
 log_file=$(mktemp)
-machine=$(uname -m)
 header="Cycles, Time Elapsed (us), Retired Instructions, Retired Memory Instructions, Data Cache Misses, Instructions Per Cycle, Miss Percentage"
 
 cleanup() {

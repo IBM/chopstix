@@ -34,29 +34,23 @@ export CHOPSTIX_OPT_PRELOAD_PATH
 
 test_run() {
     ver="$1" ; shift
-    echo "> test-$test $@ ($ver)"
+
+    echo "> test-$test $* ($ver)"
     # shellcheck disable=SC2068
     timeout "$TIMEOUT" "$testbin" $@ > "output.$ver" || die "Error: test failed"
-    echo "> test-$test $@ ($ver) OK"
+    echo "> test-$test $* ($ver) OK"
 }
 
 test_trace_function() {
     fun="$1" ; shift
     ver="$1" ; shift
-    rm -rf $CHOPSTIX_OPT_TRACE_DIR $CHOPSTIX_OPT_LOG_PATH
+    rm -rf "$CHOPSTIX_OPT_TRACE_DIR" "$CHOPSTIX_OPT_LOG_PATH"
     echo "> chop-marks $testbin $fun"
     bpoints=$("$chopm" "$testbin" "$fun" | tr "\n" " ")
-    echo "> timeout $TIMEOUT $chop trace $bpoints $testbin $@" 
+    echo "> timeout $TIMEOUT $chop trace $bpoints $testbin $*" 
+    # shellcheck disable=SC2068,SC2086
     timeout "$TIMEOUT" "$chop" trace $bpoints "$testbin" $@ > "output.$ver" 
     echo "> chop run ok"
-}
-
-test_trace() {
-    fun="$1" ; shift
-    rm -rf chop.db
-    echo "> chop trace $args test-$test $*"
-    # shellcheck disable=SC2068
-    timeout "$TIMEOUT" "$chop" trace address "$args" "$testbin" $@ > "output.trace-$fun" || die "Error: test failed"
 }
 
 validate_output() {
