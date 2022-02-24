@@ -37,7 +37,7 @@ test_event() {
     
 test_event task-clock
 test_event cpu-clock
-test_event cycles
+#test_event cycles
 
 [ -n "$event" ] || die "Error: no test event available"
 

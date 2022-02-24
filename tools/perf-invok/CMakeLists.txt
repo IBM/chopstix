@@ -53,15 +53,17 @@ if (CHOPSTIX_BUILD_TESTS)
             test_programs/sandwiched_return.c
             test_programs/sandwiched_return_s390x.s
         )
-    else ()
-        message(STATUS "No perf-invok tests for architecture ${CMAKE_HOST_SYSTEM_PROCESSOR} available.")
     endif ()
 
-    add_test(
-        NAME test_generic_invocation
-        COMMAND ${CMAKE_SOURCE_DIR}/tools/perf-invok/tests/test_vector_add.sh ${CMAKE_SOURCE_DIR}/tools
-        WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/tools/perf-invok
-    )
+    if( ${CMAKE_HOST_SYSTEM_PROCESSOR} STREQUAL "x86_64" )
+        message(STATUS "No perf-invok tests for architecture ${CMAKE_HOST_SYSTEM_PROCESSOR} available.")
+    else ()
+        add_test(
+            NAME test_generic_invocation
+            COMMAND ${CMAKE_SOURCE_DIR}/tools/perf-invok/tests/test_vector_add.sh ${CMAKE_SOURCE_DIR}/tools
+            WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/tools/perf-invok
+        )
+    endif ()
 
     if (TARGET sandwich_return)
         add_test(
