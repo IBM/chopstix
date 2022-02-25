@@ -49,6 +49,7 @@ test_trace_function() {
 
     objdump -d "$testbin"
     "$chopm" "$testbin" "$fun"
+
     bpoints=$("$chopm" "$testbin" "$fun" | tr "\n" " ")
     echo "> timeout $TIMEOUT $chop trace $bpoints $testbin $*" 
 
