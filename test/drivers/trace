@@ -45,7 +45,10 @@ test_trace_function() {
     fun="$1" ; shift
     ver="$1" ; shift
     rm -rf "$CHOPSTIX_OPT_TRACE_DIR" "$CHOPSTIX_OPT_LOG_PATH"
-    echo "> chop-marks $testbin $fun"
+    echo "> $chopm $testbin $fun"
+
+    objdump -d "$testbin"
+    "$chopm" "$testbin" "$fun"
     bpoints=$("$chopm" "$testbin" "$fun" | tr "\n" " ")
     echo "> timeout $TIMEOUT $chop trace $bpoints $testbin $*" 
 
