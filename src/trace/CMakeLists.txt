@@ -22,8 +22,6 @@
 # DESCRIPTION : Tracing support library
 ###############################################################
 
-find_library( DL_LIBRARY libdl.so )
-
 add_library(cxtrace SHARED
     system.cpp
     memory.cpp
@@ -36,6 +34,7 @@ install (
 )
 
 target_link_libraries(cxtrace cx-support)
+target_link_libraries(cxtrace dl)
 
 SET(SUPPORT_LIBRARY_CFLAGS "-DLOG_CHILD")
 get_target_property(TEMP cxtrace COMPILE_FLAGS)
@@ -48,7 +47,7 @@ endif()
 SET(TEMP "${TEMP}${SUPPORT_LIBRARY_CFLAGS} " )
 set_target_properties(cxtrace PROPERTIES COMPILE_FLAGS ${TEMP} )
 
-SET(SUPPORT_LIBRARY_LDFLAGS "-static-libstdc++ -static-libgcc ${DL_LIBRARY} -ldl")
+SET(SUPPORT_LIBRARY_LDFLAGS "-static-libstdc++ -static-libgcc")
 get_target_property(TEMP2 cxtrace COMPILE_FLAGS)
 if(TEMP2 STREQUAL "TEMP-NOTFOUND")
   SET(TEMP2 "") # Set to empty string
@@ -56,8 +55,8 @@ else()
   SET(TEMP2 "${TEMP2} ") # A space to cleanly separate from existing content
 endif()
 # Append our values
-SET(TEMP2 "${TEMP2}${SUPPORT_LIBRARY_LDFLAGS} ${DL_LIBRARY} -ldl" )
-set_target_properties(cxtrace PROPERTIES LINK_FLAGS ${TEMP2})
+SET(TEMP2 "${TEMP2}${SUPPORT_LIBRARY_LDFLAGS}" )
+set_target_properties(cxtrace PROPERTIES LINK_FLAGS ${TEMP2}) 
 
 # install (
 #     FILES cxtrace.h
