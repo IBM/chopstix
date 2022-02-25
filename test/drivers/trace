@@ -48,6 +48,7 @@ test_trace_function() {
     echo "> $chopm $testbin $fun"
 
     objdump -d "$testbin"
+    readelf -W -S "$testbin"
     "$chopm" "$testbin" "$fun"
 
     bpoints=$("$chopm" "$testbin" "$fun" | tr "\n" " ")
