@@ -66,12 +66,10 @@ jobs:
           script:
               - set -e
               - scripts/ci/install_libpfm.sh
-              - cat /proc/sys/kernel/perf_event_paranoid 
               - mkdir build
               - cd build
               - ../configure --prefix /tmp/install
-              - grep -r ldl .
-              - make -j2
+              - make -j
               - make test
               - sudo make install
         - stage: build_and_test
@@ -80,14 +78,10 @@ jobs:
           script:
               - set -e
               - scripts/ci/install_libpfm.sh
-              - cat /proc/sys/kernel/perf_event_paranoid 
-              - locate libdl.so
               - mkdir build
               - cd build
               - ../configure --prefix /tmp/install
-              - grep -r ldl .
-              - make -j2
-              - ldd src/trace/libcxtrace.so
+              - make -j
               - make test
               - sudo make install
         - stage: build_and_test
@@ -96,13 +90,9 @@ jobs:
           script:
               - set -e
               - scripts/ci/install_libpfm.sh
-              - cat /proc/sys/kernel/perf_event_paranoid 
-              - locate libdl.so
               - mkdir build
               - cd build
               - ../configure --prefix /tmp/install
-              - grep -r ldl .
-              - make -j2
-              - ldd src/trace/libcxtrace.so
+              - make -j
               - make test
               - sudo make install
