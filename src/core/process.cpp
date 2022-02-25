@@ -308,8 +308,9 @@ long Process::peek(long addr) {
 
 void Process::poke(long addr, long data) {
     log::debug("Process:: poke/write data 0x%x to 0x%x", data, addr);
+    errno=0;
     long ret = ptrace(PTRACE_POKEDATA, pid_, addr, data);
-    if (ret != -1) {
+    if (ret != 0) {
         switch (errno) {
             case EBUSY:
                 check(false, "Process:: poke: ptrace_poke failed: EBUSY: %s", strerror(errno));
