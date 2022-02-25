@@ -71,6 +71,7 @@ jobs:
               - ../configure --prefix /tmp/install
               - make -j
               - make test
+              - sudo -H pip3 install -U pip virtualenv
               - sudo -H make install
         - stage: build_and_test
           name: Build and test ppc64le
@@ -83,6 +84,7 @@ jobs:
               - ../configure --prefix /tmp/install
               - make -j
               - make test
+              - sudo -H pip3 install -U pip virtualenv
               - sudo -H make install
         - stage: build_and_test
           name: Build and test s390x
@@ -95,4 +97,5 @@ jobs:
               - ../configure --prefix /tmp/install
               - make -j
               - make test
+              - sudo -H pip3 install -U pip virtualenv
               - sudo -H make install
