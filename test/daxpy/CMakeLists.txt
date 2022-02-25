@@ -29,13 +29,3 @@ add_executable(test-daxpy
 )
 
 target_link_libraries(test-daxpy m)
-
-get_target_property(TEMP test-daxpy LINK_FLAGS)
-if(TEMP STREQUAL "TEMP-NOTFOUND")
-SET(TEMP "") # Set to empty string
-else()
-SET(TEMP "${TEMP} ") # A space to cleanly separate from existing content
-endif()
-# Append our values
-SET(TEMP "${TEMP} -fuse-ld=gold ")
-set_target_properties(test-daxpy PROPERTIES LINK_FLAGS ${TEMP}) 

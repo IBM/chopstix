@@ -132,11 +132,14 @@ test_daxpy() {
 }
 
 machine="$(uname -m)"
-if [ "$machine" = "x86_64" ]; then
+if [ "${machine}" = "x86_64" ]; then
     exit 0
 fi
 
-test_daxpy 10000 1
-test_daxpy 1000 10
-test_daxpy 100 100
-test_daxpy 10 1000
+if [ "${TRAVIS}" != "true" ]; then
+    # In TRAVIS tracing does not work
+    test_daxpy 10000 1
+    test_daxpy 1000 10
+    test_daxpy 100 100
+    test_daxpy 10 1000
+fi

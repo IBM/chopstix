@@ -48,7 +48,6 @@ jobs:
           script:                                                                  
               - set -e                                                             
               - shellcheck -x -s sh $(find . -name \*.sh) $(find . -name \*.sh.in) ./tools/chop-* ./test/drivers/* ./test/daxpy/*spec
-              - env
         - stage: shell_conventions                                                 
           name: shell conventions ppc64le                                                 
           arch: ppc64le
