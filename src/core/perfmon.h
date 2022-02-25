@@ -26,6 +26,9 @@
 
 #pragma once
 
+// Library headers
+#include <perfmon/pfmlib.h>
+
 namespace chopstix {
 
 // Singleton object
@@ -35,6 +38,7 @@ class Perfmon {
     static Perfmon &Get_instance();
     void initialize();
     void terminate();
+    pfm_pmu_t get_pmu();
 
   private:
     bool init_ = false;
