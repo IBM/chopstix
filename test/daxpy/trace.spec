@@ -136,7 +136,9 @@ if [ "${machine}" = "x86_64" ]; then
     exit 0
 fi
 
+set +u
 if [ "${TRAVIS}" != "true" ]; then
+    set -u
     # In TRAVIS tracing does not work
     test_daxpy 10000 1
     test_daxpy 1000 10
