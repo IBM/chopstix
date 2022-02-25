@@ -71,7 +71,7 @@ jobs:
               - ../configure --prefix /tmp/install
               - make -j
               - make test
-              - sudo make install
+              - sudo -H make install
         - stage: build_and_test
           name: Build and test ppc64le
           arch: ppc64le 
