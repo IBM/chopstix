@@ -49,6 +49,7 @@ test_trace_function() {
     bpoints=$("$chopm" "$testbin" "$fun" | tr "\n" " ")
     echo "> timeout $TIMEOUT $chop trace $bpoints $testbin $*" 
 
+    # shellcheck disable=SC2068,SC2086
     timeout "$TIMEOUT" "$chop" trace $bpoints "$testbin" $@ 2>&1 
     # shellcheck disable=SC2068,SC2086
     timeout "$TIMEOUT" "$chop" trace $bpoints "$testbin" $@ > "output.$ver" 
