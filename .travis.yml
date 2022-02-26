@@ -42,6 +42,7 @@ env:
         - CTEST_OUTPUT_ON_FAILURE=1
         - CC=gcc-11
         - CXX=g++-11
+        - FC=gfortran-11
 stages:
   - shell_conventions
   - build_and_test
