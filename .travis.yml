@@ -25,6 +25,8 @@ addons:
             - libopenblas-dev
             - libatlas-base-dev
             - liblapack-dev
+            - python3
+            - python3-pip
         sources:
             - ubuntu-toolchain-r-test
 notifications:
