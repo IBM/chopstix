@@ -37,6 +37,6 @@ add_custom_command(OUTPUT ${OUTPUT}/clustering_package
 
 add_custom_target(clustering ALL DEPENDS ${OUTPUT}/clustering_package ${DEPS})
 
-install(CODE "execute_process(COMMAND ${VIRTUALENV} -p ${PYTHON} --prompt=\\(chopstix\\) ${CMAKE_INSTALL_PREFIX})")
+install(CODE "execute_process(COMMAND ${PYTHON} -m virtualenv -p ${PYTHON} --prompt=\\(chopstix\\) ${CMAKE_INSTALL_PREFIX})")
 install(CODE "execute_process(COMMAND sh -c \". ${CMAKE_INSTALL_PREFIX}/bin/activate && pip3 install -r ${CMAKE_CURRENT_SOURCE_DIR}/requirements.txt\")")
 install(CODE "execute_process(COMMAND sh -c \". ${CMAKE_INSTALL_PREFIX}/bin/activate && pip3 install --no-deps --prefix ${CMAKE_INSTALL_PREFIX} ${CMAKE_CURRENT_BINARY_DIR}\" WORKING_DIRECTORY ${OUTPUT})")
