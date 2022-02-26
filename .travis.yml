@@ -22,6 +22,9 @@ addons:
             - linux-tools-generic
             - zlib1g-dev
             - g++-11
+            - libopenblas-dev
+            - libatlas-base-dev
+            - liblapack-dev
         sources:
             - ubuntu-toolchain-r-test
 notifications:
