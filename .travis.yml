@@ -21,8 +21,8 @@ addons:
             - shellcheck
             - linux-tools-generic
             - zlib1g-dev
-            - g++-11
-            - gcc-11
+            - g++-10
+            - gcc-10
             - libopenblas-dev
             - libatlas-base-dev
             - liblapack-dev
@@ -30,7 +30,7 @@ addons:
             - python3-pip
             - python3-virtualenv
             - python3-scipy
-            - gfortran-11
+            - gfortran-10
             - gfortran
             - build-essential 
         sources:
