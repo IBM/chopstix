@@ -21,8 +21,8 @@ addons:
             - shellcheck
             - linux-tools-generic
             - zlib1g-dev
-            - g++-10
-            - gcc-10
+            - g++-11
+            - gcc-11
             - libopenblas-dev
             - libatlas-base-dev
             - liblapack-dev
@@ -31,7 +31,8 @@ addons:
             - python3-virtualenv
             - python3-scipy
             - python3-sklearn
-            - gfortran-10
+            - python3-dev
+            - gfortran-11
             - gfortran
             - build-essential 
         sources:
@@ -44,9 +45,9 @@ env:
     global:
         - CHOPSTIX_PERFMON_PREFIX=/tmp/libpfm
         - CTEST_OUTPUT_ON_FAILURE=1
-        - CC=gcc-10
-        - CXX=g++-10
-        - FC=gfortran-10
+        - CC=gcc-11
+        - CXX=g++-11
+        - FC=gfortran-11
         - CFLAGS="-fno-lto"
         - CXXFLAGS="-fno-lto"
         - LDFLAGS="-fno-lto"
