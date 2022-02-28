@@ -30,6 +30,7 @@ addons:
             - python3-pip
             - python3-virtualenv
             - python3-scipy
+            - python3-sklearn
             - gfortran-10
             - gfortran
             - build-essential 
