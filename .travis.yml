@@ -29,8 +29,10 @@ addons:
             - python3
             - python3-pip
             - python3-virtualenv
+            - python3-scipy
             - gfortran-11
             - gfortran
+            - build-essential 
         sources:
             - ubuntu-toolchain-r-test
 notifications:
