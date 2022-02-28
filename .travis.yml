@@ -47,6 +47,9 @@ env:
         - CC=gcc-10
         - CXX=g++-10
         - FC=gfortran-10
+        - CFLAGS="-fno-lto"
+        - CXXFLAGS="-fno-lto"
+        - LDFLAGS="-fno-lto"
 stages:
   - shell_conventions
   - build_and_test
