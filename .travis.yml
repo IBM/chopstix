@@ -30,6 +30,7 @@ addons:
             - python3-pip
             - python3-virtualenv
             - gfortran-11
+            - gfortran
         sources:
             - ubuntu-toolchain-r-test
 notifications:
