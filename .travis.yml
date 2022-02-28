@@ -44,9 +44,9 @@ env:
     global:
         - CHOPSTIX_PERFMON_PREFIX=/tmp/libpfm
         - CTEST_OUTPUT_ON_FAILURE=1
-        - CC=gcc-11
-        - CXX=g++-11
-        - FC=gfortran-11
+        - CC=gcc-10
+        - CXX=g++-10
+        - FC=gfortran-10
 stages:
   - shell_conventions
   - build_and_test
