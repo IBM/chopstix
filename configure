@@ -12,15 +12,23 @@ Options:
   -h,--help            Display this help and exit
   --prefix=PREFIX      Install to PREFIX
   --enable-x86         Enable architecture support for x86/64
+  --disable-x86        Disable architecture support for x86/64
   --enable-sysz        Enable architecture support for IBM System/Z
+  --disable-sysz       Disable architecture support for IBM System/Z
   --enable-power       Enable architecture support for IBM POWER
+  --disable-power      Disable architecture support for IBM POWER
   --enable-powerle     Enable architecture support for IBM POWER (litte-endian)
+  --disable-powerle    Disable architecture support for IBM POWER (litte-endian)
   --enable-riscv       Enable architecture support for RiscV
+  --disable-riscv      Disable architecture support for RiscV
   --build-sqlite       Build custom version of sqlite3
   --with-sqlite=PATH   Use sqlite3 installation in PATH
   --with-perfmon=PATH  Use perfmon2 installation in PATH
+  --with-zlib=PATH     Use zlib installation in PATH
   --build-tests        Generate targets for testing
+  --no-build-tests     Do not generate targets for testing
   --build-examples     Generate targets for examples
+  --no-build-examples  Do not generate targets for examples
   --build-type=TYPE    Debug|Release|RelWithDebInfo (default: RelWithDebInfo)
   --profile-cpu        Build with profiling support
 
@@ -32,9 +40,9 @@ You can also use CMake directly. For more information see docs/installation.md.
 
 cmake --version >/dev/null || { echo "You need to install CMake to build ChopStiX." ; exit 1; }
 
-PROJECT_DIR=`dirname "$0"`
+PROJECT_DIR=$(dirname "$0")
 
-TEMP=$(getopt -o 'h' -l 'help,prefix:,enable-x86,enable-sysz,enable-power,enable-powerle,enable-riscv,disable-x86,disable-sysz,disable-power,disable-powerle,disable-riscv,build-sqlite,with-sqlite:,with-perfmon:,no-build-tests,no-build-examples,build-type:,profile-cpu' -n 'configure' -- "$@")
+TEMP=$(getopt -o 'h' -l 'help,prefix:,enable-x86,enable-sysz,enable-power,enable-powerle,enable-riscv,disable-x86,disable-sysz,disable-power,disable-powerle,disable-riscv,build-sqlite,with-sqlite:,with-perfmon:,with-zlib:,build-tests,build-examples,no-build-tests,no-build-examples,build-type:,profile-cpu' -n 'configure' -- "$@")
 
 eval set -- "$TEMP"
 
@@ -46,24 +54,35 @@ while true ; do
         --prefix) BUILD_OPTIONS="$BUILD_OPTIONS -DCMAKE_INSTALL_PREFIX=$2" ; shift 2 ;;
         --enable-x86) BUILD_OPTIONS="$BUILD_OPTIONS -DCHOPSTIX_X86_SUPPORT=ON" ; shift ;;
         --disable-x86) BUILD_OPTIONS="$BUILD_OPTIONS -DCHOPSTIX_X86_SUPPORT=OFF" ; shift ;;
-        --enable-sysz) BUILD_OPTIONS="$BUILD_OPTIONS -DCHOPSTIX_SYSZ_SUPPORT=ON" ; shift ;;
+        --enable-sysz) BUILD_OPTIONS="$BUILD_OPTIONS -DCHOPSTIX_SYSZ_SUPPORT=ON" ;
+                       if [ "$(uname -m)" != "s390x" ]; then BUILD_OPTIONS="$BUILD_OPTIONS -DCHOPSTIX_BUILD_SQLITE=ON -DCMAKE_TOOLCHAIN_FILE=../scripts/cross/cross_s390x.cmake"; fi;
+                       shift ;;
         --disable-sysz) BUILD_OPTIONS="$BUILD_OPTIONS -DCHOPSTIX_SYSZ_SUPPORT=OFF" ; shift ;;
         --enable-power) BUILD_OPTIONS="$BUILD_OPTIONS -DCHOPSTIX_POWER_SUPPORT=ON" ; shift ;;
         --disable-power) BUILD_OPTIONS="$BUILD_OPTIONS -DCHOPSTIX_POWER_SUPPORT=OFF" ; shift ;;
-        --enable-powerle) BUILD_OPTIONS="$BUILD_OPTIONS -DCHOPSTIX_POWERLE_SUPPORT=ON" ; shift ;;
+        --enable-powerle) BUILD_OPTIONS="$BUILD_OPTIONS -DCHOPSTIX_POWERLE_SUPPORT=ON" ; 
+                          if [ "$(uname -m)" != "s390x" ]; then BUILD_OPTIONS="$BUILD_OPTIONS -DCHOPSTIX_BUILD_SQLITE=ON -DCMAKE_TOOLCHAIN_FILE=../scripts/cross/cross_ppc64le.cmake"; fi;
+                          shift ;;
         --disable-powerle) BUILD_OPTIONS="$BUILD_OPTIONS -DCHOPSTIX_POWERLE_SUPPORT=OFF" ; shift ;;
-        --enable-riscv) BUILD_OPTIONS="$BUILD_OPTIONS -DCHOPSTIX_RISCV_SUPPORT=ON" ; shift ;;
+        --enable-riscv) BUILD_OPTIONS="$BUILD_OPTIONS -DCHOPSTIX_RISCV_SUPPORT=ON" ;
+                        if [ "$(uname -m)" != "s390x" ]; then BUILD_OPTIONS="$BUILD_OPTIONS -DCHOPSTIX_BUILD_SQLITE=ON -DCMAKE_TOOLCHAIN_FILE=../scripts/cross/cross_riscv64.cmake"; fi;
+                        shift ;;
         --disable-riscv) BUILD_OPTIONS="$BUILD_OPTIONS -DCHOPSTIX_RISCV_SUPPORT=OFF" ; shift ;;
         --build-sqlite) BUILD_OPTIONS="$BUILD_OPTIONS -DCHOPSTIX_BUILD_SQLITE=ON" ; shift ;;
         --with-sqlite) BUILD_OPTIONS="$BUILD_OPTIONS -DCHOPSTIX_SQLITE_PREFIX=$2" ; shift 2 ;;
         --with-perfmon) BUILD_OPTIONS="$BUILD_OPTIONS -DCHOPSTIX_PERFMON_PREFIX=$2" ; shift 2 ;;
+        --with-zlib) BUILD_OPTIONS="$BUILD_OPTIONS -DCHOPSTIX_ZLIB_PREFIX=$2" ; shift 2 ;;
+        --build-tests) BUILD_OPTIONS="$BUILD_OPTIONS -DCHOPSTIX_BUILD_TESTS=ON" ; shift ;;
         --no-build-tests) BUILD_OPTIONS="$BUILD_OPTIONS -DCHOPSTIX_BUILD_TESTS=OFF" ; shift ;;
+        --build-examples) BUILD_OPTIONS="$BUILD_OPTIONS -DCHOPSTIX_BUILD_EXAMPLES=ON" ; shift ;;
         --no-build-examples) BUILD_OPTIONS="$BUILD_OPTIONS -DCHOPSTIX_BUILD_EXAMPLES=OFF" ; shift ;;
         --build-type) BUILD_OPTIONS="$BUILD_OPTIONS -DCMAKE_BUILD_TYPE=$2" ; shift 2 ;;
         --profile-cpu) BUILD_OPTIONS="$BUILD_OPTIONS -DCHOPSTIX_PROFILE_CPU=ON" ; shift ;;
         --) shift ; break ;;
         *) echo "Internal error!" ; exit 1 ;;
     esac
+
 done
 
+echo "Executing: cmake $BUILD_OPTIONS $PROJECT_DIR"
 cmake $BUILD_OPTIONS $PROJECT_DIR

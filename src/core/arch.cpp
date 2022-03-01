@@ -79,7 +79,7 @@ Arch::impl_ptr Arch::get_impl(std::string name) {
     } else
 #endif
 #ifdef CHOPSTIX_SYSZ_SUPPORT
-        if (anyof(name, {"system", "z", "s360", "s390"})) {
+        if (anyof(name, {"system", "z", "s360", "s390", "s390x"})) {
         return impl_ptr(new ArchZ());
     } else
 #endif
