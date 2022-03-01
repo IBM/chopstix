@@ -1,7 +1,6 @@
 language: cpp
 version: ~> 1.0
 cache:
-    apt: true
     ccache: false
     directories:
         - toolchain
@@ -23,18 +22,9 @@ addons:
             - zlib1g-dev
             - g++-11
             - gcc-11
-            - libopenblas-dev
-            - libatlas-base-dev
-            - liblapack-dev
             - python3
             - python3-pip
             - python3-virtualenv
-            - python3-scipy
-            - python3-sklearn
-            - python3-dev
-            - gfortran-11
-            - gfortran
-            - build-essential 
             - libsqlite3-dev
         sources:
             - ubuntu-toolchain-r-test
