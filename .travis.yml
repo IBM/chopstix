@@ -13,7 +13,7 @@ compiler:
     - gcc
 addons:
     apt:
-        update: true
+        update: false
         packages:
             - cmake
             - cmake-data
