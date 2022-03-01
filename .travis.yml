@@ -27,8 +27,6 @@ stages:
   - build_and_test
   - test
   - install
-before_cache:
-  - sudo rm -fr /var/cache/apt/archives/partial /var/cache/apt/archives/lock
 install:
   - if [ "$(ls /tmp/deb/*deb 2> /dev/null | wc -l)" -gt 0 ]; then sudo cp -n -u /tmp/deb/*deb /var/cache/apt/archives/ ; fi;
   - sudo add-apt-repository -y ppa:ubuntu-toolchain-r/test
