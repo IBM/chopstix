@@ -34,7 +34,6 @@ install:
   - sudo apt-get update
   - sudo apt-get install -y cmake cmake-data shellcheck linux-tools-generic zlib1g-dev g++-11 gcc-11 python3 python3-pip python3-virtualenv libsqlite3-dev
 jobs:                                                                              
-    fast_finish: true                                                              
     include:
         - stage: shell_conventions                                                 
           name: shell conventions amd64                                              
