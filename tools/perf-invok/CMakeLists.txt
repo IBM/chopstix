@@ -51,6 +51,8 @@ if (CHOPSTIX_BUILD_TESTS)
         )
     endif ()
 
+    set_target_properties(sandwich_return PROPERTIES COMPILE_FLAGS "-O0 -Wall -Werror -pedantic -no-pie -fno-pic")
+
     if( ${CMAKE_HOST_SYSTEM_PROCESSOR} STREQUAL "x86_64" )
         message(STATUS "No perf-invok tests for architecture ${CMAKE_HOST_SYSTEM_PROCESSOR} available.")
     else ()
