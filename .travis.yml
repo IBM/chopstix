@@ -12,23 +12,6 @@ os:
 dist: bionic
 compiler:
     - gcc
-addons:
-    apt:
-        update: true
-        packages:
-            - cmake
-            - cmake-data
-            - shellcheck
-            - linux-tools-generic
-            - zlib1g-dev
-            - g++-11
-            - gcc-11
-            - python3
-            - python3-pip
-            - python3-virtualenv
-            - libsqlite3-dev
-        sources:
-            - ubuntu-toolchain-r-test
 notifications:
     email:
         on_success: change
@@ -46,6 +29,10 @@ stages:
   - install
 before_cache:
   - sudo rm -fr /var/cache/apt/archives/partial /var/cache/apt/archives/lock
+install:
+  - sudo add-apt-repository ppa:ubuntu-toolchain-r/test
+  - sudo apt-get update
+  - sudo apt-get install -y cmake cmake-data shellcheck linux-tools-generic zlib1g-dev g++-11 gcc-11 python3 python3-pip python3-virtualenv libsqlite3-dev
 jobs:                                                                              
     fast_finish: true                                                              
     include:
