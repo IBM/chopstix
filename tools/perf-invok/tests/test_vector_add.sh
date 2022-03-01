@@ -42,7 +42,7 @@ if ! hash "$marks_cmd" > /dev/null 2> /dev/null; then
 fi
 
 echo "Testing basic functionality using a function with two distinct alternate behaviours (this might take a while)..."
-
+echo "Command: ./chop-perf-invok -o $csv_file $("$marks_cmd" ./vector_add add) -- ./vector_add"
 # shellcheck disable=SC2046
 if ! ./chop-perf-invok -o "$csv_file" $("$marks_cmd" ./vector_add add) -- ./vector_add > "$log_file" 2> "$log_file" ; then
     echo "chop-perf-invok returned an error exit code"

@@ -59,7 +59,7 @@ void help(FILE *fd) {
     }
     fprintf(fd, "Usage:\n");
     fprintf(fd, "\n");
-    fprintf(fd, "perf-invok -o output [-begin addr] [-begin addr] ...] [-end addr [-end addr ...]] [-timeout seconds] [-max samples] [-cpu cpu] [-h] -- command-to-execute\n");
+    fprintf(fd, "chop-perf-invok -o output [-begin addr] [-begin addr] ...] [-end addr [-end addr ...]] [-timeout seconds] [-max samples] [-cpu cpu] [-h] -- command-to-execute\n");
     fprintf(fd, "\n");
     fprintf(fd, "-o name          output file name\n");
     fprintf(fd, "-begin addr      start address of the region to measure\n");
