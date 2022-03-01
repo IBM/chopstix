@@ -36,12 +36,6 @@ addons:
             - gfortran
             - build-essential 
             - libsqlite3-dev
-            - gcc-powerpc64le-linux-gnu
-            - g++-powerpc64le-linux-gnu
-            - gcc-8-riscv64-linux-gnu gcc-riscv64-linux-gnu
-            - g++-8-riscv64-linux-gnu g++-riscv64-linux-gnu
-            - gcc-s390x-linux-gnu
-            - g++-s390x-linux-gnu
         sources:
             - ubuntu-toolchain-r-test
 notifications:
@@ -154,6 +148,8 @@ jobs:
         - stage: build_and_test
           name: Build and test on amd64 for ppc64le
           arch: amd64
+          before_install:
+              - sudo apt-get -y install gcc-powerpc64le-linux-gnu g++-powerpc64le-linux-gnu
           script:
               - set -e
               - CC=powerpc64le-linux-gnu-gcc ARCH=ppc scripts/ci/install_libpfm.sh
@@ -165,6 +161,8 @@ jobs:
         - stage: build_and_test
           name: Build and test on amd64 for s390x
           arch: amd64
+          before_install:
+              - sudo apt-get -y install gcc-s390x-linux-gnu g++-s390x-linux-gnu
           script:
               - set -e
               - CC=s390x-linux-gnu-gcc ARCH=s390x scripts/ci/install_libpfm.sh
@@ -176,6 +174,8 @@ jobs:
         - stage: build_and_test
           name: Build and test on amd64 for riscv
           arch: amd64
+          before_install:
+              - sudo apt-get -y install gcc-8-riscv64-linux-gnu gcc-riscv64-linux-gnu g++-8-riscv64-linux-gnu g++-riscv64-linux-gnu 
           script:
               - set -e
               - CC=riscv64-linux-gnu-gcc-8 ARCH=riscv64 scripts/ci/install_libpfm.sh
