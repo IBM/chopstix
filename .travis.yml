@@ -3,7 +3,6 @@ version: ~> 1.0
 cache:
     ccache: false
     directories:
-        - toolchain
         - /tmp/libpfm
         - /tmp/zlib
     timeout: 1000
