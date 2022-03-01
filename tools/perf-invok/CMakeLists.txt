@@ -34,26 +34,25 @@ if (CHOPSTIX_BUILD_TESTS)
     add_executable(vector_add test_programs/vector_add.c)
     set_target_properties(vector_add PROPERTIES COMPILE_FLAGS "-O0 -Wall -Werror -pedantic")
 
-    if( ${CMAKE_HOST_SYSTEM_PROCESSOR} STREQUAL "riscv64" )
+    if( ${CMAKE_SYSTEM_PROCESSOR} STREQUAL "riscv64" )
         add_executable(sandwich_return
             test_programs/sandwiched_return_riscv.s
             test_programs/sandwiched_return.c
         )
         set_target_properties(sandwich_return PROPERTIES COMPILE_FLAGS "-O0 -Wall -Werror -pedantic")
-    elseif( ${CMAKE_HOST_SYSTEM_PROCESSOR} STREQUAL "ppc64le" )
+    elseif( ${CMAKE_SYSTEM_PROCESSOR} STREQUAL "ppc64le" )
         add_executable(sandwich_return
             test_programs/sandwiched_return.c
             test_programs/sandwiched_return_ppc64.s
         )
         set_target_properties(sandwich_return PROPERTIES COMPILE_FLAGS "-O0 -Wall -Werror -pedantic")
-    elseif( ${CMAKE_HOST_SYSTEM_PROCESSOR} STREQUAL "s390x" )
+    elseif( ${CMAKE_SYSTEM_PROCESSOR} STREQUAL "s390x" )
         add_executable(sandwich_return
             test_programs/sandwiched_return.c
             test_programs/sandwiched_return_s390x.s
         )
         set_target_properties(sandwich_return PROPERTIES COMPILE_FLAGS "-O0 -Wall -Werror -pedantic")
     endif ()
-
 
     if( ${CMAKE_HOST_SYSTEM_PROCESSOR} STREQUAL "x86_64" )
         message(STATUS "No perf-invok tests for architecture ${CMAKE_HOST_SYSTEM_PROCESSOR} available.")
