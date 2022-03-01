@@ -29,12 +29,7 @@ install (TARGETS
     DESTINATION bin
 )
 
-set(CMAKE_C_FLAGS_DEBUG "-O0 -no-pie -fno-pic")
-set(CMAKE_C_FLAGS_RELEASE "-O0 -no-pie -fno-pic")
-set(CMAKE_C_FLAGS_MINSIZEREL "-O0 -no-pie -fno-pic")
-set(CMAKE_C_FLAGS_RELWITHDEBINFO "-O0 -no-pie -fno-pic")
-
-if (CHOPSTIX_BUILD_TESTS) 
+if (CHOPSTIX_BUILD_TESTS)
 
     add_executable(vector_add test_programs/vector_add.c)
 

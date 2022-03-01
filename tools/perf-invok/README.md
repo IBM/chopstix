@@ -1,8 +1,13 @@
 # perf-invok
-`perf`-like tool to measure the performance on a per-invocation basis (aside from the performance of the overall, complete, execution).
-Note, however, that although its intent is to measure performance on an invocatoin level, because the input parameters are just two memory addresses, this tool can measure the performance of a region of code whenever it is executed.
+`perf`-like tool to measure the performance on a per-invocation basis
+(aside from the performance of the overall, complete, execution).
+Note, however, that although its intent is to measure performance on an
+invocatoin level, because the input parameters are just two memory addresses,
+this tool can measure the performance of a region of code whenever it is executed.
 
-Originally it was targeted at RiscV, meaning it had to use processor-specific PMU/HPM code. More recently, it has been updated to support any platform which, in turn, supports Linux's `perf` subsystem.
+Originally it was targeted at RiscV, meaning it had to use processor-specific
+PMU/HPM code. More recently, it has been updated to support any platform
+which, in turn, supports Linux's `perf` subsystem.
 
 ## Usage
 
@@ -30,7 +35,7 @@ perf-invok [-o <output_file>] [-timeout <time>] COMMAND
 
 ```
 > perf-invok -begin 401126 -end 40118f ./example
-Executing ./example 
+Executing ./example
 Measuring performance counters from 0x401126 to 0x40118f (max. samples: 4294967295).
 Begin...
 End
