@@ -39,7 +39,6 @@ env:
         - CTEST_OUTPUT_ON_FAILURE=1
         - CC=gcc-11
         - CXX=g++-11
-        - FC=gfortran-11
 stages:
   - shell_conventions
   - build_and_test
@@ -51,6 +50,8 @@ jobs:
         - stage: shell_conventions                                                 
           name: shell conventions amd64                                              
           arch: amd64
+          env:
+              - CACHE_NAME=AMD64
           script:                                                                  
               - set -e                                                             
               - shellcheck -x -s sh $(find . -name \*.sh) $(find . -name \*.sh.in) ./tools/chop-* ./test/drivers/* ./test/daxpy/*spec
