@@ -45,7 +45,7 @@ stages:
   - test
   - install
 before_cache:
-  - sudo rm -f /var/cache/apt/archives/partial /var/cache/apt/archives/lock
+  - sudo rm -fr /var/cache/apt/archives/partial /var/cache/apt/archives/lock
 jobs:                                                                              
     fast_finish: true                                                              
     include:
