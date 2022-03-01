@@ -2,7 +2,7 @@ language: cpp
 version: ~> 1.0
 cache:
     apt: true
-    ccache: true
+    ccache: false
     directories:
         - toolchain
         - /tmp/libpfm
