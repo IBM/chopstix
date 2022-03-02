@@ -25,7 +25,7 @@ you can preset custom settings as following:
 
 Use "make VERBOSE=1", if you need extra output from the compilation
 process. More details on other options, such as the ones that control the 
-target architecture to support (PowerPC, PowerPC LE, Z or x86) follow.
+target architecture to support (RISCV, PowerPC, PowerPC LE, Z or x86) follow.
 
 ## Build options
 
@@ -37,13 +37,14 @@ the following options:
 - `CHOPSTIX_POWERLE_SUPPORT=[ON|OFF]`
 - `CHOPSTIX_SYSZ_SUPPORT=[ON|OFF]`
 - `CHOPSTIX_X86_SUPPORT=[ON|OFF]`
+- `CHOPSTIX_RISCV_SUPPORT=[ON|OFF]`
 
-
-ChopStiX has two main external dependencies: sqlite3 and perfmon2.
+ChopStiX has three main external dependencies: sqlite3, perfmon2 and zlib.
 The following options allow you to configure the build for your setup.
 
 - `CHOPSTIX_PERFMON_PREFIX=[PATH]`: Path of perfmon2 installation
-- `CHOPSTIX_SQLITE_PREFIX=[PATH]`: Path of perfmon2 installation
+- `CHOPSTIX_SQLITE_PREFIX=[PATH]`: Path of sqlite installation
+- `CHOPSTIX_ZLIB_PREFIX=[PATH]`: Path of zlib installation
 
 Additionally, sqlite3 comes bundled with ChopStiX, so you can also
 manually build it.
