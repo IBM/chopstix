@@ -1,7 +1,8 @@
+/*
 #
 # ----------------------------------------------------------------------------
 #
-# Copyright 2019 IBM Corporation
+# Copyright 2021 IBM Corporation
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -17,15 +18,23 @@
 #
 # ----------------------------------------------------------------------------
 #
-############################################################
-# NAME        : daxpy/CMakeLists.txt
-# DESCRIPTION : Test ChopStiX on a simple daxpy kernel
-############################################################
+*/
 
-include_directories(${traceinc})
+#include <stdlib.h>
 
-add_executable(test-daxpy
-    daxpy.c
-)
+void add(unsigned int N, int *a, int *b, int *c) {
+    for (unsigned int i = 0; i < N; i++)
+       c[i] = a[i] + b[i];
+}
 
-target_link_libraries(test-daxpy m)
+int main() {
+    const unsigned int max_n = 100000000;
+    int *a = malloc(sizeof(int) * max_n);
+    int *b = malloc(sizeof(int) * max_n);
+    int *c = malloc(sizeof(int) * max_n);
+
+    for (unsigned int i = 0; i < 10; i++)
+        add(i % 2 ? max_n : max_n / 100, a, b, c);
+
+    return 0;
+}

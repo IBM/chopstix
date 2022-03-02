@@ -22,7 +22,6 @@
 # DESCRIPTION : Tracing support library
 ###############################################################
 
-
 add_library(cxtrace SHARED
     system.cpp
     memory.cpp
@@ -34,8 +33,8 @@ install (
     DESTINATION lib
 )
 
-target_link_libraries(cxtrace
-    cx-support)
+target_link_libraries(cxtrace cx-support)
+target_link_libraries(cxtrace dl)
 
 SET(SUPPORT_LIBRARY_CFLAGS "-DLOG_CHILD")
 get_target_property(TEMP cxtrace COMPILE_FLAGS)
@@ -45,7 +44,7 @@ else()
   SET(TEMP "${TEMP} ") # A space to cleanly separate from existing content
 endif()
 # Append our values
-SET(TEMP "${TEMP}${SUPPORT_LIBRARY_CFLAGS}" )
+SET(TEMP "${TEMP}${SUPPORT_LIBRARY_CFLAGS} " )
 set_target_properties(cxtrace PROPERTIES COMPILE_FLAGS ${TEMP} )
 
 SET(SUPPORT_LIBRARY_LDFLAGS "-static-libstdc++ -static-libgcc")
@@ -57,7 +56,7 @@ else()
 endif()
 # Append our values
 SET(TEMP2 "${TEMP2}${SUPPORT_LIBRARY_LDFLAGS}" )
-set_target_properties(cxtrace PROPERTIES LINK_FLAGS ${TEMP2} )
+set_target_properties(cxtrace PROPERTIES LINK_FLAGS ${TEMP2}) 
 
 # install (
 #     FILES cxtrace.h

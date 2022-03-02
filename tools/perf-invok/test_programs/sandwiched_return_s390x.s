@@ -1,7 +1,8 @@
+/*
 #
 # ----------------------------------------------------------------------------
 #
-# Copyright 2019 IBM Corporation
+# Copyright 2021 IBM Corporation
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -17,15 +18,19 @@
 #
 # ----------------------------------------------------------------------------
 #
-############################################################
-# NAME        : daxpy/CMakeLists.txt
-# DESCRIPTION : Test ChopStiX on a simple daxpy kernel
-############################################################
+*/
 
-include_directories(${traceinc})
-
-add_executable(test-daxpy
-    daxpy.c
-)
-
-target_link_libraries(test-daxpy m)
+.text
+	.align	8
+	.align	16
+.globl sandwich_return
+	.type	sandwich_return, @function
+sandwich_return:
+    j .L2
+.L1: 
+	br	%r14
+    .byte 0xde, 0xad, 0xbe, 0xef, 0xde, 0xad
+.L2:
+    larl %r2, .L1
+    lg %r2, 0(%r2)
+    j .L1

@@ -40,6 +40,7 @@ macro(test_case driver test)
                     testbin=$<TARGET_FILE:test-${test}>
                     driver=${driver}
                     chop=$<TARGET_FILE:chop>
+                    chopmarks=${CMAKE_CURRENT_SOURCE_DIR}/../tools/chop-marks
                     cxtrace=$<TARGET_FILE:cxtrace>
                 ${drivers}/${driver}
     )

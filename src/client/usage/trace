@@ -23,10 +23,10 @@ a) Region of interest, if you know the start and ending addresses
 
    In order to facilitate the task of defining a region of interest
    to be trace based on function (or symbol) names, one can use the
-   following chop-marks-<arch> support tool to automatically gather
+   following chop-marks support tool to automatically gather
    the -begin and -end of a function. E.g. 
 
-   chop trace $(chop-marks-sysz ./foo my_function_in_foo) ./foo bar baz
+   chop trace $(chop-marks ./foo my_function_in_foo) ./foo bar baz
 
    will trace all exectutions of 'my_function_in_foo'.
 

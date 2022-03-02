@@ -1,7 +1,8 @@
+#!/usr/bin/env sh
 #
 # ----------------------------------------------------------------------------
 #
-# Copyright 2019 IBM Corporation
+# Copyright 2021 IBM Corporation
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -17,15 +18,21 @@
 #
 # ----------------------------------------------------------------------------
 #
-############################################################
-# NAME        : daxpy/CMakeLists.txt
-# DESCRIPTION : Test ChopStiX on a simple daxpy kernel
-############################################################
 
-include_directories(${traceinc})
+set -e
+scriptpath=$( cd -P -- "$(dirname -- "$(command -v -- "$0")")" && pwd -P )
+machine=$(uname -m)
 
-add_executable(test-daxpy
-    daxpy.c
-)
+if [ "$machine" = "riscv64" ]; then
+    marks_cmd=chop-marks-riscv
+elif [ "$machine" = "ppc64le" ]; then
+    marks_cmd=chop-marks-ppc64
+elif [ "$machine" = "s390x" ]; then
+    marks_cmd=chop-marks-sysz
+else
+    echo "Unsupported architecture: $machine"
+    exit 0
+fi
 
-target_link_libraries(test-daxpy m)
+# shellcheck disable=SC2068
+"$scriptpath/$marks_cmd" $@

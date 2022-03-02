@@ -19,11 +19,11 @@
 # ----------------------------------------------------------------------------
 #
 
-#                fun_name  min max
-test_block_count rand_next 2   10
-test_block_count init_test 6   30
-test_block_count quit_test 1   10
-test_block_count test_time 3   10
-test_block_count test_iter 3   10
-test_block_count main      10  100
-test_block_count daxpy     3   10
+#                fun_name  min  max
+test_block_count rand_next   1   10
+test_block_count init_test   6   30
+test_block_count quit_test   1   10
+test_block_count test_time   3   20
+test_block_count test_iter   3   40
+test_block_count main       10  100
+test_block_count func_daxpy  3   15

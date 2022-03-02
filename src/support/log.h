@@ -36,6 +36,7 @@
 
 namespace chopstix {
 namespace log {
+
 enum mode {
     ERROR = 0,
     WARN = 1,
@@ -67,7 +68,10 @@ struct Logger {
         linebuf[n++] = '\n';
         w = syscall(SYS_write, fd_, linebuf, n);
         assert(w == n && "Write errror");
-        // sync();
+        //
+        // Enabling fsync created slowdown , enable only for debugging
+        //
+        //fsync(fd_);
     }
 
     Logger(const Logger &) = delete;

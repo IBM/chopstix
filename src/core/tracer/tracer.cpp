@@ -21,10 +21,17 @@ using namespace chopstix;
 namespace fs = filesystem;
 
 static std::string library_path() {
+    char *env_preload = getenv("CHOPSTIX_OPT_PRELOAD_PATH");
+    if (env_preload != NULL) {
+        std::string full_path{env_preload};
+        log::debug("library_path: %s", full_path.c_str());
+        return full_path;
+    }
     char raw_path[PATH_MAX];
     auto n = readlink("/proc/self/exe", raw_path, PATH_MAX);
     std::string full_path{raw_path};
     auto pos = full_path.rfind("bin/chop");
+    log::debug("library_path: %s", full_path.substr(0, pos) + "/lib/libcxtrace.so");
     return full_path.substr(0, pos) + "/lib/libcxtrace.so";
 }
 

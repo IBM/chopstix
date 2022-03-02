@@ -49,7 +49,7 @@ int main(int argc, char **argv) {
     double *x = malloc(sizeof(double) * n);
     double *y = malloc(sizeof(double) * n);
 
-    LOG("x: %p   y: %p", x, y);
+    LOG("x: %p   y: %p", (void*) x, (void*) y);
     srand(19940617);
     for (int i = 0; i < n; ++i) {
         x[i] = rand_next();

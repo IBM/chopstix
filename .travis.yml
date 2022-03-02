@@ -1,25 +1,17 @@
 language: cpp
 version: ~> 1.0
 cache:
-    apt: true
-    ccache: true
+    ccache: false
     directories:
-        - toolchain
+        - /tmp/libpfm
+        - /tmp/zlib
+        - /tmp/deb
     timeout: 1000
 os:
     - linux
 dist: bionic
 compiler:
     - gcc
-addons:
-    apt:
-        update: true
-        packages:
-            - cmake
-            - cmake-data
-            - shellcheck
-            - linux-tools-generic
-            - zlib1g-dev
 notifications:
     email:
         on_success: change
@@ -27,42 +19,170 @@ notifications:
 env:
     global:
         - CHOPSTIX_PERFMON_PREFIX=/tmp/libpfm
-        - CHOPSTIX_BUILD_TESTS=ON
         - CTEST_OUTPUT_ON_FAILURE=1
-    jobs:
-        - CHOPSTIX_POWERLE_SUPPORT=ON CHOPSTIX_BUILD_SQLITE=ON CACHE_NAME=POWERLE
-        - CHOPSTIX_RISCV_SUPPORT=ON CHOPSTIX_BUILD_SQLITE=ON CACHE_NAME=RISCV
-        - CHOPSTIX_SYSZ_SUPPORT=ON CHOPSTIX_BUILD_SQLITE=ON CACHE_NAME=Z
-        - CHOPSTIX_X86_SUPPORT=ON CHOPSTIX_BUILD_SQLITE=ON CACHE_NAME=X86_SQLITE
-        - CHOPSTIX_X86_SUPPORT=ON CHOPSTIX_BUILD_SQLITE=OFF CACHE_NAME=X86
-before_install:
-    - set -e
-    - echo "Before install"
-    - shellcheck -x -s sh $(find . -name \*.sh) $(find . -name \*.sh.in) ./tools/chop-* ./test/drivers/* ./test/daxpy/*spec
-    - env
-    - if [ "$CHOPSTIX_BUILD_SQLITE" == "OFF" ]; then sudo apt-get install libsqlite3-dev -y ; fi
-    - if [ "$CHOPSTIX_POWERLE_SUPPORT" == "ON" ]; then sudo apt-get install gcc-powerpc64le-linux-gnu g++-powerpc64le-linux-gnu -y ; fi
-    - if [ "$CHOPSTIX_RISCV_SUPPORT" == "ON" ]; then sudo apt-get install gcc-8-riscv64-linux-gnu gcc-riscv64-linux-gnu g++-8-riscv64-linux-gnu g++-riscv64-linux-gnu -y ; fi
-    - if [ "$CHOPSTIX_SYSZ_SUPPORT" == "ON" ]; then sudo apt-get install gcc-s390x-linux-gnu g++-s390x-linux-gnu -y ; fi
+        - CC=gcc-11
+        - CXX=g++-11
+stages:
+  - shell_conventions
+  - build_and_test
+  - test
+  - install
 install:
-    - set -e
-    - echo "Install"
-    - if [ "$CHOPSTIX_POWERLE_SUPPORT" == "ON" ]; then CC=powerpc64le-linux-gnu-gcc ARCH=ppc scripts/ci/install_libpfm.sh ; fi
-    - if [ "$CHOPSTIX_POWERLE_SUPPORT" == "ON" ]; then CC=powerpc64le-linux-gnu-gcc CHOST=powerpc64le-linux-gnu scripts/ci/install_zlib.sh ; fi
-    - if [ "$CHOPSTIX_RISCV_SUPPORT" == "ON" ]; then CC=riscv64-linux-gnu-gcc-8 ARCH=riscv64 scripts/ci/install_libpfm.sh ; fi
-    - if [ "$CHOPSTIX_RISCV_SUPPORT" == "ON" ]; then CC=riscv64-linux-gnu-gcc-8 CHOST=riscv64 scripts/ci/install_zlib.sh ; fi
-    - if [ "$CHOPSTIX_SYSZ_SUPPORT" == "ON" ]; then CC=s390x-linux-gnu-gcc ARCH=s390x scripts/ci/install_libpfm.sh ; fi
-    - if [ "$CHOPSTIX_SYSZ_SUPPORT" == "ON" ]; then CC=s390x-linux-gnu-gcc CHOST=s390x-linux-gnu scripts/ci/install_zlib.sh ; fi
-    - if [ "$CHOPSTIX_X86_SUPPORT" == "ON" ]; then scripts/ci/install_libpfm.sh ; fi
-script:
-    - set -e
-    - echo "Script"
-    - mkdir build
-    - cd build
-    - if [ "$CHOPSTIX_POWERLE_SUPPORT" == "ON" ]; then cmake .. -DZLIB_ROOT=/tmp/zlib -DCMAKE_TOOLCHAIN_FILE=../scripts/cross/cross_ppc64le.cmake ; fi
-    - if [ "$CHOPSTIX_RISCV_SUPPORT" == "ON" ]; then cmake .. -DZLIB_ROOT=/tmp/zlib -DCMAKE_TOOLCHAIN_FILE=../scripts/cross/cross_riscv64.cmake ; fi
-    - if [ "$CHOPSTIX_SYSZ_SUPPORT" == "ON" ]; then cmake .. -DZLIB_ROOT=/tmp/zlib -DCMAKE_TOOLCHAIN_FILE=../scripts/cross/cross_s390x.cmake ; fi
-    - if [ "$CHOPSTIX_X86_SUPPORT" == "ON" ]; then cmake .. ; fi
-    - make -j2
-    - sudo make install
-    # - if [ "$CHOPSTIX_X86_SUPPORT" == "ON" ]; then make test ; fi
+  - if [ "$(ls /tmp/deb/*deb 2> /dev/null | wc -l)" -gt 0 ]; then sudo cp -n -u /tmp/deb/*deb /var/cache/apt/archives/ ; fi;
+  - sudo add-apt-repository -y ppa:ubuntu-toolchain-r/test
+  - sudo apt-get update -y
+  - sudo apt-get install -y cmake cmake-data shellcheck linux-tools-generic zlib1g-dev g++-11 gcc-11 python3 python3-pip python3-virtualenv libsqlite3-dev
+  - if [ "$(ls /var/cache/apt/archives/*deb 2> /dev/null | wc -l)" -gt 0 ]; then sudo cp -n -u /var/cache/apt/archives/*deb /tmp/deb/ ; fi;
+jobs:                                                                              
+    include:
+        - stage: shell_conventions                                                 
+          name: shell conventions amd64                                              
+          arch: amd64
+          env:
+              - CACHE_NAME=amd64
+          script:                                                                  
+              - set -e                                                             
+              - shellcheck -x -s sh $(find . -name \*.sh) $(find . -name \*.sh.in) ./tools/chop-* ./test/drivers/* ./test/daxpy/*spec
+        - stage: shell_conventions                                                 
+          name: shell conventions ppc64le                                                 
+          arch: ppc64le
+          env:
+              - CACHE_NAME=ppc64le
+          script:                                                                  
+              - set -e                                                             
+              - shellcheck -x -s sh $(find . -name \*.sh) $(find . -name \*.sh.in) ./tools/chop-* ./test/drivers/* ./test/daxpy/*spec
+        - stage: shell_conventions                                                 
+          name: shell conventions s390x                                           
+          arch: s390x
+          env:
+              - CACHE_NAME=s390x
+          script:                                                                  
+              - set -e                                                             
+              - shellcheck -x -s sh $(find . -name \*.sh) $(find . -name \*.sh.in) ./tools/chop-* ./test/drivers/* ./test/daxpy/*spec
+        - stage: build_and_test
+          name: Build and test amd64
+          arch: amd64
+          env:
+              - CACHE_NAME=amd64
+          script:
+              - set -e
+              - scripts/ci/install_libpfm.sh
+              - mkdir build
+              - cd build
+              - ../configure --prefix /tmp/install
+              - make -j
+              - make test
+              - pip install -U pip virtualenv
+              - make install
+        - stage: build_and_test
+          name: Build and test ppc64le
+          arch: ppc64le 
+          env:
+              - CACHE_NAME=ppc64le
+          script:
+              - set -e
+              - scripts/ci/install_libpfm.sh
+              - mkdir build
+              - cd build
+              - ../configure --prefix /tmp/install
+              - make -j
+              - make test
+        - stage: build_and_test
+          name: Build and test s390x
+          arch: s390x
+          env:
+              - CACHE_NAME=s390x
+          script:
+              - set -e
+              - scripts/ci/install_libpfm.sh
+              - mkdir build
+              - cd build
+              - ../configure --prefix /tmp/install
+              - make -j
+              - make test
+        - stage: build_and_test
+          name: Build and test amd64 build sqlite
+          arch: amd64
+          env:
+              - CACHE_NAME=amd64
+          script:
+              - set -e
+              - scripts/ci/install_libpfm.sh
+              - mkdir build
+              - cd build
+              - ../configure --prefix /tmp/install --build-sqlite
+              - make -j
+              - make test
+              - pip install -U pip virtualenv
+              - make install
+        - stage: build_and_test
+          name: Build and test ppc64le build sqlite
+          arch: ppc64le 
+          env:
+              - CACHE_NAME=ppc64le
+          script:
+              - set -e
+              - scripts/ci/install_libpfm.sh
+              - mkdir build
+              - cd build
+              - ../configure --prefix /tmp/install --build-sqlite
+              - make -j
+              - make test
+        - stage: build_and_test
+          name: Build and test s390x build sqlite
+          arch: s390x
+          env:
+              - CACHE_NAME=s390x
+          script:
+              - set -e
+              - scripts/ci/install_libpfm.sh
+              - mkdir build
+              - cd build
+              - ../configure --prefix /tmp/install --build-sqlite
+              - make -j
+              - make test
+        - stage: build_and_test
+          name: Build and test on amd64 for ppc64le
+          arch: amd64
+          before_install:
+              - sudo apt-get -y install gcc-powerpc64le-linux-gnu g++-powerpc64le-linux-gnu
+          env:
+              - CACHE_NAME=amd64-ppc64le
+          script:
+              - set -e
+              - CC=powerpc64le-linux-gnu-gcc ARCH=ppc scripts/ci/install_libpfm.sh
+              - CC=powerpc64le-linux-gnu-gcc CHOST=powerpc64le-linux-gnu scripts/ci/install_zlib.sh
+              - mkdir build
+              - cd build
+              - ../configure --prefix /tmp/install --enable-powerle --with-perfmon=/tmp/libpfm --with-zlib=/tmp/zlib
+              - make -j
+        - stage: build_and_test
+          name: Build and test on amd64 for s390x
+          arch: amd64
+          before_install:
+              - sudo apt-get -y install gcc-s390x-linux-gnu g++-s390x-linux-gnu
+          env:
+              - CACHE_NAME=amd64-s390x
+          script:
+              - set -e
+              - CC=s390x-linux-gnu-gcc ARCH=s390x scripts/ci/install_libpfm.sh
+              - CC=s390x-linux-gnu-gcc CHOST=s390x-linux-gnu scripts/ci/install_zlib.sh
+              - mkdir build
+              - cd build
+              - ../configure --prefix /tmp/install --enable-sysz --with-perfmon=/tmp/libpfm --with-zlib=/tmp/zlib
+              - make -j
+        - stage: build_and_test
+          name: Build and test on amd64 for riscv
+          arch: amd64
+          before_install:
+              - sudo apt-get -y install gcc-8-riscv64-linux-gnu gcc-riscv64-linux-gnu g++-8-riscv64-linux-gnu g++-riscv64-linux-gnu 
+          env:
+              - CACHE_NAME=amd64-riscv
+          script:
+              - set -e
+              - CC=riscv64-linux-gnu-gcc-8 ARCH=riscv64 scripts/ci/install_libpfm.sh
+              - CC=riscv64-linux-gnu-gcc-8 CHOST=riscv64 scripts/ci/install_zlib.sh
+              - mkdir build
+              - cd build
+              - ../configure --prefix /tmp/install --enable-riscv --with-perfmon=/tmp/libpfm --with-zlib=/tmp/zlib
+              - make -j

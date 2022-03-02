@@ -26,7 +26,7 @@
 
 #include "event.h"
 
-// Langauge headers
+// Language headers
 #include <cstring>
 
 // System headers
@@ -41,6 +41,7 @@
 using namespace chopstix;
 
 Event::Event(std::string name) : name_(std::move(name)) {
+    log::debug("Event create start: %s", name_.c_str());
     // Lazy initialization of libpfm
     // when first event is created
     Perfmon::Get_instance().initialize();
@@ -54,16 +55,44 @@ Event::Event(std::string name) : name_(std::move(name)) {
     char *fstr = nullptr;
     arg.attr = &attr_;
     arg.fstr = &fstr;
+    arg.size = sizeof(pfm_perf_encode_arg_t);
 
     int ret = pfm_get_os_event_encoding(name_.c_str(), PFM_PLM0 | PFM_PLM3,
                                         PFM_OS_PERF_EVENT_EXT, &arg);
-    checkx(ret == PFM_SUCCESS,
-           "Unable to get encoding for event '%s'\n"
-           "See 'perf list' for a list of available events",
-           name_);
+    if (ret != PFM_SUCCESS) {
+        log::error("Unable to get encoding for event '%s'\n", name_);
+
+        pfm_event_info_t info;
+        pfm_pmu_info_t pinfo;
+        int i, ret;
+
+        memset(&info, 0, sizeof(info));
+        memset(&pinfo, 0, sizeof(pinfo));
+
+        info.size = sizeof(info);
+        pinfo.size = sizeof(pinfo);
+
+        pfm_pmu_t pmu = PFM_PMU_PERF_EVENT;
+
+        ret = pfm_get_pmu_info(pmu, &pinfo);
+        checkx(ret == PFM_SUCCESS, "cannot get pmu info");
+
+        for (i = pinfo.first_event; i != -1; i = pfm_get_event_next(i)) {
+            ret = pfm_get_event_info(i, PFM_OS_PERF_EVENT_EXT, &info);
+            checkx(ret == PFM_SUCCESS, "cannot get event info");
+
+            log::error("%s Event: PMU %s:: Name: %s",
+                      pinfo.is_present ? "Active" : "Supported",
+                      pinfo.name, info.name);
+        }
+        checkx(false,
+           "Unable to get encoding for event '%s'\n", name_);
+    }
 
     info_ = std::string(fstr);
     free(fstr);
+
+    log::debug("Event create end: %s", name_.c_str());
 }
 
 Event::~Event() {
@@ -109,16 +138,29 @@ void Event::setup() {
 }
 
 void Event::open(pid_t pid, int cpu, int group_fd, unsigned long flags) {
+    log::debug("Event::open start");
+    log::debug("Event::open pid: %d", pid);
+    log::debug("Event::open cpu: %d", cpu);
+    log::debug("Event::open group_fd: %d", group_fd);
+    log::debug("Event::open flags: %d", flags);
+    log::debug("Event::open attr: %x", &attr_);
+    log::debug("Event::open start");
     fd_ = perf_event_open(&attr_, pid, cpu, group_fd, flags);
     if (is_open()) return;
     switch (errno) {
+        case E2BIG:
+            fail("E2BIG: Size error");
         case EACCES:
-        case EPERM:
-            fail(
-                "Unable to open event %s: %s\n"
+            fail("EACCES: Unable to open event %s: %s\n"
                 "You need to be sysadmin or change your settings\n"
                 "in /proc/sys/kernel/perf_event_paranoid.",
                 name_, strerror(errno));
+        case EBADF:
+            fail("EBADF: group_fd file descriptor is not valid");
+        case EBUSY:
+            fail("EBUSY: another event already has exclusive access to the PMU");
+        case EFAULT:
+            fail("EFAULT: attr pointer points at an invalid memory address");
         case EINVAL:
             fail(
                 "Unable to open event %s (%s: %d): %s\n"
@@ -129,7 +171,30 @@ void Event::open(pid_t pid, int cpu, int group_fd, unsigned long flags) {
                 name_, (attr_.freq ? "freq" : "period"),
                 (attr_.freq ? attr_.sample_freq : attr_.sample_period),
                 strerror(errno));
-        default: fail("Unable to open event %s: %s\n", name_, strerror(errno));
+        case EMFILE:
+            fail("EMFILE: no more events can be created");
+        case ENODEV:
+            fail("ENODEV: feature not supported by the current CPU");
+        case ENOENT:
+            fail("ENOENT: type setting is not valid. Also returned for some unsupported generic events");
+        case ENOSPC:
+            fail("ENOSPC: no more breakpoints events supported");
+        case ENOSYS:
+            fail("ENOSYS: PERF_SAMPLE_STACK_USER not supported by the hardware");
+        case EOPNOTSUPP:
+            fail("EOPNOTSUPP: feature not supported by the hardware");
+        case EOVERFLOW:
+            fail("EOVERFLOW: overflow in sample_max_stack during PERF_SAMPLE_CALLCHAIN");
+        case EPERM:
+            fail(
+                "EPERM: Unable to open event %s: %s\n"
+                "You need to be sysadmin or change your settings\n"
+                "in /proc/sys/kernel/perf_event_paranoid.",
+                name_, strerror(errno));
+        case ESRCH:
+            fail("ESRCH: attempting to attach to a process that does not exist");
+
+        default: fail("Unable to open event %s: %s (error: %d)\n", name_, strerror(errno), errno);
     }
 }
 

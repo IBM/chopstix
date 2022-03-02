@@ -47,6 +47,33 @@ void Perfmon::initialize() {
     }
 }
 
+pfm_pmu_t Perfmon::get_pmu() {
+    if (!init_) {
+        Perfmon::initialize();
+    }
+
+    unsigned int pmu = PFM_PMU_NONE;
+    pfm_pmu_info_t pinfo;
+    for (pmu = PFM_PMU_NONE; pmu < PFM_PMU_MAX ; pmu=pmu+1) {
+        memset(&pinfo, 0, sizeof(pinfo));
+        int ret = pfm_get_pmu_info((pfm_pmu_t) pmu, &pinfo);
+        log::debug("Testing PMU: %d", pmu);
+        if (ret == PFM_SUCCESS) break;
+        if (ret == PFM_ERR_NOINIT) {
+            log::debug("pfm library has not been initialized properly");
+        }
+        if (ret == PFM_ERR_NOTSUPP) {
+            log::debug("PMU model is not supported by the library");
+        }
+        if (ret == PFM_ERR_INVAL) {
+            log::debug("Invalid argument");
+        }
+    }
+    checkx(pmu != PFM_PMU_MAX, "cannot get pmu info (tested all)");
+
+    return (pfm_pmu_t) pmu;
+}
+
 void Perfmon::terminate() {
     if (init_) {
         pfm_terminate();

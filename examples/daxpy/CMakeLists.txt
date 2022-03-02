@@ -28,7 +28,7 @@ add_executable(example-daxpy
 
 set_target_properties(example-daxpy PROPERTIES
     OUTPUT_NAME "daxpy"
-    COMPILE_FLAGS "-O0"
+    COMPILE_FLAGS "-O0 -Wall -Werror -pedantic"
 )
 
 install (

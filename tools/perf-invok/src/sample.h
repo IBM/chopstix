@@ -1,7 +1,8 @@
+/*
 #
 # ----------------------------------------------------------------------------
 #
-# Copyright 2019 IBM Corporation
+# Copyright 2021 IBM Corporation
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -17,15 +18,22 @@
 #
 # ----------------------------------------------------------------------------
 #
-############################################################
-# NAME        : daxpy/CMakeLists.txt
-# DESCRIPTION : Test ChopStiX on a simple daxpy kernel
-############################################################
+*/
 
-include_directories(${traceinc})
+#include <stdio.h>
+#include <unistd.h>
 
-add_executable(test-daxpy
-    daxpy.c
-)
+typedef struct {
+    unsigned long long retiredInstructions;
+    unsigned long long cycles;
+    unsigned long long retiredMemoryInstructions;
+    unsigned long long dataCacheMisses;
+    unsigned long long dataCacheBusyEvents;
+    unsigned long long time;
+} Sample;
 
-target_link_libraries(test-daxpy m)
+void configureEvents(pid_t pid);
+void beginSample(Sample *sample);
+void endSample(Sample *sample);
+void printSamples(FILE *fd, unsigned int sampleCount, Sample *samples,
+                  int printHeaderes);

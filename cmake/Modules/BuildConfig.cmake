@@ -4,8 +4,8 @@
 
 include (SetEnv) # Use either default or env variable
 
-set_env (CHOPSTIX_BUILD_TESTS OFF CACHE BOOL "Generate build targets for testing." )
-set_env (CHOPSTIX_BUILD_EXAMPLES OFF CACHE BOOL "Generate build targets for examples." )
+set_env (CHOPSTIX_BUILD_TESTS ON CACHE BOOL "Generate build targets for testing." )
+set_env (CHOPSTIX_BUILD_EXAMPLES ON CACHE BOOL "Generate build targets for examples." )
 
 # TODO Support for automatic documentation (e.g. doxygen)
 set_env (CHOPSTIX_BUILD_DOCS OFF CACHE BOOL "Generate build targets for documentation." )

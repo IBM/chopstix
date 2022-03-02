@@ -56,14 +56,20 @@ if [ ! -d "$dir" ]; then
     fi
 fi
 
+if [ -e "$dir/lib/libpfm.a" ] && [ -e "$dir/lib/libpfm.so" ] && [ -e "$dir/include/perfmon/perf_event.h" ] && [ -e "$dir/include/perfmon/pfmlib.h" ] && [ -e "$dir/include/perfmon/pfmlib_perf_event.h" ] ; then
+    echo libpfm already installed in location
+    exit
+fi
+
 tmp="$dir/src_build/"
 mkdir -p "$tmp"
 cd "$tmp" 
 
 LIBPFM_VERSION=4.10.1
-rm -f libpfm-${LIBPFM_VERSION}.tar.gz
-wget https://downloads.sourceforge.net/project/perfmon2/libpfm4/libpfm-${LIBPFM_VERSION}.tar.gz
-tar xvf libpfm-${LIBPFM_VERSION}.tar.gz
+if [ ! -f "libpfm-${LIBPFM_VERSION}.tar.gz" ]; then
+    wget https://downloads.sourceforge.net/project/perfmon2/libpfm4/libpfm-${LIBPFM_VERSION}.tar.gz
+    tar xvf libpfm-${LIBPFM_VERSION}.tar.gz
+fi
 
 cd libpfm-${LIBPFM_VERSION} 
 

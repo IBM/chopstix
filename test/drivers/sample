@@ -26,7 +26,6 @@ die() { echo "$*" >&2 ; exit 1 ; }
 echo "> checking events"
 command -v perf >/dev/null 2>&1 || die "Error: perf is not installed"
 
-test=$(printenv test)
 chop=$(printenv chop)
 testbin=$(printenv testbin)
 testdir=$(printenv testdir)
@@ -36,56 +35,61 @@ test_event() {
     ! perf stat -e "$1" ls >/dev/null 2>&1 || event="$1"
 }
     
-test_event task-clock
-test_event cpu-clock
-test_event cycles
-
-[ -n "$event" ] || die "Error: no test event available"
-
 export event
 export period=1000000
 
 echo "using $event@$period"
 
 test_sample() {
-    rm -rf chop.db
+    for event in cycles cpu-clock task-clock; do
+        rm -rf chop.db
+        test_event $event
 
-    echo "> chop sample -events $event -period $period test-$test $*"
-    /usr/bin/time -f"%U" -o exec_time \
-        "$chop" sample -events "$event" -period "$period" "$testbin $*"
-    
-    exec_time=$(cat exec_time)
-    clock_freq=$(lscpu | awk '/^CPU MHz:/ {print $3;exit}')
-    num_samples=$(sqlite3 chop.db 'select count(*) from sample;')
-    
-    expected_samples=
-    
-    case $event in
-        cycles)
-            expected_samples=$(echo "$clock_freq * $exec_time" | bc -l) ;;
-        cpu-clock)
-            expected_samples=$(echo "1000 * $exec_time" | bc -l) ;;
-        task-clock)
-            expected_samples=$(echo "1000 * $exec_time" | bc -l) ;;
-    esac
-    
-    margin=0.1
-    min_samples=$(echo "$expected_samples $margin" \
-        | awk '{printf("%d", $1 * (1-$2))}')
-    max_samples=$(echo "$expected_samples $margin" \
-        | awk '{printf("%d", $1 * (1+$2))}')
-    
-    echo "Execution time: $exec_time seconds"
-    echo "Sampling event: $event"
-    echo "Sampling period: $period"
-    echo "Clock frequency: $clock_freq MHz"
-    echo "Number of samples: $num_samples"
-    echo "Expected samples: $min_samples - $max_samples"
-    
-    test "$num_samples" -ge "$min_samples" || \
-        die "Error: less than $min_samples samples ($num_samples)"
-    test "$num_samples" -le "$max_samples" || \
-        die "Error: more than $max_samples samples ($num_samples)"
+        if [ -n "$event" ]; then continue; fi
+
+        set +e
+        echo "> chop sample -events $event -period $period $testbin $*"
+        # shellcheck disable=SC2068
+        "$chop" sample -events "$event" -period "$period" "$testbin" $@
+        error=$?
+        set -e
+
+        if [ "$error" -ne 0 ]; then continue; fi;
+        
+        exec_time=10
+        clock_freq=$(grep "cpu MHz static" /proc/cpuinfo | tail -n 1 | cut -d ":" -f 2)
+        num_samples=$(sqlite3 chop.db 'select count(*) from sample;')
+        
+        expected_samples=
+        case $event in
+            cycles)
+                expected_samples=$(echo "$clock_freq * $exec_time" | bc -l) ;;
+            cpu-clock)
+                expected_samples=$(echo "1000 * $exec_time" | bc -l) ;;
+            task-clock)
+                expected_samples=$(echo "1000 * $exec_time" | bc -l) ;;
+        esac
+        
+        margin=0.1
+        min_samples=$(echo "$expected_samples $margin" \
+            | awk '{printf("%d", $1 * (1-$2))}')
+        max_samples=$(echo "$expected_samples $margin" \
+            | awk '{printf("%d", $1 * (1+$2))}')
+        
+        echo "Execution time: $exec_time seconds"
+        echo "Sampling event: $event"
+        echo "Sampling period: $period"
+        echo "Clock frequency: $clock_freq MHz"
+        echo "Number of samples: $num_samples"
+        echo "Expected samples: $min_samples - $max_samples"
+        
+        test "$num_samples" -ge "$min_samples" || \
+            die "Error: less than $min_samples samples ($num_samples)"
+        test "$num_samples" -le "$max_samples" || \
+            die "Error: more than $max_samples samples ($num_samples)"
+
+        return
+    done;
 }
 
 # shellcheck disable=SC1090,SC1091

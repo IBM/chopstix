@@ -282,15 +282,52 @@ void Process::detach(int sig) {
 
 long Process::peek(long addr) {
     log::debug("Process:: peek/read data from 0x%x", addr);
+    errno = 0;
     long ret = ptrace(PTRACE_PEEKDATA, pid_, addr, 0);
     log::debug("Process:: poke/read data 0x%x readed from 0x%x", ret, addr);
+    if (errno != 0) {
+        switch (errno) {
+            case EBUSY:
+                check(false, "Process:: poke: ptrace_poke failed: EBUSY: %s", strerror(errno));
+            case EFAULT:
+                check(false, "Process:: poke: ptrace_poke failed: EFAULT: %s", strerror(errno));
+            case EINVAL:
+                check(false, "Process:: poke: ptrace_poke failed: EINVAL: %s", strerror(errno));
+            case EIO:
+                check(false, "Process:: poke: ptrace_poke failed: EIO: %s", strerror(errno));
+            case EPERM:
+                check(false, "Process:: poke: ptrace_poke failed: EPERM: %s", strerror(errno));
+            case ESRCH:
+                check(false, "Process:: poke: ptrace_poke failed: ESRCH: %s", strerror(errno));
+            default: 
+                check(false, "Process:: poke: ptrace_poke failed: %s", strerror(errno));
+        }
+    }
     return ret;
 }
 
 void Process::poke(long addr, long data) {
     log::debug("Process:: poke/write data 0x%x to 0x%x", data, addr);
+    errno=0;
     long ret = ptrace(PTRACE_POKEDATA, pid_, addr, data);
-    check(ret != -1, "Process: poke: ptrace_poke failed");
+    if (ret != 0) {
+        switch (errno) {
+            case EBUSY:
+                check(false, "Process:: poke: ptrace_poke failed: EBUSY: %s", strerror(errno));
+            case EFAULT:
+                check(false, "Process:: poke: ptrace_poke failed: EFAULT: %s", strerror(errno));
+            case EINVAL:
+                check(false, "Process:: poke: ptrace_poke failed: EINVAL: %s", strerror(errno));
+            case EIO:
+                check(false, "Process:: poke: ptrace_poke failed: EIO: %s", strerror(errno));
+            case EPERM:
+                check(false, "Process:: poke: ptrace_poke failed: EPERM: %s", strerror(errno));
+            case ESRCH:
+                check(false, "Process:: poke: ptrace_poke failed: ESRCH: %s", strerror(errno));
+            default: 
+                check(false, "Process:: poke: ptrace_poke failed: %s", strerror(errno));
+        }
+    }
     long wdata = peek(addr);
     check(wdata == data, "Process: poke: ptrace_poke wrote wrong data");
     log::debug("Process:: poke/write data 0x%x written to 0x%x", data, addr);

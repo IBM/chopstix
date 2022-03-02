@@ -1,7 +1,8 @@
+/*
 #
 # ----------------------------------------------------------------------------
 #
-# Copyright 2019 IBM Corporation
+# Copyright 2021 IBM Corporation
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -17,15 +18,18 @@
 #
 # ----------------------------------------------------------------------------
 #
-############################################################
-# NAME        : daxpy/CMakeLists.txt
-# DESCRIPTION : Test ChopStiX on a simple daxpy kernel
-############################################################
+*/
 
-include_directories(${traceinc})
+typedef struct {
+    unsigned long long address;
+    unsigned long long originalData;
+} Breakpoint;
 
-add_executable(test-daxpy
-    daxpy.c
-)
+void setBreakpoint(unsigned long pid, unsigned long long address,
+                   Breakpoint *breakpoint);
+void resetBreakpoint(unsigned long pid, Breakpoint *breakpoint);
 
-target_link_libraries(test-daxpy m)
+#if defined(__s390x__)
+#define NT_PRSTATUS 1
+void displace_pc(long pid, long displ);
+#endif

@@ -22,17 +22,35 @@ add_executable(chop-detrace
     detrace.c
 )
 
-add_executable(chop-trace2mpt
-    trace2mpt.c
-)
 
-find_package(ZLIB REQUIRED)
-target_link_libraries(chop-trace2mpt ZLIB::ZLIB)
+# Custom zlib
+if (EXISTS "${CHOPSTIX_ZLIB_PREFIX}")
+    include (CheckZlib)
+    message (STATUS "Using zlib in ${CHOPSTIX_ZLIB_PREFIX}")
+    set (ZLIB_INCLUDE_DIRS "${CHOPSTIX_ZLIB_PREFIX}/include")
+    set (ZLIB_LIBRARIES "${CHOPSTIX_ZLIB_PREFIX}/lib/libz.a")
+
+    add_executable(chop-trace2mpt
+        trace2mpt.c ${ZLIB_INCLUDE_DIRS}/zlib.h
+    )
+
+    target_include_directories(chop-trace2mpt PUBLIC ${ZLIB_INCLUDE_DIRS})
+else ()
+    find_package(ZLIB REQUIRED)
+
+    add_executable(chop-trace2mpt
+        trace2mpt.c
+    )
+endif ()
+
+target_link_libraries(chop-trace2mpt ${ZLIB_LIBRARIES})
+
 
 install(PROGRAMS
     chop-marks-ppc64
     chop-marks-sysz
     chop-marks-riscv
+    chop-marks
     chop-score-table
     DESTINATION bin)
 
@@ -43,3 +61,4 @@ install (TARGETS
 )
 
 add_subdirectory (clustering)
+add_subdirectory (perf-invok)
