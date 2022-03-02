@@ -91,6 +91,9 @@ target_link_libraries (chop
     ${CMAKE_THREAD_LIBS_INIT}
 )
 
+set_property(TARGET chop PROPERTY CXX_STANDARD 11)
+set_property(TARGET chop PROPERTY CXX_STANDARD_REQUIRED ON)
+
 install (
     TARGETS chop
     DESTINATION bin

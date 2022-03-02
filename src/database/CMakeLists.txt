@@ -118,3 +118,7 @@ add_chopstix_library(database
 )
 
 add_dependencies(cx-database compile_queries)
+
+set_property(TARGET cx-database PROPERTY CXX_STANDARD 11)
+set_property(TARGET cx-database PROPERTY CXX_STANDARD_REQUIRED ON)
+
