@@ -34,3 +34,6 @@ add_chopstix_library(support
     check.cpp
     log.cpp
 )
+
+set_property(TARGET cx-support PROPERTY CXX_STANDARD 11)
+set_property(TARGET cx-support PROPERTY CXX_STANDARD_REQUIRED ON)

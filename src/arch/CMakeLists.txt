@@ -49,3 +49,6 @@ target_link_libraries(cx-arch
     cx-database
     cx-support
 )
+
+set_property(TARGET cx-arch PROPERTY CXX_STANDARD 11)
+set_property(TARGET cx-arch PROPERTY CXX_STANDARD_REQUIRED ON)

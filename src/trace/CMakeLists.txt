@@ -28,6 +28,9 @@ add_library(cxtrace SHARED
     buffer.cpp
 )
 
+set_property(TARGET cxtrace PROPERTY CXX_STANDARD 11)
+set_property(TARGET cxtrace PROPERTY CXX_STANDARD_REQUIRED ON)
+
 install (
     TARGETS cxtrace
     DESTINATION lib
