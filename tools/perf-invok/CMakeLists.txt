@@ -46,6 +46,7 @@ if (CHOPSTIX_BUILD_TESTS)
             test_programs/sandwiched_return_ppc64.s
         )
         set_target_properties(sandwich_return PROPERTIES COMPILE_FLAGS "-O0 -Wall -Werror -pedantic -no-pie -fno-pic")
+        set_target_properties(sandwich_return PROPERTIES LINK_FLAGS "-static")
     elseif( ${CMAKE_SYSTEM_PROCESSOR} STREQUAL "s390x" )
         add_executable(sandwich_return
             test_programs/sandwiched_return.c
