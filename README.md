@@ -32,15 +32,7 @@ If you download the repository contents directly from `github.com` as a
 compressed zip file, you also have to download the external depencies
 and decompress them into the `./external` directory. 
 
-### Support script
-
-We provide a support script that facilitates the installation process. If you
-have the right compiler and [Cmake], this script will install ChopStiX and its
-dependencies in the specified installation directory:
-
-    ./install.sh <prefix>
-
-### Manual compilation
+### Compilation
 
 ChopStiX uses [CMake] as build system. We have provided a simple wrapper
 in form of a configure script in order to provide a more accessible interface.
