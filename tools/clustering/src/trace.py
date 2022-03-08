@@ -42,7 +42,7 @@ class Trace:
     distance_matrix_generated = False
 
     def __init__(self, filename, dmatrix_nproc=os.cpu_count()):
-        print("Parsing trace...")
+        chop_print("Parsing trace...")
         f = open_generic_fd(filename, "rb")
         raw_data = f.read()
         f.close()
@@ -64,8 +64,8 @@ class Trace:
                 current_invocation.add_subtrace(current_subtrace)
             else:
                 if current_subtrace is None:
-                    print("ERROR: Incorrect input trace format.")
-                    exit(os.EX_DATAERR)
+                    chop_print("ERROR: Incorrect input trace format.")
+                    exit(1)
                 current_subtrace.add_page(page)
 
         if current_invocation is not None:
@@ -77,12 +77,14 @@ class Trace:
 
         self.dmatrix_nproc = dmatrix_nproc
 
-        print("Finding distinct invocations...")
+        chop_print("Finding distinct invocations...")
         self.generate_invocation_sets()
-        print("Parsing trace... DONE!")
+        chop_print("Parsing trace... DONE!")
 
     def get_subtrace_count(self):
-        return sum(len(invocation.subtraces) for invocation in self.invocations)
+        return sum(
+            len(invocation.subtraces) for invocation in self.invocations
+        )
 
     def get_invocation_count(self):
         return len(self.invocations)
@@ -112,7 +114,7 @@ class Trace:
             gc.collect()
 
             # Generate distance matrix in parallel
-            print("Generating distance matrix with %d threads" % nprocs)
+            chop_print("Generating distance matrix with %d threads" % nprocs)
             bs = ceil(n / nprocs)
             pool = Pool(nprocs)
             submatrices = pool.starmap(
@@ -124,7 +126,9 @@ class Trace:
             )
 
             # Concatenate submatrices
-            self.distance_matrix = np.bmat(list(map(lambda x: [x], submatrices)))
+            self.distance_matrix = np.bmat(
+                list(map(lambda x: [x], submatrices))
+            )
             self.distance_matrix_generated = True
 
         return self.distance_matrix

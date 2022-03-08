@@ -32,6 +32,16 @@ class PerformanceMetrics:
         self.cycles = cycles
         self.mem_instrs = mem_instrs
         self.misses = misses
+        assert self.cycles > 0
+
+    def copy(self):
+        return PerformanceMetrics(
+            self.time,
+            self.instructions,
+            self.cycles,
+            self.mem_instrs,
+            self.misses,
+        )
 
     @property
     def ipc(self):
@@ -75,6 +85,9 @@ class Invocation:
         self.index = index
         self.metrics = metrics
 
+    def copy(self):
+        return Invocation(self.index, self.metrics.copy())
+
 
 def load_invocations_from_file(path):
     invocations = []
@@ -86,19 +99,35 @@ def load_invocations_from_file(path):
     fd = ofunc(path)
     reader = csv.DictReader(fd)
     index = 0
+    errors = 0
+    invocation = None
     for row in reader:
-        invocation = Invocation(
-            index,
-            PerformanceMetrics(
-                int(row[" Time Elapsed (us)"]),
-                int(row[" Retired Instructions"]),
-                int(row["Cycles"]),
-                int(row[" Retired Memory Instructions"]),
-                int(row[" Data Cache Misses"]),
-            ),
-        )
+        try:
+            invocation = Invocation(
+                index,
+                PerformanceMetrics(
+                    int(row[" Time Elapsed (us)"]),
+                    int(row[" Retired Instructions"]),
+                    int(row["Cycles"]),
+                    int(row[" Retired Memory Instructions"]),
+                    int(row[" Data Cache Misses"]),
+                ),
+            )
+        except AssertionError as exc:
+            if invocation is not None:
+                errors = errors + 1
+                chop_print(
+                    "WARNING: Index %d of input file has bogus data" % index
+                )
+                # Assume same as previous
+                invocation = invocation.copy()
+                invocation.index = index
+            else:
+                raise (exc)
         index += 1
         invocations.append(invocation)
+
+    assert (errors / index) <= 0.05, "More than 5% of input data is bogus"
 
     return invocations
 
@@ -180,13 +209,18 @@ class Function:
         return self.clusters[cluster_id]
 
     def get_cluster_id_for_invocation(self, invocation_id):
-        cluster_id = self.cluster_info.get_cluster_id_for_invocation(invocation_id)
+        cluster_id = self.cluster_info.get_cluster_id_for_invocation(
+            invocation_id
+        )
         return cluster_id
         # return self.clusters[cluster_id]
 
     def get_metrics(self, avg=False):
         cluster_metrics = aggregate_metrics(
-            [self.clusters[cluster_id].get_metrics(avg) for cluster_id in self.clusters]
+            [
+                self.clusters[cluster_id].get_metrics(avg)
+                for cluster_id in self.clusters
+            ]
         )
         noise_metrics = aggregate_metrics(
             [

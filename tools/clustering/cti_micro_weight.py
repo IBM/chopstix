@@ -23,7 +23,11 @@ import argparse
 from os.path import join
 
 from src.clustering import ClusteringInformation
-from src.perfmetrics import load_invocations_from_file, aggregate_metrics, Function
+from src.perfmetrics import (
+    load_invocations_from_file,
+    aggregate_metrics,
+    Function,
+)
 from src.misc import chop_print
 
 
