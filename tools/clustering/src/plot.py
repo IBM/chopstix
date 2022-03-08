@@ -130,7 +130,9 @@ def instr_ipc_cluster_plot(
     ax_histx.set_title(title)
 
     bins = np.arange(0, max(y) * 1.02, max(y) / 100.0)
-    ax_histy.hist(y, bins=bins, orientation="horizontal", density=True, stacked=True)
+    ax_histy.hist(
+        y, bins=bins, orientation="horizontal", density=True, stacked=True
+    )
 
     # the xaxis of ax_histx and yaxis of ax_histy are shared with ax,
     # thus there is no need to manually adjust the xlim and ylim of these

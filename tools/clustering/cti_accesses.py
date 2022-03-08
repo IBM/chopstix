@@ -28,7 +28,9 @@ from src.misc import chop_print
 
 
 def main():
-    parser = argparse.ArgumentParser(description="ChopStix trace visualization tool.")
+    parser = argparse.ArgumentParser(
+        description="ChopStix trace visualization tool."
+    )
     parser.add_argument("trace_file", help="Input trace bin file to process.")
     parser.add_argument(
         "--clustered",

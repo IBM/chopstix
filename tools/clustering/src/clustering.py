@@ -22,11 +22,15 @@ import os
 from sklearn.cluster import DBSCAN
 from sklearn.neighbors import NearestNeighbors
 from dbscan1d.core import DBSCAN1D
-from sklearn import metrics
+from sklearn import metrics as skmetrics
 from kneed import KneeLocator
 import numpy as np
 import math
 import random
+import warnings
+
+random.seed(1213)
+
 import json
 
 from sklearn.metrics.pairwise import pairwise_distances_chunked
@@ -36,6 +40,7 @@ import datetime
 import matplotlib
 
 matplotlib.use("Agg")
+
 
 from matplotlib import pyplot as plt
 from mpl_toolkits.axes_grid1 import make_axes_locatable
@@ -65,12 +70,13 @@ class ClusteringInformation:
                     if x == y:
                         continue
                     y_cluster = clusters[y]
-                    assert (
-                        invocation_set not in y_cluster
-                    ), "Invocation Set %d is present in clusters %d and %d." % (
-                        invocation_set,
-                        x,
-                        y,
+                    assert invocation_set not in y_cluster, (
+                        "Invocation Set %d is present in clusters %d and %d."
+                        % (
+                            invocation_set,
+                            x,
+                            y,
+                        )
                     )
 
         self._epsilon = epsilon
@@ -82,13 +88,52 @@ class ClusteringInformation:
     def get_epsilon(self):
         return self._epsilon
 
-    def get_invocation_count(self):
+    def has_extra(self):
+        return self._extra != None
+
+    def get_extra(self):
+        return self._extra
+
+    def get_instruction_coverage(self, cluster=None):
+        if not self.has_extra():
+            return -1
+
+        if cluster is not None:
+            return self._extra["coverage"][str(cluster)] * 100
+
+        return self._extra["instr_coverage"] * 100
+
+    def get_invocation_coverage(self, cluster=None):
+        if not self.has_extra():
+            return -1
+
+        if cluster is not None:
+            return (
+                len(self._invocation_sets[cluster])
+                / self.get_invocation_count()
+            ) * 100
+
+        return self._extra["inv_coverage"] * 100
+
+    def get_invocation_count(self, cluster=None):
+
+        if cluster is not None:
+            return len(self._invocation_sets[cluster])
+
         count = 0
 
         for invocation_set in self._invocation_sets:
             count += len(invocation_set)
 
         return count
+
+    def get_extra_cluster_metric(self, cluster, metric):
+        if not self.has_extra():
+            return -1
+        if "%s_metric" % metric not in self._extra:
+            return -1
+
+        return self._extra["%s_metric" % metric][str(cluster)]
 
     def get_invocation_set_count(self):
         return len(self._invocation_sets)
@@ -104,16 +149,37 @@ class ClusteringInformation:
 
         return invocations
 
-    def get_random_invocation_in_cluster(self, cluster):
-        invocation_set = random.choice(self._clusters[cluster])
-        return random.choice(self._invocation_sets[invocation_set])
+    def get_invocation_in_cluster(self, cluster):
+
+        if not (0 <= cluster < len(self._clusters)):
+            chop_print(
+                "ERROR: Wrong cluster. Valid cluster range [0,%d)"
+                % len(self._clusters)
+            )
+            exit(1)
+
+        if not self.has_extra():
+            invocation_set = random.choice(self._clusters[cluster])
+            return random.choice(self._invocation_sets[invocation_set])
+
+        return self._extra["centroids"][str(cluster)]
 
     def get_noise_invocation_set_count(self):
-        return len(self._noise_invocations)
+        if len(self._noise_invocations) == 0:
+            return 0
+        if isinstance(self._noise_invocations[0], int):
+            return 1
+        else:
+            return len(self._noise_invocations)
 
     def get_noise_invocation_count(self):
-        count = 0
 
+        if len(self._noise_invocations) == 0:
+            return 0
+        if isinstance(self._noise_invocations[0], int):
+            return len(self._noise_invocations)
+
+        count = 0
         for invocation_set in self._noise_invocations:
             count += len(self._invocation_sets[invocation_set])
 
@@ -121,11 +187,19 @@ class ClusteringInformation:
 
     # Returns a random invocation from each of the invocation sets which
     # are considered to be a noise point (i.e. don't belong to any cluster)
-    def get_random_noise_invocations(self):
+    def get_noise_invocations(self):
+
+        if len(self._noise_invocations) == 0:
+            return None
+        if isinstance(self._noise_invocations[0], int):
+            return [random.choice(self._noise_invocations)]
+
         invocations = []
 
         for invocation_set in self._noise_invocations:
-            invocations.append(random.choice(self._invocation_sets[invocation_set]))
+            invocations.append(
+                random.choice(self._invocation_sets[invocation_set])
+            )
 
         return invocations
 
@@ -149,9 +223,23 @@ class ClusteringInformation:
         return self._invocation_sets
 
     def get_cluster_id_for_invocation(self, invocation_id):
-        for invocation_set in self._noise_invocations:
-            if invocation_id in self._invocation_sets[invocation_set]:
+
+        if not (0 <= invocation_id < self.get_invocation_count()):
+            chop_print(
+                "ERROR: Wrong invocation. Valid cluster range [0,%d)"
+                % self.get_invocation_count()
+            )
+            exit(1)
+
+        if len(self._noise_invocations) == 0:
+            pass
+        elif isinstance(self._noise_invocations[0], int):
+            if invocation_id in self._noise_invocations:
                 return -1
+        else:
+            for invocation_set in self._noise_invocations:
+                if invocation_id in self._invocation_sets[invocation_set]:
+                    return -1
 
         for cluster_id in range(len(self._clusters)):
             for invocation_set_id in self._clusters[cluster_id]:
@@ -200,7 +288,9 @@ def estimate_dbscan_epsilon(trace, coverage):
     distance_matrix = trace.get_distance_matrix(disjoint_sets)
     distances = []
     for i in range(n):
-        distances.append(min([distance_matrix[i, j] for j in range(n) if j != i]))
+        distances.append(
+            min([distance_matrix[i, j] for j in range(n) if j != i])
+        )
 
     pointLimit = math.ceil((n - 1) * coverage)
     distances = np.sort(distances)
@@ -234,7 +324,7 @@ def dbscan(trace, epsilon):
         % (n_noise_, n_noise_ * 100 / trace.get_invocation_set_count())
     )
     if n_clusters_ > 1:
-        silhouette_score = metrics.silhouette_score(
+        silhouette_score = skmetrics.silhouette_score(
             distance_matrix, labels, metric="precomputed"
         )
         chop_print("Silhouette Coefficient: %0.3f" % silhouette_score)
@@ -253,11 +343,17 @@ def dbscan(trace, epsilon):
         invocation_set.invocations for invocation_set in trace.invocation_sets
     ]
 
-    return ClusteringInformation(epsilon, invocation_sets, clusters, noise_invocations)
+    return ClusteringInformation(
+        epsilon, invocation_sets, clusters, noise_invocations
+    )
 
 
 def dbscan_ipc_instr(
-    invocations, epsilon, plot_path=None, benchmark_name="Unk", function_name="Unk"
+    invocations,
+    epsilon,
+    plot_path=None,
+    benchmark_name="Unk",
+    function_name="Unk",
 ):
 
     data = []
@@ -265,13 +361,18 @@ def dbscan_ipc_instr(
         invocation = invocations[i]
         done = False
         for dp in data:
-            if not done and abs(1 - (invocation.metrics.instructions / dp[1])) < 0.01:
+            if (
+                not done
+                and abs(1 - (invocation.metrics.instructions / dp[1])) < 0.01
+            ):
                 count = len(dp[0])
                 dp[0].append(invocation)
                 dp[1] = ((dp[1] * count) + invocation.metrics.instructions) / (
                     count + 1
                 )
-                dp[2] = ((dp[2] * count) + invocation.metrics.ipc) / (count + 1)
+                dp[2] = ((dp[2] * count) + invocation.metrics.ipc) / (
+                    count + 1
+                )
                 dp[3].append(i)
                 done = True
         if done == False:
@@ -308,10 +409,19 @@ def dbscan_ipc_instr(
             clusters[label].append(i)
 
     ipcs = np.array([invocation.metrics.ipc for invocation in invocations])
-    instr = np.array([invocation.metrics.instructions for invocation in invocations])
+    instr = np.array(
+        [invocation.metrics.instructions for invocation in invocations]
+    )
     all_instr = sum(instr)
 
-    instr_coverage, inv_coverage, coverage, centroids = clustering_evaluation(
+    (
+        instr_coverage,
+        inv_coverage,
+        coverage,
+        centroids,
+        metrics,
+    ) = clustering_evaluation(
+        invocations,
         instr,
         invocation_sets,
         noise_invocations,
@@ -337,6 +447,9 @@ def dbscan_ipc_instr(
     extra_info["inv_coverage"] = inv_coverage
     extra_info["coverage"] = coverage
     extra_info["centroids"] = centroids
+    extra_info["instructions_metric"] = metrics["instructions"]
+    extra_info["cycles_metric"] = metrics["cycles"]
+    extra_info["ipc_metric"] = metrics["ipc"]
 
     return ClusteringInformation(
         epsilon, invocation_sets, clusters, noise_invocations, extra=extra_info
@@ -344,13 +457,19 @@ def dbscan_ipc_instr(
 
 
 def dbscan_ipc(
-    invocations, epsilon, plot_path=None, benchmark_name="Unk", function_name="Unk"
+    invocations,
+    epsilon,
+    plot_path=None,
+    benchmark_name="Unk",
+    function_name="Unk",
 ):
     # init dbscan object
     dbs = DBSCAN1D(eps=epsilon)
 
     ipcs = np.array([invocation.metrics.ipc for invocation in invocations])
-    instr = np.array([invocation.metrics.instructions for invocation in invocations])
+    instr = np.array(
+        [invocation.metrics.instructions for invocation in invocations]
+    )
     all_instr = sum(instr)
 
     # get labels for each point
@@ -371,7 +490,14 @@ def dbscan_ipc(
         else:
             invocation_sets[label].append(i)
 
-    instr_coverage, inv_coverage, coverage, centroids = clustering_evaluation(
+    (
+        instr_coverage,
+        inv_coverage,
+        coverage,
+        centroids,
+        metrics,
+    ) = clustering_evaluation(
+        invocations,
         instr,
         invocation_sets,
         noise_invocations,
@@ -397,6 +523,9 @@ def dbscan_ipc(
     extra_info["inv_coverage"] = inv_coverage
     extra_info["coverage"] = coverage
     extra_info["centroids"] = centroids
+    extra_info["instructions_metric"] = metrics["instructions"]
+    extra_info["cycles_metric"] = metrics["cycles"]
+    extra_info["ipc_metric"] = metrics["ipc"]
 
     return ClusteringInformation(
         epsilon, invocation_sets, clusters, noise_invocations, extra=extra_info
@@ -582,7 +711,9 @@ def dbscan_instr(
 
     # A cluster should be defined if at least it contains a X % of the samples
     if msamples is None:
-        msamples = max(int(len(instr) * (minimum_cluster_size_percentage / 100)), 1)
+        msamples = max(
+            int(len(instr) * (minimum_cluster_size_percentage / 100)), 1
+        )
 
     if enable_weighted:
         # Compute weights according to the number of instructions and msamples
@@ -635,7 +766,11 @@ def dbscan_instr(
     # Evaluate and call recursivelly if solution does not look good
     #
     if cluster_count < minimum_cluster_count:
-        if len(noise_invocations) < 10 and cluster_count == 1 and rec_level < 10:
+        if (
+            len(noise_invocations) < 10
+            and cluster_count == 1
+            and rec_level < 10
+        ):
             # All in the same cluster? Reduce epsilon and msamples
             if fplot == True:
                 return dbscan_instr(
@@ -716,8 +851,14 @@ def dbscan_instr(
                 cluster_count = cluster_count + 1
                 assert cluster_count == len(invocation_sets)
 
-    instr_coverage, inv_coverage, coverage, centroids = clustering_evaluation(
-        instr, invocation_sets, noise_invocations, all_instr
+    (
+        instr_coverage,
+        inv_coverage,
+        coverage,
+        centroids,
+        metrics,
+    ) = clustering_evaluation(
+        invocations, instr, invocation_sets, noise_invocations, all_instr
     )
 
     extra_info = {}
@@ -725,6 +866,9 @@ def dbscan_instr(
     extra_info["inv_coverage"] = inv_coverage
     extra_info["coverage"] = coverage
     extra_info["centroids"] = centroids
+    extra_info["instructions_metric"] = metrics["instructions"]
+    extra_info["cycles_metric"] = metrics["cycles"]
+    extra_info["ipc_metric"] = metrics["ipc"]
 
     if fplot == True:
         for label, indexes in zip(clusters, invocation_sets):
@@ -771,7 +915,9 @@ def brute_force_2d_density(
     function_name="Unk",
 ):
 
-    instr = np.array([invocation.metrics.instructions for invocation in invocations])
+    instr = np.array(
+        [invocation.metrics.instructions for invocation in invocations]
+    )
     ipcs = np.array([invocation.metrics.ipc for invocation in invocations])
 
     if len(instr) == 0:
@@ -779,7 +925,9 @@ def brute_force_2d_density(
         exit(0)
 
     if min(instr) == 0:
-        chop_print("Input trace contains samples with 0 instructions. Exiting...")
+        chop_print(
+            "Input trace contains samples with 0 instructions. Exiting..."
+        )
         exit(0)
 
     # Remove the outliers (X% top and bottom data points),
@@ -831,7 +979,9 @@ def brute_force_2d_density(
     # Cluters with at least X % of the sampled instructions are considered
     #
     combined = [
-        xy for xy in combined if xy[0] >= (min_clusters_weight_percentage / 100)
+        xy
+        for xy in combined
+        if xy[0] >= (min_clusters_weight_percentage / 100)
     ]
 
     if len(combined) > max_clusters:
@@ -910,7 +1060,14 @@ def brute_force_2d_density(
     for label in range(len(clusters)):
         assert label in labels, label
 
-    instr_coverage, inv_coverage, coverage, centroids = clustering_evaluation(
+    (
+        instr_coverage,
+        inv_coverage,
+        coverage,
+        centroids,
+        metrics,
+    ) = clustering_evaluation(
+        invocations,
         instr,
         invocation_sets,
         noise_invocations,
@@ -938,6 +1095,9 @@ def brute_force_2d_density(
     extra_info["inv_coverage"] = inv_coverage
     extra_info["coverage"] = coverage
     extra_info["centroids"] = centroids
+    extra_info["instructions_metric"] = metrics["instructions"]
+    extra_info["cycles_metric"] = metrics["cycles"]
+    extra_info["ipc_metric"] = metrics["ipc"]
 
     return ClusteringInformation(
         epsilon, invocation_sets, clusters, noise_invocations, extra=extra_info
@@ -945,7 +1105,13 @@ def brute_force_2d_density(
 
 
 def clustering_evaluation(
-    instr, invocation_sets, noise_invocations, all_instr, ipcs=None, custom_range=None
+    invocations,
+    instr,
+    invocation_sets,
+    noise_invocations,
+    all_instr,
+    ipcs=None,
+    custom_range=None,
 ):
     # Evaluate the percentage of instructions in a cluster as well as the
     # percentage of non noise invocations. These two metrics can be used to
@@ -954,30 +1120,71 @@ def clustering_evaluation(
     # on the dimensions given.
     coverage = {}
     centroids = {}
+    metrics = {}
+    mnames = ["instructions", "cycles", "ipc"]
 
     noise_invocations.sort(key=lambda x: instr[x], reverse=True)
 
     if custom_range is None:
         coverage[-1] = sum(instr[i] for i in noise_invocations) / all_instr
+        for name in mnames:
+            if name not in metrics:
+                metrics[name] = {}
+            with warnings.catch_warnings():
+                warnings.simplefilter("ignore", category=RuntimeWarning)
+                metrics[name][-1] = np.average(
+                    np.array(
+                        [
+                            getattr(invocations[i].metrics, name)
+                            for i in noise_invocations
+                        ]
+                    )
+                )
+            if np.isnan(metrics[name][-1]):
+                metrics[name][-1] = -1
     else:
         coverage[-1] = (
             sum(
                 [
                     instr[i]
                     for i in noise_invocations
-                    if instr[i] >= custom_range[0] and instr[i] < custom_range[1]
+                    if instr[i] >= custom_range[0]
+                    and instr[i] < custom_range[1]
                 ]
             )
             / all_instr
         )
+        for name in mnames:
+            if name not in metrics:
+                metrics[name] = {}
+            with warnings.catch_warnings():
+                warnings.simplefilter("ignore", category=RuntimeWarning)
+                metrics[name][-1] = np.average(
+                    np.array(
+                        [
+                            getattr(invocations[i].metrics, name)
+                            for i in noise_invocations
+                            if instr[i] >= custom_range[0]
+                            and instr[i] < custom_range[1]
+                        ]
+                    )
+                )
+            if np.isnan(metrics[name][-1]):
+                metrics[name][-1] = -1
 
     for label in range(len(invocation_sets)):
-        coverage[label] = sum([instr[i] for i in invocation_sets[label]]) / all_instr
+        coverage[label] = (
+            sum([instr[i] for i in invocation_sets[label]]) / all_instr
+        )
 
         assert len(invocation_sets[label]) > 0
-        gmean = np.exp(np.log([instr[i] for i in invocation_sets[label]]).mean())
+        gmean = np.exp(
+            np.log([instr[i] for i in invocation_sets[label]]).mean()
+        )
         if ipcs is not None:
-            gmean2 = np.exp(np.log([ipcs[i] for i in invocation_sets[label]]).mean())
+            gmean2 = np.exp(
+                np.log([ipcs[i] for i in invocation_sets[label]]).mean()
+            )
 
         def diff_func(x):
             idiff = abs(instr[x] - gmean)
@@ -988,6 +1195,18 @@ def clustering_evaluation(
 
         invocation_sets[label].sort(key=lambda x: diff_func(x))
         centroids[label] = invocation_sets[label][0]
+
+        for name in mnames:
+            if name not in metrics:
+                metrics[name] = {}
+            metrics[name][label] = np.average(
+                np.array(
+                    [
+                        getattr(invocations[i].metrics, name)
+                        for i in invocation_sets[label]
+                    ]
+                )
+            )
 
     # Coverage in instr
     instr_coverage = 1 - coverage[-1]
@@ -1001,7 +1220,8 @@ def clustering_evaluation(
                 [
                     x
                     for x in noise_invocations
-                    if instr[x] >= custom_range[0] and instr[x] < custom_range[1]
+                    if instr[x] >= custom_range[0]
+                    and instr[x] < custom_range[1]
                 ]
             )
             / max(
@@ -1019,4 +1239,4 @@ def clustering_evaluation(
             )
         )
 
-    return instr_coverage, inv_coverage, coverage, centroids
+    return instr_coverage, inv_coverage, coverage, centroids, metrics

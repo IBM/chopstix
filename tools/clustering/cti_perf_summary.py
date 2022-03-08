@@ -60,7 +60,9 @@ def load_function_data(results_path, benchmark):
             benchmark.add_function(name, function)
 
 
-def bar_plot(ax, data, colors=None, total_width=0.8, single_width=1, legend=True):
+def bar_plot(
+    ax, data, colors=None, total_width=0.8, single_width=1, legend=True
+):
     """Draws a bar plot with multiple bars per data point.
 
     Parameters
@@ -156,11 +158,13 @@ def main():
 
             microbenchmarks = []
             for function in benchmark.functions:
-                function_results_path = join(benchmark_entry["results_path"], function)
+                function_results_path = join(
+                    benchmark_entry["results_path"], function
+                )
                 for file in scandir(function_results_path):
-                    if not file.name.startswith("benchmark") and file.name.endswith(
-                        "_global.csv"
-                    ):
+                    if not file.name.startswith(
+                        "benchmark"
+                    ) and file.name.endswith("_global.csv"):
                         with open(file.path) as f:
                             reader = csv.DictReader(f)
                             index = 0
@@ -200,7 +204,9 @@ def main():
 
             benchmark_ipcs.append(benchmark_ipc / benchmark.get_metrics().ipc)
 
-            print("-------------- %s ----------------" % benchmark_entry["name"])
+            print(
+                "-------------- %s ----------------" % benchmark_entry["name"]
+            )
 
             microbenchmark_ipc = 0.0
             for microbenchmark in microbenchmarks:
@@ -208,7 +214,10 @@ def main():
                 microbenchmark_ipc += weight * microbenchmark.metrics.ipc
                 print(
                     "=> Microbenchmark (function %s, invocation %d)"
-                    % (microbenchmark.function_id, microbenchmark.invocation_id)
+                    % (
+                        microbenchmark.function_id,
+                        microbenchmark.invocation_id,
+                    )
                 )
                 print("Microbenchmark weight: %f" % weight)
                 print("Microbenchmark IPC: %f" % microbenchmark.metrics.ipc)

@@ -71,7 +71,9 @@ def gen_func_pie(benchmark_name, pdf, benchmark):
     fig = get_next_fig(pdf)
 
     ax = fig.subplots(1, 1)
-    ax.set_title("%s weight distribution per function" % benchmark_name, size="x-large")
+    ax.set_title(
+        "%s weight distribution per function" % benchmark_name, size="x-large"
+    )
 
     labels = []
     percentages = []
@@ -89,17 +91,26 @@ def gen_func_pie(benchmark_name, pdf, benchmark):
     percentages.append(max(percentage_others, 0))
 
     ax.pie(
-        percentages, labels=labels, autopct="%1.1f%%", startangle=90, counterclock=False
+        percentages,
+        labels=labels,
+        autopct="%1.1f%%",
+        startangle=90,
+        counterclock=False,
     )
-    ax.axis("equal")  # Equal aspect ratio ensures that pie is drawn as a circle.
+    ax.axis(
+        "equal"
+    )  # Equal aspect ratio ensures that pie is drawn as a circle.
 
 
-def gen_ipc_comparison(benchmark_name, pdf, global_ipc, benchmark, microbenchmarks):
+def gen_ipc_comparison(
+    benchmark_name, pdf, global_ipc, benchmark, microbenchmarks
+):
     fig = get_next_fig(pdf)
 
     ax = fig.subplots(1, 1)
     ax.set_title(
-        "%s bencmark & microbenchmark IPC comparison" % benchmark_name, size="x-large"
+        "%s bencmark & microbenchmark IPC comparison" % benchmark_name,
+        size="x-large",
     )
 
     bench_ipc = global_ipc
@@ -137,7 +148,12 @@ def gen_ipc_comparison(benchmark_name, pdf, global_ipc, benchmark, microbenchmar
     box = ax.get_position()
     factor = 0.9
     ax.set_position(
-        [box.x0, box.y0 + box.height * (1 - factor), box.width, box.height * factor]
+        [
+            box.x0,
+            box.y0 + box.height * (1 - factor),
+            box.width,
+            box.height * factor,
+        ]
     )
     ax.grid(True)
 
@@ -147,7 +163,8 @@ def gen_micro_pie(benchmark_name, pdf, benchmark, microbenchmarks):
 
     ax = fig.subplots(1, 1)
     ax.set_title(
-        "%s weight distribution per microbenchmark" % benchmark_name, size="x-large"
+        "%s weight distribution per microbenchmark" % benchmark_name,
+        size="x-large",
     )
 
     labels = []
@@ -156,7 +173,9 @@ def gen_micro_pie(benchmark_name, pdf, benchmark, microbenchmarks):
     percentage_others = 100.0
 
     for micro in microbenchmarks:
-        labels.append("%s (Invocation %s)" % (micro.function_id, micro.invocation_id))
+        labels.append(
+            "%s (Invocation %s)" % (micro.function_id, micro.invocation_id)
+        )
         function = benchmark.get_function(micro.function_id)
         weight = function.get_weight_of_invocation(micro.invocation_id) * 100.0
         percentages.append(weight)
@@ -166,9 +185,15 @@ def gen_micro_pie(benchmark_name, pdf, benchmark, microbenchmarks):
     percentages.append(max(percentage_others, 0))
 
     ax.pie(
-        percentages, labels=labels, autopct="%1.1f%%", startangle=90, counterclock=False
+        percentages,
+        labels=labels,
+        autopct="%1.1f%%",
+        startangle=90,
+        counterclock=False,
     )
-    ax.axis("equal")  # Equal aspect ratio ensures that pie is drawn as a circle.
+    ax.axis(
+        "equal"
+    )  # Equal aspect ratio ensures that pie is drawn as a circle.
 
 
 def gen_plots(
@@ -185,7 +210,9 @@ def gen_plots(
     benchmark_metrics = function.get_invocation_metrics()
     num_data_points = min(len(benchmark_metrics), 2000)
     x_data = range(
-        0, len(benchmark_metrics), math.floor(len(benchmark_metrics) / num_data_points)
+        0,
+        len(benchmark_metrics),
+        math.floor(len(benchmark_metrics) / num_data_points),
     )
 
     marker = None if len(benchmark_metrics) > 10 else "D"
@@ -254,14 +281,26 @@ def gen_plots(
     factor = 0.6
     box = ax_ipc.get_position()
     ax_ipc.set_position(
-        [box.x0, box.y0 + box.height * (1 - factor), box.width, box.height * factor]
+        [
+            box.x0,
+            box.y0 + box.height * (1 - factor),
+            box.width,
+            box.height * factor,
+        ]
     )
     box = ax_instructions.get_position()
     ax_instructions.set_position(
-        [box.x0, box.y0 + box.height * (1 - factor), box.width, box.height * factor]
+        [
+            box.x0,
+            box.y0 + box.height * (1 - factor),
+            box.width,
+            box.height * factor,
+        ]
     )
     # Make the legend
-    ax_ipc.legend(handles, labels, bbox_to_anchor=(0, -0.05, 2.2, -0.15), loc=9, ncol=4)
+    ax_ipc.legend(
+        handles, labels, bbox_to_anchor=(0, -0.05, 2.2, -0.15), loc=9, ncol=4
+    )
 
 
 def load_function_data(results_path, benchmark):
@@ -333,7 +372,9 @@ def main():
         function_results_path = os.path.join(root_dir, function)
 
         micro_path[function] = {}
-        print("Loading global data for microbenchmarks of function %s" % function)
+        print(
+            "Loading global data for microbenchmarks of function %s" % function
+        )
         for file in os.scandir(function_results_path):
             if not file.name.startswith("benchmark") and file.name.endswith(
                 "_global.csv"
@@ -343,12 +384,14 @@ def main():
                 invocation = int(match.group(1))
                 metrics = load_metrics(file.path)
                 assert len(metrics) == 1
-                microbenchmarks.append(Microbenchmark(function, invocation, metrics[0]))
+                microbenchmarks.append(
+                    Microbenchmark(function, invocation, metrics[0])
+                )
 
         for file in os.scandir(function_results_path):
-            if not file.name.startswith("benchmark") and not file.name.endswith(
-                "_global.csv"
-            ):
+            if not file.name.startswith(
+                "benchmark"
+            ) and not file.name.endswith("_global.csv"):
                 match = regex.match(file.name)
                 assert match
                 invocation = int(match.group(1))

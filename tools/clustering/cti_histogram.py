@@ -32,7 +32,9 @@ def main():
 
     parser = argparse.ArgumentParser(description="Inspect ChopStix traces")
     parser.add_argument("trace_file")
-    parser.add_argument("metric", choices=["count", "distance", "nearest_neighbour"])
+    parser.add_argument(
+        "metric", choices=["count", "distance", "nearest_neighbour"]
+    )
     parser.add_argument("--num-threads", "-n", type=int)
     args = parser.parse_args()
 
