@@ -1,4 +1,5 @@
 #include "regionofinterest.h"
+#include "config.h"
 
 #include "../process.h"
 #include "../../support/log.h"
