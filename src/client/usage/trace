@@ -99,7 +99,7 @@ Options:
   -prob <pct>            Probability that a given region is traced
                          Valid values: floats between 0 and 1. 0: no region
                          is going to be traced. 1: all region will be traced.
-  -indices <list>        Trace the indicated executions (starting at 1). e.g.
+  -indices <list>        Trace the indicated executions (starting at 0). e.g.
                          if tracing a region of interest defined by a starting
                          address, and list=3,5 , it will generate a trace
                          when that address is reached a third and fifth time.
