@@ -149,7 +149,7 @@ class ClusteringInformation:
 
         return invocations
 
-    def get_invocation_in_cluster(self, cluster):
+    def get_invocation_in_cluster(self, cluster, ignore=[]):
 
         if not (0 <= cluster < len(self._clusters)):
             chop_print(
@@ -160,9 +160,15 @@ class ClusteringInformation:
 
         if not self.has_extra():
             invocation_set = random.choice(self._clusters[cluster])
-            return random.choice(self._invocation_sets[invocation_set])
+            inv = random.choice(self._invocation_sets[invocation_set])
+            while inv in ignore:
+                inv = random.choice(self._invocation_sets[invocation_set])
+            return inv
 
-        return self._extra["centroids"][str(cluster)]
+        for index in range(0, len(self._invocation_sets[cluster])):
+            inv = self._invocation_sets[cluster][index]
+            if inv not in ignore:
+                return inv
 
     def get_noise_invocation_set_count(self):
         if len(self._noise_invocations) == 0:
@@ -187,12 +193,15 @@ class ClusteringInformation:
 
     # Returns a random invocation from each of the invocation sets which
     # are considered to be a noise point (i.e. don't belong to any cluster)
-    def get_noise_invocations(self):
+    def get_noise_invocations(self, ignore=[]):
 
         if len(self._noise_invocations) == 0:
             return None
         if isinstance(self._noise_invocations[0], int):
-            return [random.choice(self._noise_invocations)]
+            inv = random.choice(self._noise_invocations)
+            while inv in ignore:
+                inv = random.choice(self._noise_invocations)
+            return [inv]
 
         invocations = []
 
