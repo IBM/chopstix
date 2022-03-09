@@ -25,6 +25,7 @@
  ******************************************************************************/
 
 #include "process.h"
+#include "config.h"
 
 #include "core/arch.h"
 #include "support/check.h"
