@@ -20,7 +20,7 @@
 #
 */
 #include "system.h"
-
+#include "config.h"
 #include "memory.h"
 #include "support/check.h"
 #include "support/filesystem.h"
