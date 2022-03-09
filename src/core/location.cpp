@@ -40,6 +40,18 @@ namespace {
 
 static long search_module(const std::string &module, const std::string &name) {
     if (!fs::exists(module)) return -1;
+    auto suffix = std::string("conv-modules.cache");
+    if (module.length() > suffix.length()) {
+        if (module.compare(module.length() - suffix.length(), suffix.length(), suffix) == 0) {
+            return -1;
+        }
+    }
+    suffix = std::string("LC_CTYPE");
+    if (module.length() > suffix.length()) {
+        if (module.compare(module.length() - suffix.length(), suffix.length(), suffix) == 0) {
+            return -1;
+        }
+    }
 
     Popen readelf(fmt::format("readelf -Ws {}", module));
 

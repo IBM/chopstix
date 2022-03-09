@@ -25,6 +25,7 @@
  ******************************************************************************/
 
 #include "arch.h"
+#include "config.h"
 
 #include "fmt/format.h"
 #include "support/check.h"

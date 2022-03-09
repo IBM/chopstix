@@ -93,17 +93,28 @@ def representative(args):
 
     if args.noise:
         try:
-            for invocation in cluster_info.get_noise_invocations():
+            for invocation in cluster_info.get_noise_invocations(
+                ignore=args.ignore
+            ):
                 print(invocation)
         except TypeError:
             return
-
     elif args.cluster != None:
-        print(cluster_info.get_invocation_in_cluster(args.cluster))
+        print(
+            cluster_info.get_invocation_in_cluster(
+                args.cluster, ignore=args.ignore
+            )
+        )
     else:
         for index in range(cluster_info.get_cluster_count()):
-            print(cluster_info.get_invocation_in_cluster(index))
-        for invocation in cluster_info.get_noise_invocations():
+            print(
+                cluster_info.get_invocation_in_cluster(
+                    index, ignore=args.ignore
+                )
+            )
+        for invocation in cluster_info.get_noise_invocations(
+            ignore=args.ignore
+        ):
             print(invocation)
 
 
@@ -158,6 +169,14 @@ def main():
         type=int,
         help="Only provide representatives of the specified cluster",
         default=None,
+    )
+    parser_representative.add_argument(
+        "--ignore",
+        "-i",
+        type=int,
+        help="Ignore the invocations provided in the selection process",
+        default=[],
+        nargs="*",
     )
 
     parser_invocation = subparsers.add_parser(

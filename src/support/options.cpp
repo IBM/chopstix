@@ -204,7 +204,17 @@ int chopstix::parse_options(int argc, char **argv, OptionDef *def) {
         checkx(opt->name, "Unknown option '%s'", arg);
         if (!opt->has_arg) continue;
         checkx(parsed < argc, "Expected argument for option '%s'", arg);
-        setenv(toenv(opt->name).c_str(), argv[parsed++], 1);
+        if ((strcmp(opt->name,"begin")==0) || (strcmp(opt->name,"end")==0)) {
+            char optionstr[1023] = "";
+            if (getenv(toenv(opt->name).c_str())) {
+                strncat(optionstr, getenv(toenv(opt->name).c_str()), 1022);
+                strncat(optionstr, " ", 1022);
+            }
+            strncat(optionstr, argv[parsed++], 1022);
+            setenv(toenv(opt->name).c_str(), optionstr, 1);
+        } else {
+            setenv(toenv(opt->name).c_str(), argv[parsed++], 1);
+        }
     }
     return parsed;
 }
