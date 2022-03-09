@@ -61,6 +61,8 @@ static int protect_bits_RWX = PROT_READ;  // Might happen?
 
 #define streq(A, B) (strcmp(A, B) == 0)
 
+#define PROTECTALLSYMBOLS
+
 extern void *__libc_init_first;
 extern void *__libc_start_main;
 // extern void* explicit_bzero;
@@ -72,14 +74,12 @@ extern void *__libc_start_main;
 // always dumped to disk
 unsigned long libc_addrs[] = {
 
-    (unsigned long)&open,  // Space for NULL sep
-    (unsigned long)&open,  // Space for NULL sep
-    (unsigned long)&syscall,
-//    (unsigned long)&fsync,
-//    (unsigned long)&fflush,
-
 #ifdef PROTECTALLSYMBOLS
     (unsigned long)&open,
+    (unsigned long)&syscall,
+    (unsigned long)&fsync,
+    (unsigned long)&fflush,
+
     (unsigned long)&close,
     (unsigned long)&creat,
     (unsigned long)&mprotect,
@@ -94,17 +94,16 @@ unsigned long libc_addrs[] = {
     (unsigned long)&explicit_bzero,
     (unsigned long)&bzero,
 #endif
+    (unsigned long)NULL  //Space for NULL sep
 };
 
 char const *libc_names[] = {
-    "open",
-    "open",
-    "syscall",
-//    "fsync",
-//    "fflush",
-    
 #ifdef PROTECTALLSYMBOLS
     "open",
+    "syscall",
+    "fsync",
+    "fflush",
+
     "close",
     "creat",
     "mprotect",
@@ -112,23 +111,23 @@ char const *libc_names[] = {
     "strcmp",
     "gsignal",
     "signal",
-    
+
     //"strstr",
     "__libc_init_first",
     "__libc_start_main",
     "explicit_bzero",
     "bzero",
 #endif
+    "canary"
 };
 
 
-int libc_count = sizeof(libc_addrs) / sizeof(unsigned long);
-// int libc_count = -1;
+int libc_count = (sizeof(libc_addrs) / sizeof(unsigned long))-1;
 
 namespace {
 // TODO Use safe_sscanf
 static int parse_region(char *line, mem_region *region) {
-    log::debug("Memory:: parse_region : %s", line);
+    //log::debug("Memory:: parse_region : %s", line);
     int ret = sscanf(line, REGION_FMT, REGION_UNWRAP(&region->));
     if (region->path[1] == '\0') region->path[0] = '\0';
     return ret;
@@ -284,22 +283,22 @@ void Memory::update() {
     while (readline(fd, line, sizeof(line))) {
         checkx(n < REGIONS_MAX, "Too many memory regions");
         parse_region(line, map_ + n);
-        log::debug("Memory::update: raw parsed line: %x-%x %s %s",
-                   map_[n].addr[0], map_[n].addr[1], map_[n].perm,
-                   map_[n].path);
+        //log::debug("Memory::update: raw parsed line: %x-%x %s %s",
+        //           map_[n].addr[0], map_[n].addr[1], map_[n].perm,
+        //           map_[n].path);
 
         if (filter_region(map_ + n, perm_, (unsigned long)alt_stack_.ss_sp)) {
-            log::debug("Memory::update: not filtered. current index: %d", n);
+            //log::debug("Memory::update: not filtered. current index: %d", n);
             ++n;
             // TODO Cleanup here
             if (streq(map_[n - 1].path, "")) {
                 for (long i = 0; i < res_siz_; ++i) {
                     if (res_[i].addr[0] >= map_[n - 1].addr[0] &&
                         res_[i].addr[0] < map_[n - 1].addr[1]) {
-                        log::debug(
-                            "Memory::update: overlap maps %x-%x with res %x-%x",
-                            map_[n - 1].addr[0], map_[n - 1].addr[1],
-                            res_[i].addr[0], res_[i].addr[1]);
+                        //log::debug(
+                        //    "Memory::update: overlap maps %x-%x with res %x-%x",
+                        //    map_[n - 1].addr[0], map_[n - 1].addr[1],
+                        //    res_[i].addr[0], res_[i].addr[1]);
                         // log::debug("anonym region %x", map_[n-1].addr[0]);
                         // Split region
                         unsigned long res_begin = res_[i].addr[0];
@@ -329,10 +328,10 @@ void Memory::update() {
             if ((strstr(map_[n - 1].path, "/libc-") ||
                  strstr(map_[n - 1].path, "/libpthread-")) &&
                 map_[n - 1].perm[2] == 'x') {
-                log::debug(
-                    "Memory::update: original mapping for reserved symbols "
-                    "[x]: %x-%x",
-                    map_[n - 1].addr[0], map_[n - 1].addr[1]);
+                //log::debug(
+                //    "Memory::update: original mapping for reserved symbols "
+                //    "[x]: %x-%x",
+                //    map_[n - 1].addr[0], map_[n - 1].addr[1]);
 
                 int cin = 0;
                 // if (strstr(map_[n - 1].path, "/libc-"))
@@ -352,8 +351,8 @@ void Memory::update() {
 
                 while (map_[n - 1].addr[0] == libc_addrs[cin] &&
                        cin < libc_count) {
-                    log::debug("Memory::update: skip initial protected page %x",
-                               libc_addrs[cin]);
+                    //log::debug("Memory::update: skip initial protected page %x",
+                    //           libc_addrs[cin]);
                     map_[n - 1].addr[0] += pagesize_;
                     cin++;
                 }
@@ -363,11 +362,11 @@ void Memory::update() {
                 while (map_[n - 1].addr[1] <= end_address && cin < libc_count) {
                     if (libc_addrs[cin] != map_[n - 1].addr[1]) {
                         if ((map_[n - 1].addr[1] + pagesize_) > end_address) {
-                            log::debug(
-                                "Memory::update: region last split: %x-%x %s "
-                                "%s",
-                                map_[n - 1].addr[0], map_[n - 1].addr[1],
-                                map_[n - 1].perm, map_[n - 1].path);
+                            //log::debug(
+                            //    "Memory::update: region last split: %x-%x %s "
+                            //    "%s",
+                            //    map_[n - 1].addr[0], map_[n - 1].addr[1],
+                            //    map_[n - 1].perm, map_[n - 1].path);
                             ++n;
                             break;
                         }
@@ -377,17 +376,17 @@ void Memory::update() {
                         map_[n].addr[0] = map_[n - 1].addr[1];
                         map_[n].addr[1] = map_[n].addr[0] + pagesize_;
 
-                        log::debug("Memory::update: region split: %x-%x %s %s",
-                                   map_[n - 1].addr[0], map_[n - 1].addr[1],
-                                   map_[n - 1].perm, map_[n - 1].path);
+                        //log::debug("Memory::update: region split: %x-%x %s %s",
+                        //           map_[n - 1].addr[0], map_[n - 1].addr[1],
+                        //           map_[n - 1].perm, map_[n - 1].path);
 
                         ++n;
                         while (map_[n - 1].addr[0] == libc_addrs[cin] &&
                                cin < libc_count) {
-                            log::debug(
-                                "Memory::update: skip consecutive protected "
-                                "page %x",
-                                libc_addrs[cin]);
+                            //log::debug(
+                            //    "Memory::update: skip consecutive protected "
+                            //    "page %x",
+                            //    libc_addrs[cin]);
                             map_[n - 1].addr[0] += pagesize_;
                             map_[n - 1].addr[1] += pagesize_;
                             cin++;
@@ -424,7 +423,7 @@ void Memory::update() {
             }
         } else {
             if (!strstr(map_[n].path, "/libcxtrace")) {
-                log::debug("Region not protected. Registering for dump");
+                //log::debug("Region not protected. Registering for dump");
                 prot_[prot_siz_].addr[0] = map_[n].addr[0];
                 prot_[prot_siz_].addr[1] = map_[n].addr[1];
                 safe_strncpy(prot_[prot_siz_].perm, map_[n].perm,
@@ -439,7 +438,7 @@ void Memory::update() {
         map_[n].addr[0] = 0;
         map_[n].addr[1] = 0;
     }
-    log::debug("Memory::update: %d stack regions", stack_cnt);
+    //log::debug("Memory::update: %d stack regions", stack_cnt);
     siz_ = n;
     syscall(SYS_close, fd);
 }
