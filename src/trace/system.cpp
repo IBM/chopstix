@@ -333,6 +333,7 @@ void chopstix_stop_trace() {
     // raise(SIGTRAP);
 }
 
+
 //
 // Disable printf system calls during tracing
 //
@@ -342,7 +343,7 @@ int printf(const char* format, ...) {
 	va_list argptr;
     va_start(argptr, format);
     if (!real_printf) real_printf = (int (*)(const char*, ...)) dlsym(RTLD_NEXT, "printf");
-	int ret = real_printf(format);
+	int ret = real_printf(format, argptr);
 	va_end(argptr);
     return ret;
 }

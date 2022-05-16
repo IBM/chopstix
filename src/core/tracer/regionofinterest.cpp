@@ -23,6 +23,14 @@ void TracerRegionOfInterestState::execute(Process &child) {
     if (child.stopped()) {
         log::debug("TracerRegionOfInterestState:: child stopped, handle signal");
         handle_signal(child, child.stop_sig());
+    } else if (child.exited()) {
+        log::verbose("TracerRegionOfInterestState:: child exited during region of interest");
+        log::verbose("TracerRegionOfInterestState:: exit status: %d", child.exit_status());
+        throw std::runtime_error("Exit during region of interest");
+    } else if (child.signaled()) {
+        log::verbose("TracerRegionOfInterestState:: child term signaled during region of interest");
+        log::verbose("TracerRegionOfInterestState:: term signaled: %d", child.term_sig());
+        throw std::runtime_error("Termination signal during region of interest");
     } else {
         throw std::runtime_error("Child did not stop!");
     }

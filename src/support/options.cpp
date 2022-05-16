@@ -205,13 +205,14 @@ int chopstix::parse_options(int argc, char **argv, OptionDef *def) {
         if (!opt->has_arg) continue;
         checkx(parsed < argc, "Expected argument for option '%s'", arg);
         if ((strcmp(opt->name,"begin")==0) || (strcmp(opt->name,"end")==0)) {
-            char optionstr[1023] = "";
+            char optionstr[4000] = "";
             if (getenv(toenv(opt->name).c_str())) {
-                strncat(optionstr, getenv(toenv(opt->name).c_str()), 1022);
-                strncat(optionstr, " ", 1022);
+                strncat(optionstr, getenv(toenv(opt->name).c_str()), 3999);
+                strncat(optionstr, " ", 3999);
             }
-            strncat(optionstr, argv[parsed++], 1022);
+            strncat(optionstr, argv[parsed++], 3999);
             setenv(toenv(opt->name).c_str(), optionstr, 1);
+            //printf("%s %s\n", toenv(opt->name).c_str(), getenv(toenv(opt->name).c_str()));
         } else {
             setenv(toenv(opt->name).c_str(), argv[parsed++], 1);
         }

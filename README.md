@@ -18,7 +18,7 @@ install ChopStiX.
 - libpfm-4.8.0: http://perfmon2.sourceforge.net/
 - CMake >= 2.8
 - Git
-- Python 2.7 (optional)
+- Python 3 (optional)
 - sqlite3 (optional)
 
 To download and setup ChopStiX for installation follow these steps:

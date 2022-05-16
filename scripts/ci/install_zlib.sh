@@ -60,7 +60,7 @@ tmp="$dir/src_build/"
 mkdir -p "$tmp"
 cd "$tmp" 
 
-ZLIB_VERSION=1.2.11
+ZLIB_VERSION=1.2.12
 rm -f zlib-${ZLIB_VERSION}.tar.gz
 wget https://www.zlib.net/zlib-${ZLIB_VERSION}.tar.gz
 tar xvf zlib-${ZLIB_VERSION}.tar.gz
