@@ -27,7 +27,7 @@
 
 #include "buffer.h"
 
-#define MAX_BREAKPOINTS 16
+#define MAX_BREAKPOINTS 1024
 
 namespace chopstix {
 
