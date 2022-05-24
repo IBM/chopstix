@@ -39,7 +39,7 @@ install (
 target_link_libraries(cxtrace cx-support)
 target_link_libraries(cxtrace dl)
 
-SET(SUPPORT_LIBRARY_CFLAGS "-DLOG_CHILD")
+SET(SUPPORT_LIBRARY_CFLAGS "-DLOG_CHILD -fno-stack-protector")
 get_target_property(TEMP cxtrace COMPILE_FLAGS)
 if(TEMP STREQUAL "TEMP-NOTFOUND")
   SET(TEMP "") # Set to empty string

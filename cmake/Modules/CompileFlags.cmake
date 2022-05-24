@@ -7,7 +7,7 @@ set (CMAKE_C_FLAGS_RELEASE "-O3 -DNDEBUG")
 
 set (CXX_STANDARD 11)
 set (CXX_STANDARD_REQUIRED ON)
-set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O2 -Wall -Wno-unused -Wno-sequence-point -std=gnu++11 -Werror")
+set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O2 -Wall -Wno-unused -Wno-sequence-point -std=gnu++11 -Werror -fno-stack-protector")
 set (CMAKE_CXX_FLAGS_DEBUG "-g -O0 -fno-omit-frame-pointer")
 set (CMAKE_CXX_FLAGS_RELEASE "-O3 -DNDEBUG")
 

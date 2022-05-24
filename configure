@@ -31,6 +31,7 @@ Options:
   --no-build-examples  Do not generate targets for examples
   --build-type=TYPE    Debug|Release|RelWithDebInfo (default: RelWithDebInfo)
   --profile-cpu        Build with profiling support
+  --skip-pip-install   Skip installing python dependencies
 
 You can also use CMake directly. For more information see docs/installation.md.
 --enable-* options have the corresponding --disable-* ones.
@@ -42,7 +43,7 @@ cmake --version >/dev/null || { echo "You need to install CMake to build ChopSti
 
 PROJECT_DIR=$(dirname "$0")
 
-TEMP=$(getopt -o 'h' -l 'help,prefix:,enable-x86,enable-sysz,enable-power,enable-powerle,enable-riscv,disable-x86,disable-sysz,disable-power,disable-powerle,disable-riscv,build-sqlite,with-sqlite:,with-perfmon:,with-zlib:,build-tests,build-examples,no-build-tests,no-build-examples,build-type:,profile-cpu' -n 'configure' -- "$@")
+TEMP=$(getopt -o 'h' -l 'help,prefix:,enable-x86,enable-sysz,enable-power,enable-powerle,enable-riscv,disable-x86,disable-sysz,disable-power,disable-powerle,disable-riscv,build-sqlite,with-sqlite:,with-perfmon:,with-zlib:,build-tests,build-examples,no-build-tests,no-build-examples,build-type:,profile-cpu,skip-pip-install' -n 'configure' -- "$@")
 
 eval set -- "$TEMP"
 
@@ -78,6 +79,7 @@ while true ; do
         --no-build-examples) BUILD_OPTIONS="$BUILD_OPTIONS -DCHOPSTIX_BUILD_EXAMPLES=OFF" ; shift ;;
         --build-type) BUILD_OPTIONS="$BUILD_OPTIONS -DCMAKE_BUILD_TYPE=$2" ; shift 2 ;;
         --profile-cpu) BUILD_OPTIONS="$BUILD_OPTIONS -DCHOPSTIX_PROFILE_CPU=ON" ; shift ;;
+        --skip-pip-install) BUILD_OPTIONS="$BUILD_OPTIONS -DCHOPSTIX_PIP_INSTALL=OFF" ; shift ;;
         --) shift ; break ;;
         *) echo "Internal error!" ; exit 1 ;;
     esac

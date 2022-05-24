@@ -89,6 +89,6 @@ struct Memory {
     mem_region prot_[REGIONS_MAX + 1];
     long prot_siz_ = 0;
     stack_type alt_stack_;
-    char stack_buf_[SIGSTKSZ * 2];
+    char stack_buf_[2048]; // TODO: Find adequate size
 };
 }  // namespace chopstix
