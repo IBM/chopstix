@@ -22,7 +22,11 @@ add_executable(chop-perf-invok
     src/breakpoint.c
     src/main.c
     src/sample.c
+    src/tool.c
+    src/modes.c
 )
+
+target_link_libraries(chop-perf-invok rt)
 
 install (TARGETS
     chop-perf-invok
@@ -32,14 +36,19 @@ install (TARGETS
 if (CHOPSTIX_BUILD_TESTS)
 
     add_executable(vector_add test_programs/vector_add.c)
-    set_target_properties(vector_add PROPERTIES COMPILE_FLAGS "-O0 -Wall -Werror -pedantic")
+    set_target_properties(vector_add PROPERTIES COMPILE_FLAGS "-O0 -Wall -Werror -pedantic -no-pie -fno-pic")
+    set_target_properties(vector_add PROPERTIES LINK_FLAGS "-static")
+
+    add_executable(timed_vector_add test_programs/timed_vector_add.c)
+    set_target_properties(timed_vector_add PROPERTIES COMPILE_FLAGS "-O0 -Wall -Werror -pedantic")
 
     if( ${CMAKE_SYSTEM_PROCESSOR} STREQUAL "riscv64" )
         add_executable(sandwich_return
             test_programs/sandwiched_return_riscv.s
             test_programs/sandwiched_return.c
         )
-        set_target_properties(sandwich_return PROPERTIES COMPILE_FLAGS "-O0 -Wall -Werror -pedantic")
+        set_target_properties(sandwich_return PROPERTIES COMPILE_FLAGS "-O0 -Wall -Werror -pedantic -no-pie -fno-pic")
+        set_target_properties(sandwich_return PROPERTIES LINK_FLAGS "-static")
     elseif( ${CMAKE_SYSTEM_PROCESSOR} STREQUAL "ppc64le" )
         add_executable(sandwich_return
             test_programs/sandwiched_return.c
@@ -56,7 +65,7 @@ if (CHOPSTIX_BUILD_TESTS)
     endif ()
 
     if( ${CMAKE_HOST_SYSTEM_PROCESSOR} STREQUAL "x86_64" )
-        message(STATUS "No perf-invok tests for architecture ${CMAKE_HOST_SYSTEM_PROCESSOR} available.")
+        message(STATUS "No perf-invok tests involving chop-marks for architecture ${CMAKE_HOST_SYSTEM_PROCESSOR} available.")
     else ()
         add_test(
             NAME test_generic_invocation
@@ -64,6 +73,18 @@ if (CHOPSTIX_BUILD_TESTS)
             WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/tools/perf-invok
         )
     endif ()
+
+    add_test(
+        NAME test_timeout
+        COMMAND ${CMAKE_SOURCE_DIR}/tools/perf-invok/tests/test_timeout.sh
+        WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/tools/perf-invok
+    )
+
+    add_test(
+        NAME test_rate
+        COMMAND ${CMAKE_SOURCE_DIR}/tools/perf-invok/tests/test_rate.sh
+        WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/tools/perf-invok
+    )
 
     if (TARGET sandwich_return)
         add_test(
