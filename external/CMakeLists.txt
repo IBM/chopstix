@@ -54,9 +54,11 @@ endif ()
 
 # {fmt} https://github.com/fmtlib/fmt
 add_subdirectory (fmt)
+add_subdirectory (cJSON)
 
 set (EXTERNAL_INCLUDE_DIRS
     ${EXTERNAL_DIR}/fmt
+    ${EXTERNAL_DIR}/cJSON
     ${PERFMON2_INCLUDE_DIRS}
     ${SQLITE3_INCLUDE_DIRS}
     PARENT_SCOPE
