@@ -43,12 +43,14 @@ else ()
     )
 endif ()
 
+find_package(cJSON REQUIRED)
+
 target_link_libraries(chop-trace2mpt ${ZLIB_LIBRARIES})
 
 add_executable(chop-weight microweight.c)
 
-target_link_libraries(chop-weight cjson)
-target_include_directories(chop-weight PRIVATE ${EXTERNAL_INCLUDE_DIRS})
+target_link_libraries(chop-weight ${CJSON_LIBRARIES})
+target_include_directories(chop-weight PUBLIC ${CJSON_INCLUDE_DIRS})
 
 add_executable(chop-perf-avg perfavg.c)
 
@@ -65,6 +67,8 @@ install(PROGRAMS
 install (TARGETS
     chop-detrace
     chop-trace2mpt
+    chop-weight
+    chop-perf-avg
     DESTINATION bin
 )
 

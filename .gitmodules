@@ -2,6 +2,3 @@
 	path = external/fmt
 	url = https://github.com/fmtlib/fmt
 	branch = master
-[submodule "external/cJSON"]
-	path = external/cJSON
-	url = https://github.com/DaveGamble/cJSON.git

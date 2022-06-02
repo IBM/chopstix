@@ -1,6 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include <cJSON.h>
+#include <cjson/cJSON.h>
 #include <assert.h>
 #include <limits.h>
 #include <string.h>
