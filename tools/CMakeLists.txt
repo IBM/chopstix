@@ -45,6 +45,14 @@ endif ()
 
 target_link_libraries(chop-trace2mpt ${ZLIB_LIBRARIES})
 
+add_executable(chop-weight microweight.c)
+
+target_link_libraries(chop-weight cjson)
+target_include_directories(chop-weight PRIVATE ${EXTERNAL_INCLUDE_DIRS})
+
+add_executable(chop-perf-avg perfavg.c)
+
+target_link_libraries(chop-perf-avg m)
 
 install(PROGRAMS
     chop-marks-ppc64
