@@ -54,7 +54,6 @@ endif ()
 
 # {fmt} https://github.com/fmtlib/fmt
 add_subdirectory (fmt)
-add_subdirectory (cJSON)
 
 set (EXTERNAL_INCLUDE_DIRS
     ${EXTERNAL_DIR}/fmt
