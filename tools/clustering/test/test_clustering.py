@@ -66,12 +66,12 @@ class TestClusteringInformation(unittest.TestCase):
         self.skipTest("Test missing.")
 
     def test_get_invocation_in_cluster(self):
-        self.assertEqual(self.ci.get_invocation_in_cluster(0), 3,
-                         "Should return the first invocation of the first set "
-                         "of cluster 0, which is invocation 3.")
+        self.assertIn(self.ci.get_invocation_in_cluster(0),
+                      [3, 4, 5, 9, 10, 11],
+                      "Should return a random invocation of cluster 0")
 
     def test_get_invocation_set_count(self):
-        self.assertEqual(self.ci.get_invocation_set_count(), 2)
+        self.assertEqual(self.ci.get_invocation_set_count(), 5)
 
     def test_get_noise_invocation_count(self):
         self.assertEqual(self.ci.get_noise_invocation_count(), 6,
