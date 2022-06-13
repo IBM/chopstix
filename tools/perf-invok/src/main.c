@@ -38,7 +38,7 @@
 #include "debug.h"
 
 #define MAX_SAMPLES 8192
-#define MAX_BREAKPOINTS 256
+#define MAX_BREAKPOINTS 1024
 
 int pid;
 Sample samples[MAX_SAMPLES];

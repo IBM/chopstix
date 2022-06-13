@@ -26,6 +26,7 @@ add_library(cxtrace SHARED
     system.cpp
     memory.cpp
     buffer.cpp
+    membuffer.cpp
 )
 
 set_property(TARGET cxtrace PROPERTY CXX_STANDARD 11)
