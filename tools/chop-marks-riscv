@@ -1,4 +1,4 @@
-#!/usr/bin/env sh
+#!/usr/bin/env bash
 #
 # ----------------------------------------------------------------------------
 #
@@ -25,7 +25,7 @@ EXECUTABLE=$1
 FUNCTION=$2
 
 find_ret_address () {
-    objdump --disassemble="$1" "$EXECUTABLE" | grep -w "ret" | cut -d":" -f 1 | awk '{ printf "%s%s", sep, $0 ; sep="," } END { print "" }' | tr -d ' '
+    objdump --disassemble="$1" "$EXECUTABLE" | grep -w "ret" | cut -d":" -f 1 | awk '{ printf "%s %s", sep, $0 ; sep="," } END { print "" }' | tr -d ' '
 }
 
 BEGIN=$(nm "$EXECUTABLE" | grep -w "$FUNCTION" -m 1 | cut -d" " -f 1)
@@ -38,4 +38,10 @@ then
 fi
 
 # shellcheck disable=SC2039
-echo "-begin $BEGIN -end $END"
+printf -- "-begin %s" "$BEGIN"
+
+for addr in ${END//,/ }; do
+    printf -- " -end %s" "$addr"
+done
+
+printf "\n"
