@@ -34,18 +34,18 @@ set -a # All following variables are exported
 base_dir=$(readlink -m "$0")
 base_dir=$(dirname "$base_dir")
 
-if [ $# -eq 0 ]; then
-    echo "Using default install directory: /tmp/chopstix"
-    dir=/tmp/libpfm
-fi
-
 if [ $# -gt 2 ]; then
     echo "Usage: $0 [<install_dir> [-debug]]"
     exit 1
 fi
 
-dir="$1"
-dir=$(readlink -m "$dir")
+if [ $# -eq 0 ]; then
+    echo "Using default install directory: /tmp/chopstix"
+    dir=/tmp/libpfm
+else
+    dir="$1"
+    dir=$(readlink -m "$dir")
+fi
 
 debug=""
 if [ $# -eq 2 ]; then
