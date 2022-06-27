@@ -124,8 +124,9 @@ void System::sigsegv_handler(int sig, siginfo_t *si, void *ptr) {
     log::debug("System::sigsegv_handler: PSWA = 0x%x", ctx->uc_mcontext.psw.addr);
     pc_addr = (unsigned long) ctx->uc_mcontext.psw.addr;
 #elif defined(CHOPSTIX_RISCV_SUPPORT)
-    #error Implement the gathering of the current PC information
-    pc_addr = 0xDEADBEEF;
+#define REG_PC 0
+    log::debug("System::sigsegv_handler: PC  = 0x%x", ctx->uc_mcontext.sc_regs[REG_PC]);
+    pc_addr = (unsigned long) ctx->uc_mcontext.sc_regs[REG_PC];
 #elif defined(CHOPSTIX_X86_SUPPORT)
     log::debug("System::sigsegv_handler: RIP = 0x%x", ctx->uc_mcontext.gregs[REG_RIP]);
     pc_addr = (unsigned long) ctx->uc_mcontext.gregs[REG_RIP];
