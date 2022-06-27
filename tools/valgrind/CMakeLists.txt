@@ -19,7 +19,7 @@
 #
 
 set(DEPS1    "${CMAKE_CURRENT_SOURCE_DIR}/src/valgrind-3.19.0.tar.bz2")
-set(DEPS2    "${CMAKE_CURRENT_SOURCE_DIR}/chopstix/*" ${OUTPUT}/valgrind_chopstix1)
+set(DEPS2    "${CMAKE_CURRENT_SOURCE_DIR}/chopstix/*" "${OUTPUT}/valgrind_chopstix1")
 set(OUTPUT   "${CMAKE_CURRENT_BINARY_DIR}/")
 
 add_custom_command(OUTPUT ${OUTPUT}/valgrind_chopstix1
