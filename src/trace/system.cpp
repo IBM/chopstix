@@ -125,8 +125,8 @@ void System::sigsegv_handler(int sig, siginfo_t *si, void *ptr) {
     pc_addr = (unsigned long) ctx->uc_mcontext.psw.addr;
 #elif defined(CHOPSTIX_RISCV_SUPPORT)
 #define REG_PC 0
-    log::debug("System::sigsegv_handler: PC  = 0x%x", ctx->uc_mcontext.sc_regs[REG_PC]);
-    pc_addr = (unsigned long) ctx->uc_mcontext.sc_regs[REG_PC];
+    log::debug("System::sigsegv_handler: PC  = 0x%x", ctx->uc_mcontext.__gregs[REG_PC]);
+    pc_addr = (unsigned long) ctx->uc_mcontext.__gregs[REG_PC];
 #elif defined(CHOPSTIX_X86_SUPPORT)
     log::debug("System::sigsegv_handler: RIP = 0x%x", ctx->uc_mcontext.gregs[REG_RIP]);
     pc_addr = (unsigned long) ctx->uc_mcontext.gregs[REG_RIP];
