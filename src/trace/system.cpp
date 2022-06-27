@@ -113,6 +113,12 @@ void System::sigsegv_handler(int sig, siginfo_t *si, void *ptr) {
     log::debug("System::sigsegv_handler: R1  = 0x%x", ctx->uc_mcontext.gp_regs[POWER_R1]);
     log::debug("System::sigsegv_handler: NIP = 0x%x", ctx->uc_mcontext.gp_regs[POWER_NIP]);
     pc_addr = (unsigned long) ctx->uc_mcontext.gp_regs[POWER_NIP];
+#elif defined(CHOPSTIX_POWERLE_SUPPORT)
+#define POWER_R1 1
+#define POWER_NIP 32
+    log::debug("System::sigsegv_handler: R1  = 0x%x", ctx->uc_mcontext.gp_regs[POWER_R1]);
+    log::debug("System::sigsegv_handler: NIP = 0x%x", ctx->uc_mcontext.gp_regs[POWER_NIP]);
+    pc_addr = (unsigned long) ctx->uc_mcontext.gp_regs[POWER_NIP];
 #elif defined(CHOPSTIX_SYSZ_SUPPORT)
     log::debug("System::sigsegv_handler: PSWM = 0x%x", ctx->uc_mcontext.psw.mask);
     log::debug("System::sigsegv_handler: PSWA = 0x%x", ctx->uc_mcontext.psw.addr);
