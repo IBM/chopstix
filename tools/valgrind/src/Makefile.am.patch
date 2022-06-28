@@ -1,0 +1,16 @@
+--- valgrind-3.19.0/Makefile.am	2022-04-11 10:27:12.000000000 -0400
++++ valgrind-3.19.0_updated/Makefile.am	2022-06-10 12:09:05.786944360 -0400
+@@ -12,10 +12,12 @@
+ 		massif \
+ 		dhat \
+ 		lackey \
++		chopstix \
+ 		none
+ 
+ EXP_TOOLS = \
+-		exp-bbv
++		exp-bbv \
++		chopstix
+ 
+ # Put docs last because building the HTML is slow and we want to get
+ # everything else working before we try it.

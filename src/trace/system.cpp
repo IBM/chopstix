@@ -60,6 +60,7 @@ System::System() {
     max_pages = getopt("max-pages").as_int();
     max_traces = getopt("max-traces").as_int();
     group_iter = getopt("group").as_int(1);
+    mem_trace = getopt("memory-access-trace").as_bool();
 
     filesystem::mkdir(trace_path);
 
@@ -70,6 +71,7 @@ System::System() {
     Memory::instance();
 
     if (drytrace) buf_.setup(trace_path);
+    if (mem_trace) membuf_.setup(trace_path);
 
     sigaltstack(Memory::instance().alt_stack(), NULL);
 
@@ -103,18 +105,35 @@ System::~System() {}
 
 void System::sigsegv_handler(int sig, siginfo_t *si, void *ptr) {
     log::debug("System::sigsegv_handler start");
+    unsigned long pc_addr;
     ucontext_t *ctx = (ucontext_t *)ptr;
 #if defined(CHOPSTIX_POWER_SUPPORT)
 #define POWER_R1 1
 #define POWER_NIP 32
-    log::debug("System::sigsegv_handler: R1  = %x", ctx->uc_mcontext.gp_regs[POWER_R1]);
-    log::debug("System::sigsegv_handler: NIP = %x", ctx->uc_mcontext.gp_regs[POWER_NIP]);
+    log::debug("System::sigsegv_handler: R1  = 0x%x", ctx->uc_mcontext.gp_regs[POWER_R1]);
+    log::debug("System::sigsegv_handler: NIP = 0x%x", ctx->uc_mcontext.gp_regs[POWER_NIP]);
+    pc_addr = (unsigned long) ctx->uc_mcontext.gp_regs[POWER_NIP];
+#elif defined(CHOPSTIX_POWERLE_SUPPORT)
+#define POWER_R1 1
+#define POWER_NIP 32
+    log::debug("System::sigsegv_handler: R1  = 0x%x", ctx->uc_mcontext.gp_regs[POWER_R1]);
+    log::debug("System::sigsegv_handler: NIP = 0x%x", ctx->uc_mcontext.gp_regs[POWER_NIP]);
+    pc_addr = (unsigned long) ctx->uc_mcontext.gp_regs[POWER_NIP];
 #elif defined(CHOPSTIX_SYSZ_SUPPORT)
-    log::debug("System::sigsegv_handler: PSWM = %x", ctx->uc_mcontext.psw.mask);
-    log::debug("System::sigsegv_handler: PSWA = %x", ctx->uc_mcontext.psw.addr);
+    log::debug("System::sigsegv_handler: PSWM = 0x%x", ctx->uc_mcontext.psw.mask);
+    log::debug("System::sigsegv_handler: PSWA = 0x%x", ctx->uc_mcontext.psw.addr);
+    pc_addr = (unsigned long) ctx->uc_mcontext.psw.addr;
+#elif defined(CHOPSTIX_RISCV_SUPPORT)
+#define REG_PC 0
+    log::debug("System::sigsegv_handler: PC  = 0x%x", ctx->uc_mcontext.__gregs[REG_PC]);
+    pc_addr = (unsigned long) ctx->uc_mcontext.__gregs[REG_PC];
+#elif defined(CHOPSTIX_X86_SUPPORT)
+    log::debug("System::sigsegv_handler: RIP = 0x%x", ctx->uc_mcontext.gregs[REG_RIP]);
+    pc_addr = (unsigned long) ctx->uc_mcontext.gregs[REG_RIP];
 #endif
-    sys_.record_segv((unsigned long)si->si_addr);
-    log::debug("System::sigsegv_handler end");
+    log::debug("System::sigsegv_handler: PC Address = 0x%x", pc_addr);
+    log::debug("System::sigsegv_handler: From Address = 0x%x", (unsigned long)si->si_addr);
+    sys_.record_segv((unsigned long)si->si_addr, pc_addr);
 }
 
 void System::register_handlers() {
@@ -127,7 +146,7 @@ void System::register_handlers() {
     log::debug("System::register_handlers end");
 }
 
-void System::record_segv(unsigned long addr) {
+void System::record_segv(unsigned long addr, unsigned long pc_addr) {
     log::debug("System::record_segv start");
     log::verbose("System::record_segv: segv at %x", addr);
 
@@ -137,7 +156,39 @@ void System::record_segv(unsigned long addr) {
     log::debug(
         "System::record_segv: access at addr:%x page:%x region:%s perm:%s",
         addr, page_addr, reg->path, reg->perm);
-    Memory::instance().unprotect_page(reg, page_addr);
+
+    //log::debug(
+    //    "System::record_segv: prev addr: %x prev pc: %x",
+    //    previous_addr, previous_pc_addr
+    //);
+
+    if (mem_trace) {
+        if ((previous_addr == addr) && (previous_pc_addr == pc_addr)) {
+            Memory::instance().unprotect_page(reg, page_addr);
+            // Write from pc_addr to addr
+            previous_addr = 0;
+            previous_pc_addr = 0;
+            // We already dumped and did all the bookeeping
+            if (reg->perm[2] == 'x') {
+                membuf_.save_code_write(pc_addr, addr);
+            } else {
+                membuf_.save_mem_write(pc_addr, addr);
+            }
+            return;
+        } else {
+            Memory::instance().unprotect_page_for_read(reg, page_addr);
+            // Read from pc_addr to addr
+            previous_addr = addr;
+            previous_pc_addr = pc_addr;
+            if (reg->perm[2] == 'x') {
+                membuf_.save_code_write(pc_addr, addr);
+            } else {
+                membuf_.save_mem_read(pc_addr, addr);
+            }
+        }
+    } else {
+        Memory::instance().unprotect_page(reg, page_addr);
+    }
 
     if (!tracing) {
         log::debug("System::record_segv: not tracing");
@@ -169,7 +220,6 @@ void System::record_segv(unsigned long addr) {
     if (drytrace) {
         buf_.save_page(page_addr);
     }
-    log::debug("System::record_segv end");
 }
 
 void System::save_page(unsigned long page_addr) {
@@ -258,14 +308,15 @@ void System::start_trace(bool isNewInvocation) {
     log::debug("Tracing: %d", true);
     log::debug("Systen: start_trace end (trace %d)", trace_id);
 
-    // Protect pages at the end
     Memory::instance().update();
     log::debug("System: start_Trace: map updated");
-    Memory::instance().protect_all();
-
     tracing = true;
     pagecount = 0;
+    previous_addr = 0;
+    previous_pc_addr = 0;
 
+    // Protect pages at the end
+    Memory::instance().protect_all();
 }
 
 void System::stop_trace() {

@@ -22,6 +22,9 @@ add_executable(chop-detrace
     detrace.c
 )
 
+add_executable(chop-detrace-mem
+    detrace-mem.c
+)
 
 # Custom zlib
 if (EXISTS "${CHOPSTIX_ZLIB_PREFIX}")
@@ -56,9 +59,11 @@ install(PROGRAMS
 
 install (TARGETS
     chop-detrace
+    chop-detrace-mem
     chop-trace2mpt
     DESTINATION bin
 )
 
 add_subdirectory (clustering)
 add_subdirectory (perf-invok)
+add_subdirectory (valgrind)

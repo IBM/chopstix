@@ -43,7 +43,8 @@ enum mode {
     INFO = 2,
     VERBOSE = 3,
     DEBUG = 4,
-    MODES_MAX = 5,
+    SILENT = 5,
+    MODES_MAX = 6,
 };
 
 extern const char *prefix[MODES_MAX];
@@ -70,7 +71,7 @@ struct Logger {
         assert(w == n && "Write errror");
         //
         // Enabling fsync created slowdown , enable only for debugging
-        //
+        // can create errors
         //fsync(fd_);
     }
 
@@ -109,6 +110,10 @@ void warn(const char *fmt, Args... args) {
 template <typename... Args>
 void error(const char *fmt, Args... args) {
     println(ERROR, fmt, args...);
+}
+template <typename... Args>
+void silent(const char *fmt, Args... args) {
+    println(SILENT, fmt, args...);
 }
 }  // namespace log
 }  // namespace chopstix

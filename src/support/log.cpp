@@ -46,7 +46,7 @@ namespace fs = filesystem;
 using namespace chopstix;
 
 const char *log::prefix[log::MODES_MAX] = {
-    "error", "warn", "info", "verbose", "debug",
+    "error", "warn", "info", "verbose", "debug", "silent"
 };
 
 log::Logger::Logger() {
@@ -61,6 +61,8 @@ log::Logger::Logger() {
         mode_ = log::VERBOSE;
     } else if (loglevel == "debug") {
         mode_ = log::DEBUG;
+    } else if (loglevel == "silent") {
+        mode_ = log::SILENT;
     } else {
         checkx(0, "Unknown log level '%s'", loglevel);
     }

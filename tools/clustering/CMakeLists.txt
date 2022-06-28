@@ -27,8 +27,6 @@ set(SETUP_PY "${CMAKE_CURRENT_SOURCE_DIR}/setup.py")
 set(DEPS     "${CMAKE_CURRENT_SOURCE_DIR}/*.py" "${CMAKE_CURRENT_SOURCE_DIR}/src/*.py" "${CMAKE_CURRENT_SOURCE_DIR}/*.txt" "${CMAKE_CURRENT_SOURCE_DIR}/*.md")
 set(OUTPUT   "${CMAKE_CURRENT_BINARY_DIR}/")
 
-# message(FATAL_ERROR ${OUTPUT})
-
 add_custom_command(OUTPUT ${OUTPUT}/clustering_package
                    COMMAND cp -fr ${CMAKE_CURRENT_SOURCE_DIR}/*.py ${CMAKE_CURRENT_SOURCE_DIR}/*.txt ${CMAKE_CURRENT_SOURCE_DIR}/*.md ${CMAKE_CURRENT_SOURCE_DIR}/src ${CMAKE_CURRENT_BINARY_DIR}
                    COMMAND ${CMAKE_COMMAND} -E touch ${OUTPUT}/clustering_package
