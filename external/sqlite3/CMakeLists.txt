@@ -30,6 +30,8 @@ add_executable (sqlite3exe shell.c)
 target_link_libraries(sqlite3exe PUBLIC sqlite3 dl pthread)
 target_include_directories(sqlite3exe PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}")
 
+set_target_properties(sqlite3exe PROPERTIES OUTPUT_NAME sqlite3)
+
 set (SQLITE3_INCLUDE_DIRS "${CMAKE_CURRENT_SOURCE_DIR}" PARENT_SCOPE)
 set (SQLITE3_LIBRARIES sqlite3 dl pthread PARENT_SCOPE)
 
