@@ -17,11 +17,22 @@
 #
 # ----------------------------------------------------------------------------
 #
+
 cmake_minimum_required (VERSION 2.8)
 project (sqlite3)
+
 add_definitions (-DSQLITE_ENABLE_RTREE)
+
 add_library (sqlite3 sqlite3.c)
 
+add_executable (sqlite3exe shell.c)
+
+target_link_libraries(sqlite3exe PUBLIC sqlite3 dl pthread)
+target_include_directories(sqlite3exe PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}")
+
 set (SQLITE3_INCLUDE_DIRS "${CMAKE_CURRENT_SOURCE_DIR}" PARENT_SCOPE)
-set (SQLITE3_LIBRARIES sqlite3 dl PARENT_SCOPE)
+set (SQLITE3_LIBRARIES sqlite3 dl pthread PARENT_SCOPE)
+
 set (CMAKE_C_FLAGS "-O3 -DNDEBUG")
+
+install (TARGETS sqlite3exe DESTINATION bin RENAME sqlite3)

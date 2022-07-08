@@ -49,7 +49,10 @@ get that begin/end addresses automatically:
 > chop-marks daxpy daxpy
 
 3. To then run the tracer simply use the following command:
-(this assumes that you have compiled and setup ChopStiX).
+
+> chop trace 
+
+
 
     ./run_example.sh -begin 400 -end 600
     ./run_example.sh $(< test_x86)

@@ -48,7 +48,6 @@ endif ()
 
 target_link_libraries(chop-trace2mpt ${ZLIB_LIBRARIES})
 
-
 install(PROGRAMS
     chop-marks-x86_64
     chop-marks-ppc64
