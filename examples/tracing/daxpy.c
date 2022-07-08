@@ -27,12 +27,10 @@
 
 #define log(p, ...)                       \
     do {                                  \
-        if (getenv("CX_VERBOSE")) {       \
             fprintf(stderr, "=%s= ", p);  \
             fprintf(stderr, __VA_ARGS__); \
             fprintf(stderr, "\n");        \
             fflush(stderr);               \
-        }                                 \
     } while (0)
 
 #define logt(...) log("t", __VA_ARGS__)
