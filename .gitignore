@@ -6,3 +6,4 @@ build*/
 !scripts/build
 *.swp
 __pycache__
+examples/tracing/daxpy

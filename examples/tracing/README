@@ -17,21 +17,38 @@
 #
 # ----------------------------------------------------------------------------
 #
-To build the daxpy kernel run `make daxpy`.
-It is a simple kernel that performs floating point operations over a vector.
-It has two parameters:
-    TEST_SIZE : Size of the vector
-    TEST_ITER : Number of iterations
 
-In order to trace this benchmark you need to define the region of interest.
-The files test_x86 and test_sysz define the -begin and -end addresses for my
-setup on the respective machines.
-This is complier and architecture dependent.
-The find_region.sh will try to find the region for the `daxpy` function.
+0. Enable the ChopStix environment
 
-    ./find_regions.sh <binary> <function>
+> source <INSTALL_DIR>/share/chopstix/setup.sh
 
-To then run the tracer simply use the run_example.sh script
+and make sure you have `chop` command in you PATH. 
+
+1. First build the binary to trace:
+
+> make daxpy
+
+Te example code it is a simple kernel that performs floating point operations
+over a vector. It has two parameters:
+
+ TEST_SIZE : Size of the vector (default: 10000)
+ TEST_ITER : Number of iterations (default: 10)
+
+You can test the functionality and the execution time on your system after
+compiling:
+
+> time ./daxpy 
+
+2. In order to trace this benchmark you need to define the region of interest (ROI).
+One can dump the binary (objdump) and find the begin/end addresses for the
+ROI. But if the ROI is a function, ChopStiX provides a command to automatically
+get that information. The kernel function that we want to trace is named `daxpy`
+and the binary is `daxpy. So, we can execute the following command to 
+get that begin/end addresses automatically:
+
+> chop-marks daxpy daxpy
+
+3. To then run the tracer simply use the following command:
 (this assumes that you have compiled and setup ChopStiX).
 
     ./run_example.sh -begin 400 -end 600
