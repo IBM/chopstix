@@ -81,7 +81,7 @@ if [ "$sym" = "_start" ]; then
     localentry=1
 fi
 
-awk -v sym="<$sym>:" -v le=$localentry -v d=$displ -v b=$bdispl'
+awk -v sym="<$sym>:" -v le=$localentry -v d=$displ -v b=$bdispl '
 $2 ~ sym {
     flag=1;
     dnum = strtonum(d);
