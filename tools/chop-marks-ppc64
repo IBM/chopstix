@@ -73,7 +73,6 @@ set -e
 awk -v sym="<$sym>:" -v le=$localentry displ=$displ'
 $2 ~ sym {
     flag=1;
-    printf("%x", $displ);
     if (!le) {
         printf("-begin %x\n", strtonum("0x"$1) + 8);
     } else {
