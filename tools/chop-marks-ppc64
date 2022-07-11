@@ -39,6 +39,8 @@ obj=$1
 sym=$2
 
 displ=0
+bdispl=0
+
 set +e
 chop-marks-dyn-addr "$obj" "$sym" > /dev/null
 error=$?
@@ -50,7 +52,6 @@ else
     dyn_start_sym=$(chop-marks-ppc64 "$obj" "_start" | cut -d ' ' -f 2)
     static_start_sym=$(readelf -s "$obj" | grep -v UND | grep FUNC | grep GLOBAL | grep " _start$" | tr -s " " | cut -d ' ' -f 3 | sort | uniq)
     bdispl=$((0x$dyn_start_sym - 0x$static_start_sym))
-    printf "0x%x" $bdispl
 fi
 
 if [ "$cache" -eq 1 ]; then
@@ -80,24 +81,25 @@ if [ "$sym" = "_start" ]; then
     localentry=1
 fi
 
-awk -v sym="<$sym>:" -v le=$localentry -v d=$displ '
+awk -v sym="<$sym>:" -v le=$localentry -v d=$displ -v b=$bdispl'
 $2 ~ sym {
     flag=1;
     dnum = strtonum(d);
+    base = strtonum(b);
     if (dnum != 0) {
         displ = dnum - strtonum("0x"$1);
     } else {
         displ = 0;
     }
     if (!le) {
-        printf("-begin %x\n", strtonum("0x"$1) + 8 + displ);
+        printf("-begin %x\n", strtonum("0x"$1) + 8 + displ + base);
     } else {
-        printf("-begin %x\n", strtonum("0x"$1) + displ);
+        printf("-begin %x\n", strtonum("0x"$1) + displ + base);
     }
 }
 flag && $6 ~ "bc?lr" {
     gsub(":", "", $1);
-    printf("-end %x\n",strtonum("0x"$1) + displ);
+    printf("-end %x\n",strtonum("0x"$1) + displ + base);
 }
 /^$/ { flag=0; }
 ' "$tmp" | tee "$tmp2"
