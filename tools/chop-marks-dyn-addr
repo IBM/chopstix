@@ -32,6 +32,16 @@ sym=$2
 lib=$(dirname $0)/../lib/libchop-marks-dyn-addr-lib.so
 script=$(mktemp)
 
+set +e
+ldd "$obj" 1> /dev/null 2> /dev/null
+error=$?
+set -e
+
+if [ $error -ne 0 ]; then
+    echo 0
+    exit
+fi
+
 cleanup() {
     rm -f "$script"
 }
