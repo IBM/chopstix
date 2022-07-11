@@ -45,6 +45,12 @@ error=$?
 set -e
 if [ "$error" -eq 0 ]; then
     displ=$(chop-marks-dyn-addr "$obj" "$sym" 2> /dev/null)
+else
+    # symbol not defined, but we can fail back to _start
+    dyn_start_sym=$(chop-marks-ppc64 $obj "_start" | cut -d ' ' -f 2)
+    static_start_sym=$(readelf -s ./test-daxpy | grep -v UND | grep FUNC | grep GLOBAL | grep _start | tr -s " " | cut -d ' ' -f 3)
+    bdispl=$((0x$dyn_start_sym - 0x$static_start_sym))
+    echo $bdispl
 fi
 
 if [ "$cache" -eq 1 ]; then
@@ -69,6 +75,10 @@ set +e
 readelf -Ws "$obj" | grep "$sym" | grep -q localentry
 localentry=$?
 set -e
+
+if [ "$sym" == "_start" ]; then
+    localentry=0
+fi
 
 awk -v sym="<$sym>:" -v le=$localentry -v d=$displ '
 $2 ~ sym {
