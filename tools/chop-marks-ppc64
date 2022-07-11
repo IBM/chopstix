@@ -51,7 +51,7 @@ elif [ "$sym" != "_start" ]; then
     static_start_sym=$(readelf -s "$obj" | grep -v UND | grep FUNC | grep GLOBAL | grep " _start$" | tr -s " " | cut -d ' ' -f 3 | sort | uniq)
     dyn_start_sym=$(chop-marks-ppc64 "$obj" "_start" | cut -d ' ' -f 2)
     if [ "$dyn_start_sym" = "" ]; then
-        bdispl=0x$(chop-marks-ppc64 "$obj" "_start" 2>&1 | grep PT_LOAD | cut -d "x" -f 3 | cut -d ")" -f 1 | sort | uniq)
+        bdispl=0x$(chop-marks-dyn-addr "$obj" "_start" 2>&1 | grep PT_LOAD | cut -d "x" -f 3 | cut -d ")" -f 1 | sort | uniq)
         bdispl=$(($bdispl))
     else
         bdispl=$((0x$dyn_start_sym - 0x$static_start_sym))
