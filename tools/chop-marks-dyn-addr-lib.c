@@ -67,6 +67,7 @@ static int callback(struct dl_phdr_info *info, size_t size, void *data)
 static void check_address() {
 
     dl_iterate_phdr(callback, NULL);
+    return
 
     char * symbol = getenv("LD_SYMBOL");
     if (symbol == NULL) {
