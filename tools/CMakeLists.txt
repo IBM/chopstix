@@ -27,6 +27,7 @@ add_executable(chop-detrace-mem
 )
 
 add_library(chop-marks-dyn-addr-lib SHARED chop-marks-dyn-addr-lib.c)
+target_link_libraries(chop-marks-dyn-addr-lib dl)
 
 # Custom zlib
 if (EXISTS "${CHOPSTIX_ZLIB_PREFIX}")
