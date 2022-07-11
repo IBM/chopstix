@@ -67,8 +67,8 @@ static int callback(struct dl_phdr_info *info, size_t size, void *data)
 static void check_address() {
 
     dl_iterate_phdr(callback, NULL);
-    return
 
+#if 0
     char * symbol = getenv("LD_SYMBOL");
     if (symbol == NULL) {
         fprintf(stderr, "chop-marks-dyn-addr: not symbol specified in LD_SYMBOL");
@@ -95,4 +95,5 @@ static void check_address() {
     fprintf(stderr, "chop-marks-dyn-addr: %s addr is: %p\n", symbol, addr);
     fprintf(stdout, "%p\n", addr);
     exit(EXIT_SUCCESS);
+#endif
 }
