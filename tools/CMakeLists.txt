@@ -26,6 +26,8 @@ add_executable(chop-detrace-mem
     detrace-mem.c
 )
 
+add_library(chop-marks-dyn-addr-lib SHARED chop-marks-dyn-addr-lib.c)
+
 # Custom zlib
 if (EXISTS "${CHOPSTIX_ZLIB_PREFIX}")
     include (CheckZlib)
@@ -49,6 +51,7 @@ endif ()
 target_link_libraries(chop-trace2mpt ${ZLIB_LIBRARIES})
 
 install(PROGRAMS
+    chop-marks-dyn-addr
     chop-marks-x86_64
     chop-marks-ppc64
     chop-marks-sysz
@@ -62,6 +65,11 @@ install (TARGETS
     chop-detrace-mem
     chop-trace2mpt
     DESTINATION bin
+)
+
+install (TARGETS
+    chop-marks-dyn-addr-lib
+    DESTINATION lib
 )
 
 add_subdirectory (clustering)
