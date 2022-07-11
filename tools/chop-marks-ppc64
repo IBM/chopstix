@@ -42,7 +42,7 @@ displ=0
 bdispl=0
 
 set +e
-chop-marks-dyn-addr "$obj" "$sym" > /dev/null
+chop-marks-dyn-addr "$obj" "$sym" > /dev/null 2> /dev/null
 error=$?
 set -e
 if [ "$error" -eq 0 ]; then
