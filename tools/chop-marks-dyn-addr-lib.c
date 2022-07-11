@@ -30,7 +30,10 @@ static void check_address() __attribute__((constructor));
 void check_address() {
 
     char * symbol = getenv("LD_SYMBOL");
-    if (symbol == NULL) exit(1);
+    if (symbol == NULL) {
+        fprintf(stderr, "chop-marks-dyn-addr: not symbol specified in LD_SYMBOL");
+        exit(1);
+    }
 
     fprintf(stderr, "chop-marks-dyn-addr: search symbol: %s\n", symbol);
 
