@@ -40,7 +40,7 @@ sym=$2
 
 displ=0
 set +e
-chop-marks-dyn-addr "$obj" "$sym"
+chop-marks-dyn-addr "$obj" "$sym" > /dev/null
 error=$?
 set -e
 if [ "$error" -eq 0 ]; then
