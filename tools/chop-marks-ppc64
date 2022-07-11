@@ -47,11 +47,13 @@ error=$?
 set -e
 if [ "$error" -eq 0 ]; then
     displ=$(chop-marks-dyn-addr "$obj" "$sym" 2> /dev/null)
-else
+elif [ "$sym" != "_start" ]; then
     # symbol not defined, but we can fail back to _start
     dyn_start_sym=$(chop-marks-ppc64 "$obj" "_start" | cut -d ' ' -f 2)
     static_start_sym=$(readelf -s "$obj" | grep -v UND | grep FUNC | grep GLOBAL | grep " _start$" | tr -s " " | cut -d ' ' -f 3 | sort | uniq)
     bdispl=$((0x$dyn_start_sym - 0x$static_start_sym))
+else
+    die "Unable to find address for $sym in $obj"
 fi
 
 if [ "$cache" -eq 1 ]; then
