@@ -52,7 +52,7 @@ void check_address() {
         exit(1);
     }
 
-    fprintf(stderr, "chop-marks-dyn-addr: %s addr is: 0x%p\n", symbol, addr);
-    fprintf(stdout, "0x%p\n", addr);
+    fprintf(stderr, "chop-marks-dyn-addr: %s addr is: %p\n", symbol, addr);
+    fprintf(stdout, "%p\n", addr);
     exit(0);
 }

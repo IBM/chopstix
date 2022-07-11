@@ -38,6 +38,15 @@ fi
 obj=$1
 sym=$2
 
+displ=0
+set +e
+chop-marks-dyn-addr "$obj" "$sym"
+error=$?
+set -e
+if [ "$error" -eq 0 ]; then
+    displ=$(chop-marks-dyn-addr "$obj" "$sym" 2> /dev/null)
+fi
+
 if [ "$cache" -eq 1 ]; then
     tmp="$obj.S"
     tmp2="$obj.S.$sym"
@@ -55,8 +64,6 @@ else
     tmp2=$(mktemp)
     objdump -d "$obj" > "$tmp"
 fi
-
-
 
 set +e
 readelf -Ws "$obj" | grep "$sym" | grep -q localentry
