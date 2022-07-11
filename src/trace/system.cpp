@@ -388,14 +388,25 @@ void chopstix_stop_trace() {
 //
 // Disable printf system calls during tracing
 //
+int vprintf(const char* format, va_list ap) {
+    if (chopstix::hide_calls && chopstix::sys_.tracing) return 0;
+
+    static int (*real_vprintf)(const char* format, va_list ap) = nullptr;
+    if (!real_vprintf) real_vprintf = (int (*)(const char*, va_list ap)) dlsym(RTLD_NEXT, "vprintf");
+
+    int ret = real_vprintf(format, ap);
+
+    return ret;
+}
+
 int printf(const char* format, ...) {
     if (chopstix::hide_calls && chopstix::sys_.tracing) return 0;
-	static int (*real_printf)(const char* format, ...) = nullptr;
-	va_list argptr;
+
+    va_list argptr;
     va_start(argptr, format);
-    if (!real_printf) real_printf = (int (*)(const char*, ...)) dlsym(RTLD_NEXT, "printf");
-	int ret = real_printf(format, argptr);
-	va_end(argptr);
+    int ret = vprintf(format, argptr);
+    va_end(argptr);
+
     return ret;
 }
 
