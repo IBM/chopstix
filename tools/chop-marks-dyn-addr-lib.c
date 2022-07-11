@@ -57,9 +57,11 @@ static int callback(struct dl_phdr_info *info, size_t size, void *data)
             printf("%s\n", type);
         else
             printf("[other (0x%x)]\n", p_type);
+
+        printf(" 0x%lx 0x%lx 0x%lx 0x%lx\n", info->dlpi_addr, info->dlpi_phdr[j].p_offset, info->dlpi_phdr[j].p_vaddr, info->dlpi_phdr[j].p_paddr);
     }
 
-    return 0;
+    return 1;
 }
 
 static void check_address() {
