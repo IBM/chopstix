@@ -70,7 +70,7 @@ readelf -Ws "$obj" | grep "$sym" | grep -q localentry
 localentry=$?
 set -e
 
-awk -v sym="<$sym>:" -v le=$localentry displ=$displ'
+awk -v sym="<$sym>:" -v le=$localentry '
 $2 ~ sym {
     flag=1;
     if (!le) {
