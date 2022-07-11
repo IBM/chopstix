@@ -33,7 +33,7 @@ static int callback(struct dl_phdr_info *info, size_t size, void *data)
     char *type;
     int p_type, j;
 
-    printf("Name: \"%s\" (%d segments)\n", info->dlpi_name,
+    fprintf(stderr, "chop-marks-dyn-addr: name: \"%s\" (%d segments)\n", "main program",
             info->dlpi_phnum);
 
     for (j = 0; j < info->dlpi_phnum; j++) {
@@ -49,16 +49,15 @@ static int callback(struct dl_phdr_info *info, size_t size, void *data)
             (p_type == PT_GNU_STACK) ? "PT_GNU_STACK" :
             (p_type == PT_GNU_RELRO) ? "PT_GNU_RELRO" : NULL;
 
-        printf("    %2d: [%14p; memsz:%7lx] flags: 0x%x; ", j,
+        fprintf(stderr, "chop-marks-dyn-addr:   %2d: [%14p (base: %14p); memsz:%7lx] flags: 0x%x; ", j,
                 (void *) (info->dlpi_addr + info->dlpi_phdr[j].p_vaddr),
+                (void *) (info->dlpi_addr),
                 info->dlpi_phdr[j].p_memsz,
                 info->dlpi_phdr[j].p_flags);
         if (type != NULL)
-            printf("%s\n", type);
+            fprintf(stderr, "%s\n", type);
         else
-            printf("[other (0x%x)]\n", p_type);
-
-        printf(" 0x%lx 0x%lx 0x%lx 0x%lx\n", info->dlpi_addr, info->dlpi_phdr[j].p_offset, info->dlpi_phdr[j].p_vaddr, info->dlpi_phdr[j].p_paddr);
+            fprintf(stderr, "[other (0x%x)]\n", p_type);
     }
 
     return 1;
@@ -68,7 +67,6 @@ static void check_address() {
 
     dl_iterate_phdr(callback, NULL);
 
-#if 0
     char * symbol = getenv("LD_SYMBOL");
     if (symbol == NULL) {
         fprintf(stderr, "chop-marks-dyn-addr: not symbol specified in LD_SYMBOL");
@@ -95,5 +93,4 @@ static void check_address() {
     fprintf(stderr, "chop-marks-dyn-addr: %s addr is: %p\n", symbol, addr);
     fprintf(stdout, "%p\n", addr);
     exit(EXIT_SUCCESS);
-#endif
 }
