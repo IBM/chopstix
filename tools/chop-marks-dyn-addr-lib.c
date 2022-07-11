@@ -48,7 +48,7 @@ void check_address() {
     if (addr == NULL) {
         char * err = dlerror();
         fprintf(stderr, "chop-marks-dyn-addr: dlsym error: %s\n", err);
-        fprintf(stderr, "chop-marks-dyn-addr: Symbol not exported. Make sure it is defined using 'readelf -s <binary>'\n"); 
+        fprintf(stderr, "chop-marks-dyn-addr: Symbol not exported. Make sure it is defined using 'readelf -s <binary>'\n");
         exit(1);
     }
 

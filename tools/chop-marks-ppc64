@@ -23,14 +23,14 @@ set -eu
 
 die() { echo "$*" >&2; exit 1; }
 
-if [ $# -lt 2 ]; then 
+if [ $# -lt 2 ]; then
     die "Usage: $0 <object> <symbol> [-cache]"
 fi
 
 cache=0
-if [ $# -eq 3 ]; then 
-    if [ "$3" != "-cache" ]; then     
-        die "Usage: $0 <object> <symbol> [-cache]"  
+if [ $# -eq 3 ]; then
+    if [ "$3" != "-cache" ]; then
+        die "Usage: $0 <object> <symbol> [-cache]"
     fi
     cache=1
 fi
@@ -73,19 +73,25 @@ set -e
 awk -v sym="<$sym>:" -v le=$localentry '
 $2 ~ sym {
     flag=1;
-    if (!le) {
-        printf("-begin %x\n", strtonum("0x"$1) + 8);
+    dnum = strtonum(d);
+    if (dnum != 0) {
+        displ = dnum - strtonum("0x"$1);
     } else {
-        printf("-begin %x\n", strtonum("0x"$1));
+        displ = 0;
+    }
+    if (!le) {
+        printf("-begin %x\n", strtonum("0x"$1) + 8 + displ);
+    } else {
+        printf("-begin %x\n", strtonum("0x"$1) + displ);
     }
 }
 flag && $6 ~ "bc?lr" {
     gsub(":", "", $1);
-    print "-end",$1;
+    printf("-end %x\n",strtonum("0x"$1) + displ);
 }
 /^$/ { flag=0; }
 ' "$tmp" | tee "$tmp2"
 
-if [ $cache -eq 0 ]; then 
+if [ $cache -eq 0 ]; then
     rm -f "$tmp" "$tmp2"
 fi

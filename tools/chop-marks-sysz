@@ -56,8 +56,6 @@ else
     objdump -d "$obj" > "$tmp"
 fi
 
-
-
 set +e
 readelf -Ws "$obj" | grep "$sym" | grep -q localentry
 localentry=$?
