@@ -91,24 +91,22 @@ void Process::exec(char **argv, int argc) {
         abandon();
         exit(EXIT_FAILURE);
     }
+
     persona = persona | ADDR_NO_RANDOMIZE;
-    if (persona & ADDR_NO_RANDOMIZE)
-    {
-        log::debug("Process:: exec: ASLR already disabled");
-    } else {
-          persona = personality(persona | ADDR_NO_RANDOMIZE);
-        if (persona == -1) {
-            fprintf(stderr, "Process:: exec: Unable to set ASLR info: %s\n", strerror(errno));
-            abandon();
-            exit(EXIT_FAILURE);
-        }
-        if (!(personality (0xffffffff) & ADDR_NO_RANDOMIZE))
-        {
-            fprintf(stderr, "Process:: exec: Unable to disable ASLR");
-            abandon();
-            exit(EXIT_FAILURE);
-        }
+    log::debug("Process:: exec: Disabling ASLR ...");
+    persona = personality(persona | ADDR_NO_RANDOMIZE);
+    if (persona == -1) {
+        fprintf(stderr, "Process:: exec: Unable to set ASLR info: %s\n", strerror(errno));
+        abandon();
+        exit(EXIT_FAILURE);
     }
+    if (!(personality (0xffffffff) & ADDR_NO_RANDOMIZE))
+    {
+        fprintf(stderr, "Process:: exec: Unable to disable ASLR");
+        abandon();
+        exit(EXIT_FAILURE);
+    }
+    log::debug("Process:: exec: ASLR disabled");
 
     int ret = execvp(*argv, argv);
     if (ret <  0) {
