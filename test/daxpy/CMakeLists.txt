@@ -28,4 +28,5 @@ add_executable(test-daxpy
     daxpy.c
 )
 
+set_target_properties(test-daxpy PROPERTIES COMPILE_FLAGS "-U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=0 -O3 -Wall -Werror -pedantic")
 target_link_libraries(test-daxpy m)

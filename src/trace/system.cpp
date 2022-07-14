@@ -95,8 +95,7 @@ System::System() {
     Memory::instance().restrict_map(res_fd);
     syscall(SYS_close, res_fd);
 
-
-    hide_calls = getenv("CHOPSTIX_OPT_HIDE_CALLS") != NULL;
+    //hide_calls = getenv("CHOPSTIX_OPT_HIDE_CALLS") != NULL;
 
     log::verbose("System:: End preload library initialization");
 }
