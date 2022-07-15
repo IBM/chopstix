@@ -38,6 +38,7 @@
 double daxpy(double *x, double *y, int n, double a) {
     for (int i = 1; i < n; ++i) {
         y[i] = a * x[i] + y[i-1];
+        x[i] = a * x[i] + y[i-1];
     }
     return y[n-1];
 }
