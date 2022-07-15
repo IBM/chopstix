@@ -59,6 +59,7 @@ install(PROGRAMS
     chop-marks-riscv
     chop-marks
     chop-score-table
+    chop-trace-mem
     DESTINATION bin)
 
 install (TARGETS

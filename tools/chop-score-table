@@ -60,6 +60,11 @@ db="$(mktemp)"
 tmp="$(mktemp)"
 tmp2="$(mktemp)"
 
+cleanup() {
+    rm -f "$tmp" "$tmp2" "$db"
+}
+trap cleanup EXIT
+
 score_min_goal="$2"
 score_max_func="$3"
 score_min_size="$4"

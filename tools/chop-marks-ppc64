@@ -76,6 +76,11 @@ else
     tmp=$(mktemp)
     tmp2=$(mktemp)
     objdump -d "$obj" > "$tmp"
+
+    cleanup() {
+        rm -f "$tmp" "$tmp2"
+    }
+    trap cleanup EXIT
 fi
 
 set +e

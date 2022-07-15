@@ -45,8 +45,8 @@ fi
 cleanup() {
     rm -f "$script"
 }
-
 trap cleanup EXIT
+
 echo "export LD_BIND_NOW=1" >> "$script"
 echo "export LD_SYMBOL=$sym" >> "$script"
 echo "export LD_PRELOAD=$lib" >> "$script"
