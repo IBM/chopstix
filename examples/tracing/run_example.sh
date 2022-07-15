@@ -24,10 +24,11 @@ OUTPUT_DIR=/tmp/trace_example
 BASE_NAME=ubench_daxpy
 MICROPROBE_TARGET=
 
+source $INSTALL_DIR/share/chopstix/setup.sh
+
 set -e
 set -x
 
-source $INSTALL_DIR/share/chopstix/setup.sh
 # Compile test
 make daxpy
 # Test test
