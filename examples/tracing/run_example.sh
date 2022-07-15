@@ -42,11 +42,23 @@ chop-trace2mpt --trace-dir $OUTPUT_DIR/trace_data -o $OUTPUT_DIR/$BASE_NAME
 # Convert MPT to runnable ELF
 mp_mpt2elf -T $MICROPROBE_TARGET -t $OUTPUT_DIR/$BASE_NAME#0.mpt -O $OUTPUT_DIR/$BASE_NAME#0.s --safe-bin --raw-bin --fix-long-jump --compiler gcc --reset --wrap-endless --wrap-endless-threshold 1000
 # Test generated ELF
+set +e
 timeout 10s $OUTPUT_DIR/$BASE_NAME#0.elf  
+if [ $? -ne 124 ]; then
+    echo "ELF not functional"
+    exit 1
+fi
+set -e
 # Trace memory accesses of generated ELF and create a new MPT with the memory
 # accesse information
 chop-trace-mem -output $OUTPUT_DIR/$BASE_NAME#0 -base-mpt $OUTPUT_DIR/$BASE_NAME#0.mpt -output-mpt $OUTPUT_DIR/$BASE_NAME#0#memory.mpt -- $OUTPUT_DIR/$BASE_NAME#0.elf
 # Convert the new MPT, with memory accesses, to runnable ELF
 mp_mpt2elf -T $MICROPROBE_TARGET -t $OUTPUT_DIR/$BASE_NAME#0#memory.mpt -O $OUTPUT_DIR/$BASE_NAME#0#memory.s --safe-bin --raw-bin --fix-long-jump --compiler gcc --reset --wrap-endless --wrap-endless-threshold 1000
 # Test generated ELF
+set +e
 timeout 10s $OUTPUT_DIR/$BASE_NAME#0#memory.elf  
+if [ $? -ne 124 ]; then
+    echo "ELF not functional"
+    exit 1
+fi
+set -e
