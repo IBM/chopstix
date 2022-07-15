@@ -50,7 +50,7 @@ trap cleanup EXIT
 echo "export LD_BIND_NOW=1" >> "$script"
 echo "export LD_SYMBOL=$sym" >> "$script"
 echo "export LD_PRELOAD=$lib" >> "$script"
-echo "$1" >> "$script"
+echo "$(dirname $obj)/$(basename $obj)" >> "$script"
 chmod +x "$script"
 setarch $(uname -m) -R "$script"
 rm -f "$script"
