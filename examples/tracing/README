@@ -79,7 +79,7 @@ maintaining the same original address layout. To do so, execute:
 > mp_mpt2elf -T <target> -t base_name#0.mpt -O base_name#0.s --safe-bin --raw-bin --fix-long-jump --compiler gcc --reset --wrap-endless --wrap-endless-threshold 1000
 
 The command above converts the MPT file into an ELF executable. Since the
-extracted ROI is a funcion, we can wrap it into an endless loop (--wrap-endless)
+extracted ROI is a function, we can wrap it into an endless loop (--wrap-endless)
 and reset the state at each iteration (--reset).  Check mp_mpt2elf and
 Microprobe documentation for further information of the rest of the flags. 
 The output assembly file `base_name#0.s` is generated and compiled using
@@ -87,13 +87,26 @@ the necessary flags using the compiler provided. If the compilation succeeds**,
 a `base_name#0.elf` file is generated. Then, you can execute the binary
 using:
 
-> ./base_name#0.elf
+> timeout 10s ./base_name#0.elf
 
-It might be the case that the executable is not functionally correct because
+6. It might be the case that the executable is not functionally correct because
 we only reset the state of the user architecture registers at each iteration
 of the wrapped function. However, the execution might depend on values in 
 memory that have not been reset. To reset such values, we need to obtain
 the memory access trace, and to do so execute the following command:
 
+> chop-trace-mem -output ./base_name#0 -base-mpt base_name#0.mpt -output-mpt base_name#0#memory.mpt -- ./base_name#0.elf 
 
-**
+The command above will trace the memory accesses of the first iteration of the
+region of interest and embed such information into a new MPT file with name:
+base_name#0.mpt. Then, you can repeat step 5, using the new MPT file generated.
+
+The script './run_example.sh' in this directory performs all the commands
+aforementioned. You just need to edit a couple of variables according to your
+needs.
+
+** Depending on your toolchain and system environment, the compilation might
+not be successful. We only provide a generic command which works in our 
+experimental environment. You might need to add the necessary flags and compilation
+according to your system.
+option 
