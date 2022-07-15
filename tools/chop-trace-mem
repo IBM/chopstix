@@ -125,6 +125,9 @@ echo ""
 
 start_addr=$(chop-marks "$bin" "$start_sym" | grep begin | sed "s/n /n=0x/g")        
 end_addr=$(chop-marks "$bin" "$end_sym" | grep end | sed "s/d /d=0x/g")
+if [ "$end_sym" = "MPT2ELF_ENDLESS" ]; then
+    end_addr=$(chop-marks "$bin" "$end_sym" | grep begin | sed "s/n /d=0x/g")
+fi
 
 [ "$start_addr" != "" ] || die "$0: error: Unable to compute start addresses"
 [ "$end_addr" != "" ] || die "$0: error: Unable to compute end addresses"
