@@ -269,11 +269,18 @@ void System::save_page(unsigned long page_addr) {
 
 void System::start_trace(bool isNewInvocation) {
 
-    // Flust I/O streams before doing anything
-    fflush(stdout);
-    fflush(stderr);
-    fsync(fileno(stdout));
-    fsync(fileno(stderr));
+    // Do not flush I/O streams before doing anything
+    //
+    // fflush(stdout);
+    // fflush(stderr);
+    // fsync(fileno(stdout));
+    // fsync(fileno(stderr));
+    //
+    // If sharing the same IO buffer, any flushing during the start/end
+    // dynamic calls can have side effect. Need to avoid sharing the same
+    // IO buffers or not create IO to such buffers. Typically the only 
+    // shared buffer can be stdout and stderr.
+    //
 
     log::debug("System: start_trace start (trace %d)", trace_id);
     check(tracing == false, "System: start_trace: Tracing already started");
@@ -320,6 +327,20 @@ void System::start_trace(bool isNewInvocation) {
 
 void System::stop_trace() {
     Memory::instance().unprotect_all();
+
+    // Do not flush I/O streams before doing anything
+    //
+    // fflush(stdout);
+    // fflush(stderr);
+    // fsync(fileno(stdout));
+    // fsync(fileno(stderr));
+    //
+    // If sharing the same IO buffer, any flushing during the start/end
+    // dynamic calls can have side effect. Need to avoid sharing the same
+    // IO buffers or not create IO to such buffers. Typically the only 
+    // shared buffer can be stdout and stderr.
+    //
+
     log::debug("System:: stop_trace start");
     log::debug("Tracing: %d", tracing);
     check(tracing == true, "System:: stop_trace: Tracing already stopped");
@@ -368,7 +389,6 @@ void System::stop_trace() {
 
 void chopstix_start_trace(unsigned long isNewInvocation) {
     chopstix::sys_.start_trace(isNewInvocation);
-
     // Generate a SIGILL event, without using system routines like 'raise'
     // to avoid more page faults that needed (note that all pages have been
     // protected.
