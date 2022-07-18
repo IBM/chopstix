@@ -411,6 +411,8 @@ void chopstix_stop_trace() {
 // side effects
 //
 
+extern "C" {
+
 int vprintf(const char* format, va_list ap) {
     if (chopstix::hide_calls && chopstix::sys_.tracing) return 0;
 
@@ -460,10 +462,14 @@ int puts(const char *s) {
     return ret;
 }
 
+#if 0
 int printf(const char* format) {
     if (chopstix::hide_calls && chopstix::sys_.tracing) return 0;
 	static int (*real_printf)(const char* format) = nullptr;
     if (!real_printf) real_printf = (int (*)(const char*)) dlsym(RTLD_NEXT, "printf");
 	int ret = real_printf(format);
     return ret;
+}
+#endif
+
 }
