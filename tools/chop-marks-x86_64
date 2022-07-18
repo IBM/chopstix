@@ -76,6 +76,7 @@ else
     tmp=$(mktemp)
     tmp2=$(mktemp)
     objdump -d "$obj" > "$tmp"
+
     cleanup() {
         rm -f "$tmp" "$tmp2"
     }
@@ -86,6 +87,10 @@ set +e
 readelf -Ws "$obj" | grep "$sym" | grep -q localentry
 localentry=$?
 set -e
+
+if [ "$sym" = "_start" ]; then
+    localentry=1
+fi
 
 awk -v sym="<$sym>:" -v le=$localentry -v d=$displ -v b=$bdispl '
 $2 ~ sym {
