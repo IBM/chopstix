@@ -371,6 +371,18 @@ void Tracer::set_breakpoint(std::vector<long> address, bool state) {
     log::debug("Tracer:: set_breakpoint end");
 }
 
+bool Tracer::check_breakpoint(std::vector<long> address) {
+    log::debug("Tracer:: check_breakpoint start");
+    long cur_pc = Arch::current()->get_pc(child.pid());
+    for (auto addr : address) {
+        auto baddr = addr + module_offset.addr();
+        log::debug("Tracer:: check_breakpoint: check_break at 0x%x (0x%x)", addr, baddr);
+        if (baddr == cur_pc) return true;
+    }
+    log::debug("Tracer:: check_breakpoint end");
+    return false;
+}
+
 bool RandomizedTracer::should_trace() {
     log::debug("RandomizedTracer::should_trace");
     double value = ((random() + 0.0) / RAND_MAX);

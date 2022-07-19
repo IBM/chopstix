@@ -144,7 +144,11 @@ void TracerRangedRegionOfInterestState::handle_signal(Process &child,
 
     log::debug("TracerRangedRegionOfInterestState:: handle signal start");
     if (signal == SIGILL) {
-        change_state();
+        if (tracer->check_breakpoint(end) {
+            change_state();
+        else {
+            change_state();
+        }
     } else {
         TracerRegionOfInterestState::handle_signal(child, signal);
     }
