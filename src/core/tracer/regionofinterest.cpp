@@ -148,6 +148,7 @@ void TracerRangedRegionOfInterestState::handle_signal(Process &child,
             change_state();
         } else {
             // Restore contents and continue executing 
+            tracer->fix_breakpoint(end);
             child.syscall(0);
         }
     } else {

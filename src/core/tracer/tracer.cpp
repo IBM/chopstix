@@ -383,6 +383,34 @@ bool Tracer::check_breakpoint(std::vector<long> address) {
     return false;
 }
 
+void Tracer::fix_breakpoint(std::vector<long> address) {
+    log::debug("Tracer:: fix_breakpoint start");
+    long cur_pc = Arch::current()->get_pc(child.pid());
+    long mask;
+
+	switch(Arch::current()->get_breakpoint_size()) {                                                
+        case BreakpointSize::HALF_WORD:                                            
+            mask = std::numeric_limits<unsigned short>::max();                     
+            break;                                                                 
+        case BreakpointSize::WORD:                                                 
+            mask = std::numeric_limits<unsigned int>::max();                       
+            break;                                                                 
+        default:                                                                   
+        case BreakpointSize::DOUBLE_WORD:                                          
+            mask = std::numeric_limits<unsigned long>::max();                      
+            break;                                                                 
+    }            
+
+    for (auto addr : address) {
+        auto baddr = addr + module_offset.addr();
+        log::debug("Tracer:: fix_breakpoint: fix_break at 0x%x (0x%x)", addr, baddr);
+        if (baddr <= cur_pc) {
+
+        }
+    }
+    log::debug("Tracer:: fix_breakpoint end");
+}
+
 bool RandomizedTracer::should_trace() {
     log::debug("RandomizedTracer::should_trace");
     double value = ((random() + 0.0) / RAND_MAX);

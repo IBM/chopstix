@@ -38,6 +38,7 @@ class Tracer {
     bool symbol_contains(std::string symbol, long addr);
     void set_breakpoint(std::vector<long> address, bool state);
     bool check_breakpoint(std::vector<long> address);
+    void fix_breakpoint(std::vector<long> address);
     int trace_id = 0;
     TraceOptions trace_options;
   protected:
