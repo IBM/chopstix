@@ -355,13 +355,23 @@ void Process::set_break_size(long addr, long size) {
     auto it = breaks_.find(addr);
     long addr_content = peek(addr);
     if (it == breaks_.end()) breaks_[addr] = addr_content;
-    long mask = Arch::current()->get_breakpoint_mask();
+    long mask;
+	switch(Arch::current()->get_breakpoint_size()) {                                                
+        case BreakpointSize::HALF_WORD:                                            
+            mask = (1 << ((2-size)*8)) - 1;
+            break;                                                                 
+        case BreakpointSize::WORD:                                                 
+            mask = (1 << ((4-size)*8)) - 1;
+            break;                                                                 
+        default:                                                                   
+        case BreakpointSize::DOUBLE_WORD:                                          
+            mask = (1 << ((8-size)*8)) - 1;
+            break;                                                                 
+    } 
     addr_content &= mask;
     log::debug("Process:: set break size: break contents are %x", addr_content);
     poke(addr, addr_content);
 }
-
-
 
 void Process::remove_break(long addr) {
     log::debug("Process:: remove_break: address %x", addr);
