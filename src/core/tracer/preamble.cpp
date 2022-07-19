@@ -58,19 +58,26 @@ void TracerRangedPreambleState::execute(Process &child) {
         long cur_pc = Arch::current()->get_pc(child.pid());
         log::debug("TracerRangedPreamble:: Stop at PC: %x", cur_pc);
 
-        if (tracer->should_trace()) {
-            log::verbose("TracerRangedPreamble:: execute: start region hit, start tracing");
-            change_state();
-            log::debug("TracerRangedPreamble:: Restarting at PC: %x" , cur_pc);
-            child.syscall(0);
+        if (tracer->check_breakpoint(start)) {
+            if (tracer->should_trace()) {
+                log::verbose("TracerRangedPreamble:: execute: start region hit, start tracing");
+                change_state();
+                log::debug("TracerRangedPreamble:: Restarting at PC: %x" , cur_pc);
+                child.syscall(0);
+            } else {
+                log::verbose("TracerRangedPreamble:: execute: start region hit, skip");
+                tracer->set_breakpoint(start, false);
+                tracer->set_breakpoint(end, true);
+                child.cont();
+                child.waitfor(SIGILL);
+                tracer->set_breakpoint(end, false);
+                tracer->set_breakpoint(start, true);
+            }
         } else {
-            log::verbose("TracerRangedPreamble:: execute: start region hit, skip");
-            tracer->set_breakpoint(start, false);
-            tracer->set_breakpoint(end, true);
+            // Restore contents and continue executing 
+            tracer->fix_breakpoint(start);
             child.cont();
             child.waitfor(SIGILL);
-            tracer->set_breakpoint(end, false);
-            tracer->set_breakpoint(start, true);
         }
     }
     log::debug("TracerRangedPreamble:: execute end");
