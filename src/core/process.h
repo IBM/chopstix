@@ -88,6 +88,7 @@ class Process {
     void poke(long addr, long data);
 
     void set_break(long addr);
+    void set_break_size(long addr, long size);
     void remove_break(long addr);
 
     void timeout(double time);
