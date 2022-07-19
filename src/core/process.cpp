@@ -358,14 +358,14 @@ void Process::set_break_size(long addr, long size) {
     long mask;
 	switch(Arch::current()->get_breakpoint_size()) {                                                
         case BreakpointSize::HALF_WORD:                                            
-            mask = (1 << ((2-size)*8)) - 1;
+            mask = (((long)1 << ((2 - size)*8)) - 1);
             break;                                                                 
         case BreakpointSize::WORD:                                                 
-            mask = (1 << ((4-size)*8)) - 1;
+            mask = (((long)1 << ((4 - size)*8)) - 1);
             break;                                                                 
         default:                                                                   
         case BreakpointSize::DOUBLE_WORD:                                          
-            mask = (1 << ((8-size)*8)) - 1;
+            mask = (((long)1 << ((8 - size)*8)) - 1);
             break;                                                                 
     } 
     addr_content &= mask;

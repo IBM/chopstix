@@ -405,7 +405,6 @@ void Tracer::fix_breakpoint(std::vector<long> address) {
         auto baddr = addr + module_offset.addr();
         log::debug("Tracer:: fix_breakpoint: fix_break at 0x%x (0x%x)", addr, baddr);
         if ((baddr <= cur_pc) && (cur_pc <= (baddr + mask_size))) {
-            printf("FIXING %lx in %lx", cur_pc, baddr);
             child.remove_break(baddr);
             child.set_break_size(baddr, cur_pc-baddr);
             break;
