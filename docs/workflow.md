@@ -1,5 +1,6 @@
 # Example workflow 
 
-Use case:
+This document explains the following use case:
 
-    Given a 
+_Generate a microbenchmark from the most representative function invocation of
+the most hot function of a benchmark_
