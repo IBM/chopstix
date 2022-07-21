@@ -83,7 +83,7 @@ entry/exit addresses). To do so, execute:
 
 to obtain the list of being/end addresses corresponding to the entry/exit
 points of the *function_name* without requiring further address math. The
-parameters can be directly fed into the chop trace command as following:
+parameters can be directly fed into the `chop trace` command as following:
 
     chop trace $(chop-marks binary function_name) EXTRA_TRACING_OPTIONS ./binary BINARY_ARGUMENTS
 
@@ -94,7 +94,7 @@ invoke `chop` for tracing.
 Once tracing is done, the raw output needs to be processed in order to be
 converted into a MPTs (Microprobe Test files). To do so execute:
 
-   chop-trace2mpt trace_directory basename
+    chop-trace2mpt trace_directory basename
 
 Then, it is up to the Microprobe tool to process and convert the Microprobe
 test definition to another format. Check the Microprobe documentation for
