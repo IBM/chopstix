@@ -77,14 +77,21 @@ instance, the command:
 
     chop-score-table CHOPSTIX_DB 80 10 100
 
-will dump the stats of at most 10 functions, with at least having 100
-instructions in size (static funciton size), having a minimum of 80% of
-coverage. 
-
+will dump the stats of at most 10 functions having a minimum of 80% of
+coverage, where each of them having at least 100 instructions in size (static
+function size).
 
 ## Function profiling
 
- chop-marks binary function_name
+Once a `HOTFUNC` is has been selected. We need to obtain the corresponding
+addreses in memory where the function starts and ends. i.e. the entry and
+exit points of the function. One can do so manually, by inspecting the code
+but ChopStiX provide a help script that facilitates the process: 
+
+    chop-marks BINARY HOTFUNC
+
+will return the addreses of the being/end points for the funciton. From now
+on, we call them `HOTFUNC_MARKS`.
 
 chop-perf-invok $$(cat $<) -o $@ -max 1000000 -- $$(cat $$arguments) > /dev/null 2> '$@.log'
 
