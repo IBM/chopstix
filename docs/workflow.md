@@ -64,12 +64,23 @@ of view. To do so, execute the following commands:
 
 The commands above first disassemble the executed binary and the dynamic
 libraries used (note the `ldd $BINARY` subcommand). If you already know that
-the function to trace are in the main `BINARY`, there is no need to disassemble
+the functions to trace are in the main `BINARY`, there is no need to disassemble
 the dynamic libraries (which can be size and time consuming). The samples
-are counted and annotated to the control flow graph (CFG) the ChopStiX generated
-during the `disasm` step.
+are counted and annotated to the control flow graph (CFG) that ChopStiX generated
+during the `disasm` step. The final command lists all the functions, sorted
+by the number of samples / coverage with respect to the entire benchmark.
+The top one is the **_hottest_** function (`HOTFUNC` from now on).
 
- chop-score-table $*/sample.chop.db $$coverage 10 1 -functions
+ChopStiX provides a help script to automatically select function based on
+coverage, function size and maximum number of functions to select. For
+instance, the command:
+
+    chop-score-table CHOPSTIX_DB 80 10 100
+
+will dump the stats of at most 10 functions, with at least having 100
+instructions in size (static funciton size), having a minimum of 80% of
+coverage. 
+
 
 ## Function profiling
 
