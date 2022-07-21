@@ -14,9 +14,9 @@ To do so, the following high level steps are required:
    regenerate the microbenchmark using the  MPTs and detailed memory
    access pattern.
 
-The rest of the decoument provides details on each of the steps.
+The rest of the document provides details on each of the steps.
 
-## Bechmark profiling
+## Benchmark profiling
 
 The initial profiling of the benchmark is done using performance counters.
 Depending on the performance counter being sampled, the definition of **_hottest_**
@@ -84,20 +84,20 @@ function size).
 ## Function profiling
 
 Once a `HOTFUNC` is has been selected. The next step is to know which 
-particular invocation we want to trace and reproduce. This is not straighforward
-since hot functions tipically are executed multiple times and most of the time
+particular invocation we want to trace and reproduce. This is not straightforward
+since hot functions typically are executed multiple times and most of the time
 exhibit much different behaviors over time depending on the input parameters.
 In such case, the question is: which particular invocation (or set of 
 invocations) represent best the typical behavior of the function? 
 
-First, we need to obtain the corresponding addreses in memory where the
+First, we need to obtain the corresponding addresses in memory where the
 function starts and ends. i.e. the entry and exit points of the function.
 One can do so manually, by inspecting the code but ChopStiX provides a helper
 script that facilitates the process: 
 
     chop-marks BINARY HOTFUNC
 
-will return the addresses of the being/end points for the funciton. From now
+will return the addresses of the being/end points for the function. From now
 on, we call them `HOTFUNC_MARKS`. This information is going to be used for 
 profiling the function in the next step as well as for tracing the selected
 invocation in the tracing step.
@@ -116,13 +116,13 @@ of the approach.
 
 ## Invocation selection
 
-You can manually analyse the stats of the CSV generated to understand in
+You can manually analyze the stats of the CSV generated to understand in
 detail the behavior of each invocation and manually select a particular
-invocation you find worh to trace. Alternatively, you can use the clustering
+invocation you find worth to trace. Alternatively, you can use the clustering
 analysis explained in the rest of the section to perform the selection
 automatically.
 
-ChopStiX provide a set of support scripts to analyse the generated CSV, 
+ChopStiX provide a set of support scripts to analyze the generated CSV, 
 create clusters and select a representative invocation for each of them.
 To do so, execute:
 
@@ -136,7 +136,7 @@ where:
   debug the clustering analysis.
 - `BINARY_NAME` is the benchmark name.
 
-The command will generate a maximum of 20 clusters or lesss is total coverage
+The command will generate a maximum of 20 clusters or less is total coverage
 reaches 80% before. Each cluster will have at least 1% of coverage. There
 exists more parameters to control the clustering process. Please refer to the
 actual command line information for further details. Once the `CLUSTER_INFO`
@@ -186,8 +186,8 @@ From the MPTs generated in the previous step, we can then use Microprobe
 framework to process them and convert them to different formats. Check the
 documentation of Microprobe for all the possibilities available. 
 
-A typicall use case is to convert the MPT into a self runnable ELF. I.e. the
-function invocation will converted into an executable that will continously
+A typically use case is to convert the MPT into a self runnable ELF. I.e. the
+function invocation will converted into an executable that will continuously
 execute the traced function in an endless loop. To do so, you can use
 the following command:
 
@@ -213,13 +213,13 @@ You can try the functional correctness of the `UBENCH_NAME.elf` by executing
 it and checking the functional correctness and the performance profile. For
 most of the simple functions, the workflow stops here and you succeeded in
 generating a small version (microbenchmark) of the most representative 
-function invocation of the **_hottest_** fucntion of a benchmark.
+function invocation of the **_hottest_** function of a benchmark.
 
 Still, there might be errors or the performance might not be expected.
 This is because we only reset the state of the registers. However, there might
 be ROIs on which their functional correctness or performance profile depend on
 the state of the memory, which we do not reset at each iteration.
-To fix such errors and missmatches, we need to proceed to the next step.
+To fix such errors and mismatches, we need to proceed to the next step.
 
 ## Microbenchmark tuning
 

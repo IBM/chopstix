@@ -31,4 +31,4 @@ which will be called from `main`. The `PARSE_OPTIONS(Argc, Argv, Command)`
 macro implements the option parser for this command.
 
 All options can be passed using environment variables. Command line specifiers
-takes preference over the enOironment defined settings. 
+takes preference over the environment defined settings. 

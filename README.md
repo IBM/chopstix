@@ -16,7 +16,7 @@ Execute the following command to install ChopStiX:
     ./install.sh <INSTALLATION_DIRECTORY>
 
 The command will perform all the necessary steps (i.e. including the download
-of specific requirements) and install ChopStix in `<INSTALLATION_DIRECTORY>.
+of specific requirements) and install ChopStiX in `<INSTALLATION_DIRECTORY>.
 
 ## Installation
 
@@ -38,7 +38,7 @@ To download and setup ChopStiX for installation follow these steps:
     git submodule update --init --recursive
 
 If you download the repository contents directly from `github.com` as a 
-compressed zip file, you also have to download the external depencies
+compressed zip file, you also have to download the external dependencies
 and decompress them into the `./external` directory. 
 
 ### Compilation
