@@ -54,7 +54,7 @@ The basic build workflow is as follows:
     make && make install
 
 For more detailed information regarding configuration options see 
-docs/installation.md.
+[installation](docs/installation.md) documentation.
 
 ## Basic usage
 

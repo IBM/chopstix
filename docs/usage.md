@@ -77,7 +77,7 @@ invocation. To do so:
     chop trace $(chop-marks myapp func1) -gzip myapp -max-traces 10 -trace-dir output_dir
 
 The command above will generate 10 traces and will store the contents in 
-output_dir. Then, the output directory can be postprocessed to generate the 
+`output_dir`. Then, the output directory can be postprocessed to generate the 
 corresponding mpts with the following command:
 
     chop-trace2mpt -o mynewmpt --trace-dir output_dir --gzip
@@ -85,6 +85,11 @@ corresponding mpts with the following command:
 The mpts generated can then be processed by Microprobe to generate microbenchmarks
 in different formats. 
 
-The _chop-marks_ command is a help script to automatically detect the
+The _chop-marks_ command is a helper script to automatically detect the
 addresses of the entry and exit poings of the function to be traced. Otherwise,
 that input have to be provided manually. 
+
+In the `./examples/tracing/` directory, you can find a more detailed tracing
+example, including a script to perform all the necessary steps to trace
+a particular function and convert the extracted trace into a self-runable
+binary.
