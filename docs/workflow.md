@@ -10,5 +10,20 @@ To do so, the following high level steps are required:
 4. Trace the invocation of interest to generate the corresponding Microprobe
    test files (MPTs).
 5. Generate a microbenchmark from the MPTs.
-6. (Optional) Trace microbenchmark detailed memory access pattern.
-7. (Optional) Regenerate microbenchmark using MPTs and detailed memory access pattern.
+6. (Optional) Trace microbenchmark detailed memory access pattern and
+   regenerate the microbenchmark using the  MPTs and detailed memory
+   access pattern.
+
+The rest of the decoument provides details on each of the steps.
+
+## Bechmark profiling
+
+## Function profiling
+
+## Invocation selection
+
+## Invocation tracing
+
+## Microbenchmark generation
+
+## Microbenchmark 
