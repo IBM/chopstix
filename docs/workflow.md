@@ -34,7 +34,9 @@ In this example, we are going to focus on CYCLES, which at the end of the day,
 it is the first type of analysis one performs before going into more detailed
 ones. The command to execute will be as follows: 
 
-    chop sample -data _sample_databes_ -events CYCLES -period 100000
+    chop sample -data SAMPLE_DB -events CYCLES -period 100000 -- BINARY ARGUMENTS
+
+
 
 
 
