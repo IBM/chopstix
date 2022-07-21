@@ -91,9 +91,19 @@ but ChopStiX provide a help script that facilitates the process:
     chop-marks BINARY HOTFUNC
 
 will return the addreses of the being/end points for the funciton. From now
-on, we call them `HOTFUNC_MARKS`.
+on, we call them `HOTFUNC_MARKS`. This information is going to be used for 
+profiling the function in the next step as well as for tracing the selected
+invocation in the tracing step.
 
-chop-perf-invok $$(cat $<) -o $@ -max 1000000 -- $$(cat $$arguments) > /dev/null 2> '$@.log'
+Now that we now the `HOTFUNC_MARKS` that define the region of interest (ROI),
+we can profile is performance using the following command: 
+
+    chop-perf-invok HOTFUNC_MARKS -o HOTFUNC_PROFILE -max 1000000 -- BINARY ARGUMENTS
+
+The command will generate a CSV file named HOTFUNC_PROFILE with a maximum 
+of 1M entries. You can manually analyse the stats of the CSV generated to 
+understand in detail the behavior of each invocation of the ROI and manually
+select a particular invocation you find worh to trace. 
 
 ## Invocation selection
 
