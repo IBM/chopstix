@@ -19,13 +19,19 @@ The rest of the decoument provides details on each of the steps.
 ## Bechmark profiling
 
 The initial profiling of the benchmark is done using performance counters.
-Depending on the performance counter being sample, the definition of **_hottest_**
-might change. For instance, if sampling `CYCLES` the functions with more
-execution time be the _hottest_, if sample `INSTRUCTIONS`, the functions executing
-most of the instructions will be the _hottest_. Once can use any other performance
-counter available to focus the analysis on other aspects. E.g. one can sample
-branch miss-prediction counter to focus the analysis on the functions with 
-poor branch predictions. Same for memory misses or pipeline vector stalls, etc.
+Depending on the performance counter being sampled, the definition of **_hottest_**
+changes. It is up to the user to select what type of analysis wants to perform.
+
+For instance, using `CYCLES`, the functions with more execution time be
+the _hottest_. If one uses `INSTRUCTIONS`, the functions executing
+most of the instructions will be the _hottest_. One can use any other performance
+counter available via `perf` interface to focus the analysis on other aspects.
+E.g. one can sample the branch miss-prediction counter to focus the analysis
+on the functions with poor branch predictions, same for memory misses or
+pipeline vector stalls, etc. In this example, we are going to focus on CYCLES,
+which at the end of the day, is the first type of analysis one performs before
+going into more detailed ones. 
+
 
     chop sample -data $*/sample.chop.db -events CYCLES -period 100000
 
