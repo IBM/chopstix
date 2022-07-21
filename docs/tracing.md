@@ -101,7 +101,9 @@ test definition to another format. Check the Microprobe documentation for
 the different possibilities.  In the `./examples/tracing/` directory,
 you can find a more detailed tracing example, including a script to perform
 all the necessary steps to trace a particular function and convert the
-extracted trace into a self-runnable binary.
+extracted trace into a self-runnable binary. The example also includes 
+the steps required to complete the MPTs generated with a detailed memory
+access traces using a Valgrind's based `chop-trace-mem`.
 
 ## Notes about tracing
 
