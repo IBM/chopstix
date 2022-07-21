@@ -19,12 +19,17 @@
 # ----------------------------------------------------------------------------
 #
 
+
+#
+# Configuration options 
+#
 INSTALL_DIR=
 OUTPUT_DIR=/tmp/trace_example
 BASE_NAME=ubench_daxpy
 MICROPROBE_TARGET=
 
-source $INSTALL_DIR/share/chopstix/setup.sh
+# shellcheck disable=SC1091,SC3046
+source "$INSTALL_DIR/share/chopstix/setup.sh"
 
 set -e
 set -x
@@ -36,14 +41,15 @@ time ./daxpy
 # Check we can get region of interest (ROI) addresses
 chop-marks daxpy daxpy
 # Trace ROI
-chop trace $(chop-marks daxpy daxpy) -trace-dir $OUTPUT_DIR/trace_data ./daxpy
+# shellcheck disable=SC2046
+chop trace $(chop-marks daxpy daxpy) -trace-dir "$OUTPUT_DIR/trace_data" ./daxpy
 # Convert trace to MPT
-chop-trace2mpt --trace-dir $OUTPUT_DIR/trace_data -o $OUTPUT_DIR/$BASE_NAME
+chop-trace2mpt --trace-dir "$OUTPUT_DIR/trace_data" -o "$OUTPUT_DIR/$BASE_NAME"
 # Convert MPT to runnable ELF
-mp_mpt2elf -T $MICROPROBE_TARGET -t $OUTPUT_DIR/$BASE_NAME#0.mpt -O $OUTPUT_DIR/$BASE_NAME#0.s --safe-bin --raw-bin --fix-long-jump --compiler gcc --reset --wrap-endless --wrap-endless-threshold 1000
+mp_mpt2elf -T "$MICROPROBE_TARGET" -t "$OUTPUT_DIR/$BASE_NAME#0.mpt" -O "$OUTPUT_DIR/$BASE_NAME#0.s" --safe-bin --raw-bin --fix-long-jump --compiler gcc --reset --wrap-endless --wrap-endless-threshold 1000
 # Test generated ELF
 set +e
-timeout 10s $OUTPUT_DIR/$BASE_NAME#0.elf  
+timeout 10s "$OUTPUT_DIR/$BASE_NAME#0.elf"  
 if [ $? -ne 124 ]; then
     echo "ELF not functional"
     exit 1
@@ -51,12 +57,12 @@ fi
 set -e
 # Trace memory accesses of generated ELF and create a new MPT with the memory
 # accesse information
-chop-trace-mem -output $OUTPUT_DIR/$BASE_NAME#0 -base-mpt $OUTPUT_DIR/$BASE_NAME#0.mpt -output-mpt $OUTPUT_DIR/$BASE_NAME#0#memory.mpt -- $OUTPUT_DIR/$BASE_NAME#0.elf
+chop-trace-mem -output "$OUTPUT_DIR/$BASE_NAME#0" -base-mpt "$OUTPUT_DIR/$BASE_NAME#0.mpt" -output-mpt "$OUTPUT_DIR/$BASE_NAME#0#memory.mpt" -- "$OUTPUT_DIR/$BASE_NAME#0.elf"
 # Convert the new MPT, with memory accesses, to runnable ELF
-mp_mpt2elf -T $MICROPROBE_TARGET -t $OUTPUT_DIR/$BASE_NAME#0#memory.mpt -O $OUTPUT_DIR/$BASE_NAME#0#memory.s --safe-bin --raw-bin --fix-long-jump --compiler gcc --reset --wrap-endless --wrap-endless-threshold 1000
+mp_mpt2elf -T "$MICROPROBE_TARGET" -t "$OUTPUT_DIR/$BASE_NAME#0#memory.mpt" -O "$OUTPUT_DIR/$BASE_NAME#0#memory.s" --safe-bin --raw-bin --fix-long-jump --compiler gcc --reset --wrap-endless --wrap-endless-threshold 1000
 # Test generated ELF
 set +e
-timeout 10s $OUTPUT_DIR/$BASE_NAME#0#memory.elf  
+timeout 10s "$OUTPUT_DIR/$BASE_NAME#0#memory.elf"  
 if [ $? -ne 124 ]; then
     echo "ELF not functional"
     exit 1

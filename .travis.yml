@@ -42,7 +42,7 @@ jobs:
               - CACHE_NAME=amd64
           script:                                                                  
               - set -e                                                             
-              - shellcheck -x -s sh $(find . -name \*.sh) $(find . -name \*.sh.in) ./tools/chop-* ./test/drivers/* ./test/daxpy/*spec
+              - shellcheck -x -s sh $(find . -name \*.sh) $(find . -name \*.sh.in) $(/bin/ls ./tools/chop-* | grep -v lib.c) ./test/drivers/* ./test/daxpy/*spec
         - stage: shell_conventions                                                 
           name: shell conventions ppc64le                                                 
           arch: ppc64le
@@ -50,7 +50,7 @@ jobs:
               - CACHE_NAME=ppc64le
           script:                                                                  
               - set -e                                                             
-              - shellcheck -x -s sh $(find . -name \*.sh) $(find . -name \*.sh.in) ./tools/chop-* ./test/drivers/* ./test/daxpy/*spec
+              - shellcheck -x -s sh $(find . -name \*.sh) $(find . -name \*.sh.in) $(/bin/ls ./tools/chop-* | grep -v lib.c) ./test/drivers/* ./test/daxpy/*spec
         - stage: shell_conventions                                                 
           name: shell conventions s390x                                           
           arch: s390x
@@ -58,7 +58,7 @@ jobs:
               - CACHE_NAME=s390x
           script:                                                                  
               - set -e                                                             
-              - shellcheck -x -s sh $(find . -name \*.sh) $(find . -name \*.sh.in) ./tools/chop-* ./test/drivers/* ./test/daxpy/*spec
+              - shellcheck -x -s sh $(find . -name \*.sh) $(find . -name \*.sh.in) $(/bin/ls ./tools/chop-* | grep -v lib.c) ./test/drivers/* ./test/daxpy/*spec
         - stage: build_and_test
           name: Build and test amd64
           arch: amd64

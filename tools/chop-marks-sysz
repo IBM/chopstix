@@ -52,12 +52,13 @@ elif [ "$sym" != "_start" ]; then
     dyn_start_sym=$(chop-marks-sysz "$obj" "_start" 2> /dev/null | cut -d ' ' -f 2)
     if [ "$dyn_start_sym" = "" ]; then
         bdispl=0x$(chop-marks-dyn-addr "$obj" "_start" 2>&1 | grep PT_LOAD | sed "s/(nil)/0x0/" | cut -d "x" -f 3 | cut -d ")" -f 1 | sort | uniq)
+        # shellcheck disable=SC2004
         bdispl=$(($bdispl))
     else
         bdispl=$((0x$dyn_start_sym - 0x$static_start_sym))
     fi
 else
-    die "$(basename $0): Unable to find address for $sym in $obj"
+    die "$(basename "$0"): Unable to find address for $sym in $obj"
 fi
 
 if [ "$cache" -eq 1 ]; then
@@ -92,7 +93,7 @@ if [ "$sym" = "_start" ]; then
     localentry=1
 fi
 
-awk -v sym="<$sym>:" -v le=$localentry -v d=$displ -v b=$bdispl '
+awk -v sym="<$sym>:" -v le="$localentry" -v d="$displ" -v b="$bdispl" '
 $2 ~ sym {
     flag=1;
     dnum = strtonum(d);

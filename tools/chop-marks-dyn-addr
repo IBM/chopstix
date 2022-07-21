@@ -27,17 +27,17 @@ if [ $# -lt 2 ]; then
     die "Usage: $0 <object> <symbol> "
 fi
 
-obj=$1
-sym=$2
-lib=$(dirname $0)/../lib/libchop-marks-dyn-addr-lib.so
-script=$(mktemp)
+obj="$1"
+sym="$2"
+lib="$(dirname "$0")/../lib/libchop-marks-dyn-addr-lib.so"
+script="$(mktemp)"
 
 set +e
 ldd "$obj" 1> /dev/null 2> /dev/null
 error=$?
 set -e
 
-if [ $error -ne 0 ]; then
+if [ "$error" -ne 0 ]; then
     echo 0
     exit
 fi
@@ -47,10 +47,14 @@ cleanup() {
 }
 trap cleanup EXIT
 
-echo "export LD_BIND_NOW=1" >> "$script"
+# shellcheck disable=SC2129
+echo "export LD_BIND_NOW=1" > "$script"
+# shellcheck disable=SC2129
 echo "export LD_SYMBOL=$sym" >> "$script"
+# shellcheck disable=SC2129
 echo "export LD_PRELOAD=$lib" >> "$script"
-echo "$(dirname $obj)/$(basename $obj)" >> "$script"
+# shellcheck disable=SC2129
+echo "$(dirname "$obj")/$(basename "$obj")" >> "$script"
 chmod +x "$script"
-setarch $(uname -m) -R "$script"
+setarch "$(uname -m)" -R "$script"
 rm -f "$script"
