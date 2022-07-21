@@ -28,27 +28,98 @@ modes are the following:
   The addresses define what is called the Region of Interest (ROI). For example,
   if we want to trace a particular function, the start address will be the
   function entry point and the end addresses will be the function exit points.
+- _Temporal Tracing_: Tracing starts/end at user specified time intervals.
+  For example, one can specify to trace for 5 seconds after waiting for a 10
+  seconds.
+- _Hybrid Tracing_: Tracing start/ends when specific code address are executed.
+  However, the end tracing is activated _after_ a specified amount of time. I.e.
+  we can to start tracing at least for 5 seconds after a particular function
+  is reached and stop the first time another function is executed from that
+  point.
 
+## ROI Tracing
 
+For defining the Region of Interest (ROI) to be traced, multiple _begin_ and 
+_end_ addresses can be provided. The first time a begin _address_ is hit, the
+tracing starts until the first time an _end_ address is hit. That corresponds
+to a _ROI invocation_. Using user parameters one can select the _ROI invocations_
+to trace. E.g. one might want to trace the 10th time a particular function
+is executed.
 
-# ROI Tracing
+It is up to the user to provide the correct set of being/end addresses.
+Depending on the toolchain configuration and system the static addresses
+of the binary (i.e. the ones shown when dumping the binary using _objdump_)
+might correspond or not with the addresses of the program image loaded by the
+system loader before starting the execution. The tool `chop-marks-dyn-addr`
+is provided to support the task of finding out the displacement between the 
+objdump address and the address loaded in memory. The steps to perform the 
+find the right addresses are the following:
 
-## Tracing example
+    objdump -d binary 
 
-In the [usage](docs/usage.md) documentation, there is a simple example on
-how to invoke `chop` for tracing. 
+To obtain the dump of the binary.
 
-Also, in the `./examples/tracing/` directory, you can find a more detailed
-tracing example, including a script to perform all the necessary steps to
-trace a particular function and convert the extracted trace into a
-self-runable binary.
+    chop-marks-dyn-addr binary main
 
-# Notes about tracing
+To obtain information of the loaded segments in memory when the program is
+executed. Discard any error message, the key information you want to obtain 
+is the base address of the PT\_LOAD segments. You can add that base address 
+with the address of the binary dump to obtain the final address that should
+be used for tracing. 
 
-1. Code pages of specific libc functions (used by the tracing supoprt library)
+ROIs can be defined at any boundary, and it is up to the user to select what
+to trace. This provides flexibility since one can begin/end tracing at function
+entry/exit points or at begin/end of computational loops or a combinations or
+any other address. Typically, the tracing of function invocations is quite 
+common because previous profiling steps are typically done at function level
+(to know what to trace) and also because having clearly defined boundaries 
+enables some assumptions and optimizations later on when converting the 
+traced region into a self-executable binary or another format for tracing and
+simulation. Therefore, ChopStiX provides a helper script script to automatically
+compute the begin/end addresses of function-level ROIs (i.e. the function 
+entry/exit addresses). To do so, execute:
+
+    chop-marks binary function_name
+
+to obtain the list of being/end addresses corresponding to the entry/exit
+points of the *function_name* without requiring further address math. The
+parameters can be directly fed into the chop trace command as following:
+
+    chop trace $(chop-marks binary function_name) EXTRA_TRACING_OPTIONS ./binary BINARY_ARGUMENTS
+
+Check `chop trace --help` for all the details and tracing options.  In the
+[usage](docs/usage.md) documentation, there is a simple example on how to
+invoke `chop` for tracing. 
+
+Once tracing is done, the raw output needs to be processed in order to be
+converted into a MPTs (Microprobe Test files). To do so execute:
+
+   chop-trace2mpt trace_directory basename
+
+Then, it is up to the Microprobe tool to process and convert the Microprobe
+test definition to another format. Check the Microprobe documentation for
+the different possibilities.  In the `./examples/tracing/` directory,
+you can find a more detailed tracing example, including a script to perform
+all the necessary steps to trace a particular function and convert the
+extracted trace into a self-runnable binary.
+
+## Notes about tracing
+
+1. Code pages of specific libc functions (used by the tracing support library)
    are not protected and always dumped for safety. 
 2. System calls are not supported during tracing. Whenever a system call is
-   hit during tracing. The trace is finished. The system call is services, and
-   tracing starts again. I.e. 
+   hit during tracing. The trace is finished. The system call is serviced, and
+   tracing starts again. I.e. tracing a function invocation with a system
+   call will generate two traces.
+3. ChopStiX minimizes the number of systems calls using library interposition
+   mechanisms. Common libc functions such as _printf_/_puts_ are overridden
+   with custom implementations during tracing to minimize the number of 
+   system calls. The list of overridden functions is preliminary, and more
+   functions will be added in the future to nullify the number of system calls
+   while maintaining functional correctness.
+4. Recursive tracing is not supported. Tracing will start a first entry address
+   and stop at first end address.
+5. ChopStiX disables ASLR (Address Space Layout Randomization) to ensure 
+   reproducibility.
 
 
