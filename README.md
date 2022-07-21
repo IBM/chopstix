@@ -9,6 +9,15 @@ Extract representative microbenchmarks.
 ![GitHub stars](https://img.shields.io/github/stars/IBM/chopstix.svg?style=social)
 ![GitHub watchers](https://img.shields.io/github/watchers/IBM/chopstix.svg?style=social)
 
+## Quick start
+
+Execute the following command to install ChopStiX:
+
+    ./install.sh <INSTALLATION_DIRECTORY>
+
+The command will perform all the necessary steps (i.e. including the download
+of specific requirements) and install ChopStix in `<INSTALLATION_DIRECTORY>.
+
 ## Installation
 
 The following is a list of the minimal software requirements to be able to
@@ -44,7 +53,8 @@ The basic build workflow is as follows:
     ../configure
     make && make install
 
-For more detailed information regarding configuration options see docs/installation.md.
+For more detailed information regarding configuration options see 
+docs/installation.md.
 
 ## Basic usage
 
@@ -54,8 +64,8 @@ option to change this path.
 
 In general, you can invoke any command using `chop <command>`.
 For more information about a specific command, try `chop help <command>`.
-There are also some utility scripts (i.e. `cx-trace.sh`) which are generally
-prefixed by `cx-`.
+There are also some utility scripts (i.e. `chop-marks`) which are generally
+prefixed by `chop-`.
 
 The basic workflow for ChopStiX is as follows:
     
@@ -66,7 +76,6 @@ The basic workflow for ChopStiX is as follows:
     chop search -target-coverage 90%   # Generate hottest paths
     chop list paths          # List generated paths
     chop text path -id <id>  # Show instructions for path with <id>
-
 
 For a more detailed workflow example see the following documents:
 
