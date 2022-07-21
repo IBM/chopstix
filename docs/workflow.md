@@ -83,35 +83,79 @@ function size).
 
 ## Function profiling
 
-Once a `HOTFUNC` is has been selected. We need to obtain the corresponding
-addreses in memory where the function starts and ends. i.e. the entry and
-exit points of the function. One can do so manually, by inspecting the code
-but ChopStiX provide a help script that facilitates the process: 
+Once a `HOTFUNC` is has been selected. The next step is to know which 
+particular invocation we want to trace and reproduce. This is not straighforward
+since hot functions tipically are executed multiple times and most of the time
+exhibit much different behaviors over time depending on the input parameters.
+In such case, the question is: which particular invocation (or set of 
+invocations) represent best the typical behavior of the function? 
+
+First, we need to obtain the corresponding addreses in memory where the
+function starts and ends. i.e. the entry and exit points of the function.
+One can do so manually, by inspecting the code but ChopStiX provides a helper
+script that facilitates the process: 
 
     chop-marks BINARY HOTFUNC
 
-will return the addreses of the being/end points for the funciton. From now
+will return the addresses of the being/end points for the funciton. From now
 on, we call them `HOTFUNC_MARKS`. This information is going to be used for 
 profiling the function in the next step as well as for tracing the selected
 invocation in the tracing step.
 
-Now that we now the `HOTFUNC_MARKS` that define the region of interest (ROI),
-we can profile is performance using the following command: 
+Now that we know the `HOTFUNC_MARKS` that define the region of interest (ROI),
+we can profile its performance using the following command: 
 
     chop-perf-invok HOTFUNC_MARKS -o HOTFUNC_PROFILE -max 1000000 -- BINARY ARGUMENTS
 
-The command will generate a CSV file named HOTFUNC_PROFILE with a maximum 
-of 1M entries. You can manually analyse the stats of the CSV generated to 
-understand in detail the behavior of each invocation of the ROI and manually
-select a particular invocation you find worh to trace. 
+The command will generate a CSV file named `HOTFUNC_PROFILE` with a maximum 
+of 1M entries. The stats include instruction, cycle and execution time
+information, etc. Therefore, they are subject to experimental noise. Like in
+the first step, you might want to minimize the activity on the rest of the
+system or repeat the experiment various times to improve the robustness
+of the approach. 
 
 ## Invocation selection
 
-@cti_cluster instr_ipc_density --max-clusters 20 --min-clusters-weight-percentage 1 --target-coverage-percentage 90 --outlier-percent 1 --outlier-minsize-threshold 1000 --minimum-granularity-percentage 1 --granularity-step-percentage 1 --output $@ --plot-path $*/plot_cluster --benchmark-name $${bname} --function-name $${fname} $<
+You can manually analyse the stats of the CSV generated to understand in
+detail the behavior of each invocation and manually select a particular
+invocation you find worh to trace. Alternatively, you can use the clustering
+analysis explained in the rest of the section to perform the selection
+automatically.
 
-cti_cluster_info summary 
+ChopStiX provide a set of support scripts to analyse the generated CSV, 
+create clusters and select a representative invocation for each of them.
+To do so, execute:
 
-cti_cluster_info representative -c $$clusterid %/cluster.json
+    cti_cluster instr_ipc_density --max-clusters 20 --min-clusters-weight-percentage 1 --target-coverage-percentage 80 --output CLUSTER_INFO --plot-path CLUSTER_PLOT --benchmark-name BINARY_NAME --function-name HOTFUNC HOTFUNC_PROFILE
+
+where:
+
+- `CLUSTER_INFO` is the output JSON file that will contain of the clustering
+  information.
+- `CLUSTER_PLOT` is the path to the plot that will be generated to visually 
+  debug the clustering analysis.
+- `BINARY_NAME` is the benchmark name.
+
+The command will generate a maximum of 20 clusters or lesss is total coverage
+reaches 80% before. Each cluster will have at least 1% of coverage. There
+exists more parameters to control the clustering process. Please refer to the
+actual command line information for further details. Once the `CLUSTER_INFO`
+is generated a summary can be viewed using:
+
+    cti_cluster_info summary CLUSTER_INFO 
+
+and a representative of a cluster can be obtained using:
+
+    cti_cluster_info representative -c CLUSTER_ID CLUSTER_INFO
+
+where:
+
+- `CLUSTER_ID` is the ID of the cluster, you can get from the previous summary.
+  Cluster IDs are sorted by coverage, therefore, selecting cluster ID to be 0,
+  will select a representative of the most common behavior.
+
+After executing the previous command, we obtain the invocation number of the
+most representative behavior of the function, `HOTFUNC_INVOCATION` from now on.
 
 ## Invocation tracing
 
