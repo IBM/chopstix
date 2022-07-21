@@ -34,8 +34,21 @@ In this example, we are going to focus on CYCLES, which at the end of the day,
 it is the first type of analysis one performs before going into more detailed
 ones. The command to execute will be as follows: 
 
-    chop sample -data SAMPLE_DB -events CYCLES -period 100000 -- BINARY ARGUMENTS
+    chop sample -data CHOPSTIX_DB -events CYCLES -period 100000 -- BINARY ARGUMENTS
 
+where:
+
+- `CHOPSTIX_DB` is the path of the database where all the samples and extra
+  information (see following steps) will be stored.
+- `-events` specifies the event to be sampled.
+` `-period` specidied how often to sample the event. The lower, the better, but
+  one should take into account the overheads generated.
+- `BINARY` is the binary executable (ELF) to execute.
+- `ARGUMENTS` are the necessary arguments fro the `BINARY`.
+
+Note that measurements are done in the real system. Therefore, when sampling
+counters which can be affected by other activity on the system, one needs to
+minimize the measurement _noise_
 
 
 
