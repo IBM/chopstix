@@ -28,12 +28,15 @@ most of the instructions will be the _hottest_. One can use any other performanc
 counter available via `perf` interface to focus the analysis on other aspects.
 E.g. one can sample the branch miss-prediction counter to focus the analysis
 on the functions with poor branch predictions, same for memory misses or
-pipeline vector stalls, etc. In this example, we are going to focus on CYCLES,
-which at the end of the day, is the first type of analysis one performs before
-going into more detailed ones. 
+pipeline vector stalls, etc.
+
+In this example, we are going to focus on CYCLES, which at the end of the day,
+it is the first type of analysis one performs before going into more detailed
+ones. The command to execute will be as follows: 
+
+    chop sample -data _sample_databes_ -events CYCLES -period 100000
 
 
-    chop sample -data $*/sample.chop.db -events CYCLES -period 100000
 
     @chop disasm -data $*/sample.chop.db $*/bin/run.$(TARGET) $$(ldd $*/bin/run.$(TARGET) | cut -d " " -f 3 | grep -v libc.so)
     @chop count -data $*/sample.chop.db                                         
