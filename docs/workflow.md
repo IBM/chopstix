@@ -48,17 +48,26 @@ where:
 
 Note that measurements are done in the real system. Therefore, when sampling
 counters which can be affected by other activity on the system, one needs to
-minimize the measurement _noise_
+minimize the measurement _noise_ by minimizing any other system activity. Also,
+can execute the above command N times, and the results will be accumulated so
+that noise can be minimized.
 
+Once the sampling is done, one can postprocess all the sampled information
+to list which functions got the most samples, i.e. generated most of the events,
+and therefore the **_hottest_** function from that performance counter point
+of view. To do so, execute the following commands:
 
+    chop disasm -data CHOPSTIX_DB BINARY $(ldd BINARY)
+    chop count -data CHOPSTIX_DB
+    chop annotate -data CHOPSTIX_DB 
+    chop list functions -data CHOPSTIX_DB
 
-
-    @chop disasm -data $*/sample.chop.db $*/bin/run.$(TARGET) $$(ldd $*/bin/run.$(TARGET) | cut -d " " -f 3 | grep -v libc.so)
-    @chop count -data $*/sample.chop.db                                         
-    @chop annotate -data $*/sample.chop.db                                      
-    @chop list functions -data $*/sample.chop.db > $@   
-
-
+The commands above first disassemble the executed binary and the dynamic
+libraries used (note the `ldd $BINARY` subcommand). If you already know that
+the function to trace are in the main `BINARY`, there is no need to disassemble
+the dynamic libraries (which can be size and time consuming). The samples
+are counted and annotated to the control flow graph (CFG) the ChopStiX generated
+during the `disasm` step.
 
  chop-score-table $*/sample.chop.db $$coverage 10 1 -functions
 
