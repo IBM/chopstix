@@ -82,6 +82,7 @@ For a more detailed workflow example see the following documents:
 - [Installation](docs/installation.md)
 - [General Usage](docs/usage.md)
   - [Tracing](docs/tracing.md)
+  - [Example workflow](docs/workflow.md)
 - Development information
   - [Custom_commands](docs/custom_commands.md)
   - [Database layout](docs/database_layout.md)
