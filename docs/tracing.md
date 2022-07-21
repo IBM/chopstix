@@ -88,7 +88,7 @@ parameters can be directly fed into the chop trace command as following:
     chop trace $(chop-marks binary function_name) EXTRA_TRACING_OPTIONS ./binary BINARY_ARGUMENTS
 
 Check `chop trace --help` for all the details and tracing options.  In the
-[usage](docs/usage.md) documentation, there is a simple example on how to
+[usage](usage.md) documentation, there is a simple example on how to
 invoke `chop` for tracing. 
 
 Once tracing is done, the raw output needs to be processed in order to be
@@ -121,5 +121,3 @@ extracted trace into a self-runnable binary.
    and stop at first end address.
 5. ChopStiX disables ASLR (Address Space Layout Randomization) to ensure 
    reproducibility.
-
-
