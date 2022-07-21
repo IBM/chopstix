@@ -79,12 +79,13 @@ The basic workflow for ChopStiX is as follows:
 
 For a more detailed workflow example see the following documents:
 
-- [Usage](docs/usage.md)
-- [Tracing](docs/tracing.md)
 - [Installation](docs/installation.md)
-- [Custom_commands](docs/custom_commands.md)
-- [Database layout](docs/database_layout.md)
-- [Debug](docs/debug.md)
-- [Events power8](docs/events_power8.md)
+- [General Usage](docs/usage.md)
+  - [Tracing](docs/tracing.md)
+- Development information
+  - [Custom_commands](docs/custom_commands.md)
+  - [Database layout](docs/database_layout.md)
+  - [Debug](docs/debug.md)
+  - [Events power8](docs/events_power8.md)
 
 [CMake]: https://cmake.org/

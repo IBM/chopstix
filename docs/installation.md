@@ -63,7 +63,7 @@ tools/dependencies are fetched and installed during the installation
 process:
 
 - [Microprobe](https://github.com/IBM/microprobe) to be able to convert
-  the generated Microprobe Test files (MPTs) to other format after tracing.
+  the generated Microprobe Test files (MPTs) to other formats after tracing.
 - [Valgrind](https://valgrind.org/) to be able to complete the generated
   MPTs with detailed memory access trace information.
 

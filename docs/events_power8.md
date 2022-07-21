@@ -1,6 +1,7 @@
 # Events and groups supported on POWER8 architecture
 
-On Linux POWER8, the number of CPU groups supported is 267. The following tables list the supported event groups listed by group ID number.
+On Linux POWER8, the number of CPU groups supported is 267.
+The following tables list the supported event groups listed by group ID number.
 
 ### Group 0
 Event | Description

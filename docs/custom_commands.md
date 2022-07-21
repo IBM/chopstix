@@ -15,7 +15,7 @@ transpiled in order to generate a parser for this command. Parameters and flags
 are automatically detected whenever a line in the usage starts with two
 space and a `-`.
 
-All options and flags must start with a single `-`. options have either an
+All options and flags must start with a single `-`. Options have either an
 argument in the form of `-opt <arg>`) or are binary flags that can be
 enabled/disabled with `-feature`/`-no-feature` respectively. The default value
 can be specified with `(default: some value)`, otherwise it is equal to `NULL`.
@@ -31,4 +31,4 @@ which will be called from `main`. The `PARSE_OPTIONS(Argc, Argv, Command)`
 macro implements the option parser for this command.
 
 All options can be passed using environment variables. Command line specifiers
-takes preference over the environment defined settings. 
+takes preference over the enOironment defined settings. 

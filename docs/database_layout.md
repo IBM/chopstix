@@ -1,7 +1,8 @@
 # Database layout
 
 ChopStiX saves all collected information into a SQLite database.
-The `src/database/sql` folder contains SQL snippets and commands that can be used from C++ code.
+The `src/database/sql` folder contains SQL snippets and commands
+that can be used from C++ code.
 
 ### Example
 
@@ -115,7 +116,7 @@ Saves basic block information.
 
 ### Table: edge
 
-Saves edges, i.e. control flow between basic blocks
+Saves edges, i.e. control flow between basic blocks.
 
 | Field   | Type | Description        |
 | ------- | ---- | ------------------ |
@@ -124,7 +125,7 @@ Saves edges, i.e. control flow between basic blocks
 
 ### Table: inst
 
-Saves instruction information
+Saves instruction information.
 
 | Field    | Type | Description                     |
 | -------- | ---- | ------------------------------- |
@@ -153,7 +154,7 @@ Saves created paths. Each path has a hash value to easily identify duplicates.
 
 ### Table: path_node
 
-List of nodes (basic blocks) that belong to a path
+List of nodes (basic blocks) that belong to a path.
 
 | Field    | Type | Description                    |
 | -------- | ---- | ------------------------------ |
