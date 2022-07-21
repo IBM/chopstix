@@ -154,6 +154,30 @@ void ArchPower::serialize_regs(FILE *os, Arch::regbuf_type regs) const {
     }
 }
 
+void ArchPower::debug_regs(Arch::regbuf_type regs) const {
+
+    for (int i = 0; i < 32; ++i) {  // General (64-bit)
+        log::debug("ArchPower::debug_regs: GPR%d 0x%x", i, regs[POWER_R0 + i]);
+    }
+    log::debug("ArchPower::debug_regs: CR 0x%x", regs[POWER_CCR]);   // (32-bit)
+    log::debug("ArchPower::debug_regs: MSR 0x%x", regs[POWER_MSR]);  // (32-bit)
+    // log::debug("ArchPower::debug_regs: NIP 0x%x", regs[POWER_NIP]); // (64-bit)
+    for (int i = 0; i < 32; ++i) {  // Floating-Point (64-bit)
+        log::debug("ArchPower::debug_regs: FPR%d 0x%x", i, regs[POWER_FPR0 + i]);
+    }
+    log::debug("ArchPower::debug_regs: FPSCR 0x%x", regs[POWER_FPSCR]);
+    for (int i = 0; i < 32; ++i) {  // Vector (128-bit)
+        log::debug("ArchPower::debug_regs: VR%d 0x%x 0x%x", i, regs[POWER_VR0 + i * 2],
+                regs[POWER_VR0 + i * 2 + 1]);
+    }
+    log::debug("ArchPower::debug_regs: VSCR 0x%x", regs[POWER_VSCR]);  // 32-bit
+    for (int i = 0; i < 32; ++i) {                    // Vector Scalar (128-bit)
+        log::debug("ArchPower::debug_regs: VSR%d 0x%x 0x%x", i, regs[POWER_VSR0 + i * 2],
+                regs[POWER_VSR0 + i * 2 + 1]);
+    }
+}
+
+
 void ArchPower::read_regs(pid_t pid, regbuf_type regs) const {
     long ret = ptrace(PTRACE_GETREGS, pid, 0, regs);
     check(ret >= 0, "ArchPower:: read_regs: Unable to read registers");

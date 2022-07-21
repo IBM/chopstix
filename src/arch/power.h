@@ -41,6 +41,7 @@ struct ArchPower : public Arch {
 
     size_t regsize() const;
     void serialize_regs(FILE *fp, regbuf_type regs) const;
+    void debug_regs(regbuf_type regs) const;
 
     void read_regs(pid_t pid, regbuf_type regbuf) const;
     void write_regs(pid_t pid, regbuf_type regbuf) const;

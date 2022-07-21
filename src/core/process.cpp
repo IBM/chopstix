@@ -91,24 +91,22 @@ void Process::exec(char **argv, int argc) {
         abandon();
         exit(EXIT_FAILURE);
     }
+
     persona = persona | ADDR_NO_RANDOMIZE;
-    if (persona & ADDR_NO_RANDOMIZE)
-    {
-        log::debug("Process:: exec: ASLR already disabled");
-    } else {
-          persona = personality(persona | ADDR_NO_RANDOMIZE);
-        if (persona == -1) {
-            fprintf(stderr, "Process:: exec: Unable to set ASLR info: %s\n", strerror(errno));
-            abandon();
-            exit(EXIT_FAILURE);
-        }
-        if (!(personality (0xffffffff) & ADDR_NO_RANDOMIZE))
-        {
-            fprintf(stderr, "Process:: exec: Unable to disable ASLR");
-            abandon();
-            exit(EXIT_FAILURE);
-        }
+    log::debug("Process:: exec: Disabling ASLR ...");
+    persona = personality(persona | ADDR_NO_RANDOMIZE);
+    if (persona == -1) {
+        fprintf(stderr, "Process:: exec: Unable to set ASLR info: %s\n", strerror(errno));
+        abandon();
+        exit(EXIT_FAILURE);
     }
+    if (!(personality (0xffffffff) & ADDR_NO_RANDOMIZE))
+    {
+        fprintf(stderr, "Process:: exec: Unable to disable ASLR");
+        abandon();
+        exit(EXIT_FAILURE);
+    }
+    log::debug("Process:: exec: ASLR disabled");
 
     int ret = execvp(*argv, argv);
     if (ret <  0) {
@@ -349,6 +347,29 @@ void Process::set_break(long addr) {
     long mask = Arch::current()->get_breakpoint_mask();
     addr_content &= mask;
     log::debug("Process:: set break: break contents are %x", addr_content);
+    poke(addr, addr_content);
+}
+
+void Process::set_break_size(long addr, long size) {
+    log::debug("Process:: set break size: address %x size %d", addr, size);
+    auto it = breaks_.find(addr);
+    long addr_content = peek(addr);
+    if (it == breaks_.end()) breaks_[addr] = addr_content;
+    long mask;
+	switch(Arch::current()->get_breakpoint_size()) {                                                
+        case BreakpointSize::HALF_WORD:                                            
+            mask = (((long)1 << ((2 - size)*8)) - 1);
+            break;                                                                 
+        case BreakpointSize::WORD:                                                 
+            mask = (((long)1 << ((4 - size)*8)) - 1);
+            break;                                                                 
+        default:                                                                   
+        case BreakpointSize::DOUBLE_WORD:                                          
+            mask = (((long)1 << ((8 - size)*8)) - 1);
+            break;                                                                 
+    } 
+    addr_content &= mask;
+    log::debug("Process:: set break size: break contents are %x", addr_content);
     poke(addr, addr_content);
 }
 

@@ -42,7 +42,7 @@ jobs:
               - CACHE_NAME=amd64
           script:                                                                  
               - set -e                                                             
-              - shellcheck -x -s sh $(find . -name \*.sh) $(find . -name \*.sh.in) ./tools/chop-* ./test/drivers/* ./test/daxpy/*spec
+              - shellcheck -x -s sh $(find . -name \*.sh) $(find . -name \*.sh.in) $(/bin/ls ./tools/chop-* | grep -v lib.c) ./test/drivers/* ./test/daxpy/*spec
         - stage: shell_conventions                                                 
           name: shell conventions ppc64le                                                 
           arch: ppc64le
@@ -50,7 +50,7 @@ jobs:
               - CACHE_NAME=ppc64le
           script:                                                                  
               - set -e                                                             
-              - shellcheck -x -s sh $(find . -name \*.sh) $(find . -name \*.sh.in) ./tools/chop-* ./test/drivers/* ./test/daxpy/*spec
+              - shellcheck -x -s sh $(find . -name \*.sh) $(find . -name \*.sh.in) $(/bin/ls ./tools/chop-* | grep -v lib.c) ./test/drivers/* ./test/daxpy/*spec
         - stage: shell_conventions                                                 
           name: shell conventions s390x                                           
           arch: s390x
@@ -58,7 +58,7 @@ jobs:
               - CACHE_NAME=s390x
           script:                                                                  
               - set -e                                                             
-              - shellcheck -x -s sh $(find . -name \*.sh) $(find . -name \*.sh.in) ./tools/chop-* ./test/drivers/* ./test/daxpy/*spec
+              - shellcheck -x -s sh $(find . -name \*.sh) $(find . -name \*.sh.in) $(/bin/ls ./tools/chop-* | grep -v lib.c) ./test/drivers/* ./test/daxpy/*spec
         - stage: build_and_test
           name: Build and test amd64
           arch: amd64
@@ -70,7 +70,7 @@ jobs:
               - mkdir build
               - cd build
               - ../configure --prefix /tmp/install
-              - make -j
+              - make -j 4
               - make test
               - pip install -U pip virtualenv
               - make install
@@ -83,9 +83,9 @@ jobs:
               - set -e
               - scripts/ci/install_libpfm.sh
               - mkdir build
-              - cd build
+              <F12>- cd build
               - ../configure --prefix /tmp/install
-              - make -j
+              - make -j 4
               - make test
         - stage: build_and_test
           name: Build and test s390x
@@ -98,7 +98,7 @@ jobs:
               - mkdir build
               - cd build
               - ../configure --prefix /tmp/install
-              - make -j
+              - make -j 4
               - make test
         - stage: build_and_test
           name: Build and test amd64 build sqlite
@@ -111,7 +111,7 @@ jobs:
               - mkdir build
               - cd build
               - ../configure --prefix /tmp/install --build-sqlite
-              - make -j
+              - make -j 4
               - make test
               - pip install -U pip virtualenv
               - make install
@@ -126,7 +126,7 @@ jobs:
               - mkdir build
               - cd build
               - ../configure --prefix /tmp/install --build-sqlite
-              - make -j
+              - make -j 4
               - make test
         - stage: build_and_test
           name: Build and test s390x build sqlite
@@ -139,7 +139,7 @@ jobs:
               - mkdir build
               - cd build
               - ../configure --prefix /tmp/install --build-sqlite
-              - make -j
+              - make -j 4
               - make test
         - stage: build_and_test
           name: Build and test on amd64 for ppc64le
@@ -155,7 +155,7 @@ jobs:
               - mkdir build
               - cd build
               - ../configure --prefix /tmp/install --enable-powerle --with-perfmon=/tmp/libpfm --with-zlib=/tmp/zlib
-              - make -j
+              - make -j 4
         - stage: build_and_test
           name: Build and test on amd64 for s390x
           arch: amd64
@@ -170,7 +170,7 @@ jobs:
               - mkdir build
               - cd build
               - ../configure --prefix /tmp/install --enable-sysz --with-perfmon=/tmp/libpfm --with-zlib=/tmp/zlib
-              - make -j
+              - make -j 4
         - stage: build_and_test
           name: Build and test on amd64 for riscv
           arch: amd64
@@ -185,4 +185,4 @@ jobs:
               - mkdir build
               - cd build
               - ../configure --prefix /tmp/install --enable-riscv --with-perfmon=/tmp/libpfm --with-zlib=/tmp/zlib
-              - make -j
+              - make -j 4

@@ -33,6 +33,7 @@ if (CHOPSTIX_BUILD_TESTS)
 
     add_executable(vector_add test_programs/vector_add.c)
     set_target_properties(vector_add PROPERTIES COMPILE_FLAGS "-O0 -Wall -Werror -pedantic")
+    set_target_properties(vector_add PROPERTIES LINK_FLAGS "-static")
 
     if( ${CMAKE_SYSTEM_PROCESSOR} STREQUAL "riscv64" )
         add_executable(sandwich_return

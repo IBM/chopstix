@@ -38,6 +38,29 @@ fi
 obj=$1
 sym=$2
 
+displ=0
+bdispl=0
+
+set +e
+chop-marks-dyn-addr "$obj" "$sym" > /dev/null 2> /dev/null
+error=$?
+set -e
+if [ "$error" -eq 0 ]; then
+    displ=$(chop-marks-dyn-addr "$obj" "$sym" 2> /dev/null)
+elif [ "$sym" != "_start" ]; then
+    static_start_sym=$(readelf -s "$obj" | grep -v UND | grep FUNC | grep GLOBAL | grep " _start$" | tr -s " " | cut -d ' ' -f 3 | sort | uniq)
+    dyn_start_sym=$(chop-marks-sysz "$obj" "_start" 2> /dev/null | cut -d ' ' -f 2)
+    if [ "$dyn_start_sym" = "" ]; then
+        bdispl=0x$(chop-marks-dyn-addr "$obj" "_start" 2>&1 | grep PT_LOAD | sed "s/(nil)/0x0/" | cut -d "x" -f 3 | cut -d ")" -f 1 | sort | uniq)
+        # shellcheck disable=SC2004
+        bdispl=$(($bdispl))
+    else
+        bdispl=$((0x$dyn_start_sym - 0x$static_start_sym))
+    fi
+else
+    die "$(basename "$0"): Unable to find address for $sym in $obj"
+fi
+
 if [ "$cache" -eq 1 ]; then
     tmp="$obj.S"
     tmp2="$obj.S.$sym"
@@ -54,37 +77,49 @@ else
     tmp=$(mktemp)
     tmp2=$(mktemp)
     objdump -d "$obj" > "$tmp"
+
+    cleanup() {
+        rm -f "$tmp" "$tmp2"
+    }
+    trap cleanup EXIT
 fi
-
-
 
 set +e
 readelf -Ws "$obj" | grep "$sym" | grep -q localentry
 localentry=$?
 set -e
 
-awk -v sym="<$sym>:" -v le=$localentry '
+if [ "$sym" = "_start" ]; then
+    localentry=1
+fi
 
+awk -v sym="<$sym>:" -v le="$localentry" -v d="$displ" -v b="$bdispl" '
 $2 ~ sym {
     flag=1;
-    gsub("^0*", "", $1);
-    if (!le) {
-        printf("-begin %x\n", strtonum("0x"$1) + 8);
+    dnum = strtonum(d);
+    base = strtonum(b);
+    if (dnum != 0) {
+        displ = dnum - strtonum("0x"$1);
     } else {
-        printf("-begin %x\n", strtonum("0x"$1));
+        displ = 0;
+    }
+    if (!le) {
+        printf("-begin %x\n", strtonum("0x"$1) + 8 + displ + base);
+    } else {
+        printf("-begin %x\n", strtonum("0x"$1) + displ + base);
     }
 }
 
 flag && $4 ~ "br" && $5 ~ r14 {
     gsub(":", "", $1);
-    print "-end",$1;
+    printf("-end %x\n",strtonum("0x"$1) + displ + base);
     longjmp=0;
     addr=0;
 }
 
 flag && $4 ~ "ber" && $5 ~ r14 {
     gsub(":", "", $1);
-    print "-end",$1;
+    printf("-end %x\n",strtonum("0x"$1) + displ + base);
     longjmp=0;
     addr=0;
 }
@@ -97,7 +132,7 @@ flag && $8 ~ "jg" {
 
 /^$/ {
     if (longjmp) {
-        print "-end",addr;
+        printf("-end %x\n",strtonum("0x"addr) + displ + base);
     }
     flag=0;
     longjmp=0;

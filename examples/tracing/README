@@ -17,39 +17,96 @@
 #
 # ----------------------------------------------------------------------------
 #
-To build the daxpy kernel run `make daxpy`.
-It is a simple kernel that performs floating point operations over a vector.
-It has two parameters:
-    TEST_SIZE : Size of the vector
-    TEST_ITER : Number of iterations
 
-In order to trace this benchmark you need to define the region of interest.
-The files test_x86 and test_sysz define the -begin and -end addresses for my
-setup on the respective machines.
-This is complier and architecture dependent.
-The find_region.sh will try to find the region for the `daxpy` function.
+0. Enable the ChopStix environment
 
-    ./find_regions.sh <binary> <function>
+> source <INSTALL_DIR>/share/chopstix/setup.sh
 
-To then run the tracer simply use the run_example.sh script
-(this assumes that you have compiled and setup ChopStiX).
+and make sure you have `chop` command in you PATH. 
 
-    ./run_example.sh -begin 400 -end 600
-    ./run_example.sh $(< test_x86)
+1. First build the binary to trace:
 
-These are other options:
+> make daxpy
 
-    -data   : Where to save the data
-    -save   : Save traced pages' content
-    -code   : Extract code as well
-    -active : Time active during tracing
-    -wait   : Time waiting between tracing intervals
+Te example code it is a simple kernel that performs floating point operations
+over a vector. It has two parameters, that one can modify using environment
+variables:
 
-Once you have extracted the data, you can use it to generate test (.mpt) and
-state (.mps) files. Additionally you can use the `--code` option to prune the .mpt
-file and only incorporate extracted code pages.
+ TEST_SIZE : Size of the vector (default: 10000)
+ TEST_ITER : Number of iterations (default: 10)
 
-    ./create_mp.py -d data -t test.mpt -s state.mps -i invocation
-    ./create_mp.py -d data -t test.mpt -s state.mps -i invocation --code
+You can test the functionality and the execution time on your system after
+compiling:
 
-In the future these scripts will be integrated into the ChopStiX main workflow.
+> time ./daxpy 
+
+2. In order to trace this benchmark you need to define the region of interest
+(ROI) begin and end addresses.  One can dump the binary (objdump) and find
+the begin/end addresses for the ROI. But if the ROI is a function, ChopStiX
+provides a CLI to automatically get that information. In the example, the
+kernel function that we want to trace is named `daxpy` and the binary is
+`daxpy. So, we can execute the following command to  get that begin/end
+addresses automatically:
+
+> chop-marks daxpy daxpy
+
+This will generate the necessary parameters for the next step, the tracing.
+
+3. In order to trace the ROI defined in the prevous step, simply use the
+following command:
+
+> chop trace $(chop-marks daxpy daxpy) -trace-dir output_directory ./daxpy
+
+which will generate all the tracing files in the <output_directory> specified.
+Execute `chop trace --help` for more control options. 
+
+4. The raw dump generated in the previous command needs to be processed in
+order to be readable by Microprobe. To generate the MPT (Microprobe Test
+Files) from the trace directory executed the following command:
+
+> chop-trace2mpt --trace-dir output_directory -o base_name
+
+The command above will generate a set of MPT/MPS files (one for each execution
+of the ROI) named with the prefix `base_name`. Now that we have MPT files,
+you can use the Microprobe framework to process, modify and convert them
+using at your convenience. Please check Microprobe documentation for further
+information.
+
+5. The next step in this examples is to convert the MPT files into self-runnable
+ELF binaries: i.e. binaries that only execute the extracted function, while 
+maintaining the same original address layout. To do so, execute:
+
+> mp_mpt2elf -T <target> -t base_name#0.mpt -O base_name#0.s --safe-bin --raw-bin --fix-long-jump --compiler gcc --reset --wrap-endless --wrap-endless-threshold 1000
+
+The command above converts the MPT file into an ELF executable. Since the
+extracted ROI is a function, we can wrap it into an endless loop (--wrap-endless)
+and reset the state at each iteration (--reset).  Check mp_mpt2elf and
+Microprobe documentation for further information of the rest of the flags. 
+The output assembly file `base_name#0.s` is generated and compiled using
+the necessary flags using the compiler provided. If the compilation succeeds**,
+a `base_name#0.elf` file is generated. Then, you can execute the binary
+using:
+
+> timeout 10s ./base_name#0.elf
+
+6. It might be the case that the executable is not functionally correct because
+we only reset the state of the user architecture registers at each iteration
+of the wrapped function. However, the execution might depend on values in 
+memory that have not been reset. To reset such values, we need to obtain
+the memory access trace, and to do so execute the following command:
+
+> chop-trace-mem -output ./base_name#0 -base-mpt base_name#0.mpt -output-mpt base_name#0#memory.mpt -- ./base_name#0.elf 
+
+The command above will trace the memory accesses of the first iteration of the
+region of interest and embed such information into a new MPT file with name:
+base_name#0.mpt. Then, you can repeat step 5, using the new MPT file generated.
+
+The script './run_example.sh' in this directory performs all the commands
+aforementioned. You just need to edit a couple of variables according to your
+needs.
+
+** Depending on your toolchain and system environment, the compilation might
+not be successful. We only provide a generic command which works in our 
+experimental environment. You might need to add the necessary flags and compilation
+according to your system.
+option 

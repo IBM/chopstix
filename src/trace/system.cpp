@@ -95,8 +95,7 @@ System::System() {
     Memory::instance().restrict_map(res_fd);
     syscall(SYS_close, res_fd);
 
-
-    hide_calls = getenv("CHOPSTIX_OPT_HIDE_CALLS") != NULL;
+    //hide_calls = getenv("CHOPSTIX_OPT_HIDE_CALLS") != NULL;
 
     log::verbose("System:: End preload library initialization");
 }
@@ -270,11 +269,18 @@ void System::save_page(unsigned long page_addr) {
 
 void System::start_trace(bool isNewInvocation) {
 
-    // Flust I/O streams before doing anything
-    fflush(stdout);
-    fflush(stderr);
-    fsync(fileno(stdout));
-    fsync(fileno(stderr));
+    // Do not flush I/O streams before doing anything
+    //
+    // fflush(stdout);
+    // fflush(stderr);
+    // fsync(fileno(stdout));
+    // fsync(fileno(stderr));
+    //
+    // If sharing the same IO buffer, any flushing during the start/end
+    // dynamic calls can have side effect. Need to avoid sharing the same
+    // IO buffers or not create IO to such buffers. Typically the only 
+    // shared buffer can be stdout and stderr.
+    //
 
     log::debug("System: start_trace start (trace %d)", trace_id);
     check(tracing == false, "System: start_trace: Tracing already started");
@@ -321,6 +327,20 @@ void System::start_trace(bool isNewInvocation) {
 
 void System::stop_trace() {
     Memory::instance().unprotect_all();
+
+    // Do not flush I/O streams before doing anything
+    //
+    // fflush(stdout);
+    // fflush(stderr);
+    // fsync(fileno(stdout));
+    // fsync(fileno(stderr));
+    //
+    // If sharing the same IO buffer, any flushing during the start/end
+    // dynamic calls can have side effect. Need to avoid sharing the same
+    // IO buffers or not create IO to such buffers. Typically the only 
+    // shared buffer can be stdout and stderr.
+    //
+
     log::debug("System:: stop_trace start");
     log::debug("Tracing: %d", tracing);
     check(tracing == true, "System:: stop_trace: Tracing already stopped");
@@ -369,7 +389,6 @@ void System::stop_trace() {
 
 void chopstix_start_trace(unsigned long isNewInvocation) {
     chopstix::sys_.start_trace(isNewInvocation);
-
     // Generate a SIGILL event, without using system routines like 'raise'
     // to avoid more page faults that needed (note that all pages have been
     // protected.
@@ -388,14 +407,42 @@ void chopstix_stop_trace() {
 //
 // Disable printf system calls during tracing
 //
+// TODO: Do the same for other common/typical functions that do not have
+// side effects
+//
+
+extern "C" {
+
+int vprintf(const char* format, va_list ap) {
+    if (chopstix::hide_calls && chopstix::sys_.tracing) return 0;
+
+    static int (*real_vprintf)(const char* format, va_list ap) = nullptr;
+    if (!real_vprintf) real_vprintf = (int (*)(const char*, va_list ap)) dlsym(RTLD_NEXT, "vprintf");
+
+    int ret = real_vprintf(format, ap);
+
+    return ret;
+}
+
 int printf(const char* format, ...) {
     if (chopstix::hide_calls && chopstix::sys_.tracing) return 0;
-	static int (*real_printf)(const char* format, ...) = nullptr;
-	va_list argptr;
+
+    va_list argptr;
     va_start(argptr, format);
-    if (!real_printf) real_printf = (int (*)(const char*, ...)) dlsym(RTLD_NEXT, "printf");
-	int ret = real_printf(format, argptr);
-	va_end(argptr);
+    int ret = vprintf(format, argptr);
+    va_end(argptr);
+
+    return ret;
+}
+
+int __printf_chk (int __flag, const char *format, ...) {
+    if (chopstix::hide_calls && chopstix::sys_.tracing) return 0;
+
+    va_list argptr;
+    va_start(argptr, format);
+    int ret = vprintf(format, argptr);
+    va_end(argptr);
+
     return ret;
 }
 
@@ -415,10 +462,14 @@ int puts(const char *s) {
     return ret;
 }
 
+#if 0
 int printf(const char* format) {
     if (chopstix::hide_calls && chopstix::sys_.tracing) return 0;
 	static int (*real_printf)(const char* format) = nullptr;
     if (!real_printf) real_printf = (int (*)(const char*)) dlsym(RTLD_NEXT, "printf");
 	int ret = real_printf(format);
     return ret;
+}
+#endif
+
 }
