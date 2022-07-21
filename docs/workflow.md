@@ -18,6 +18,8 @@ The rest of the decoument provides details on each of the steps.
 
 ## Bechmark profiling
 
+The initial profiling of the benchmark is done using performance counters.
+Depending on the performance counter being sample, the definition of *_hottest_*
 
     chop sample -data $*/sample.chop.db -events CYCLES -period 100000
 
