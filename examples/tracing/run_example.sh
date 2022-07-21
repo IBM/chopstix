@@ -28,8 +28,8 @@ OUTPUT_DIR=/tmp/trace_example
 BASE_NAME=ubench_daxpy
 MICROPROBE_TARGET=
 
-# shellcheck disable=SC1091,SC3046
-source "$INSTALL_DIR/share/chopstix/setup.sh"
+# shellcheck disable=SC1090,SC1091,SC3046
+. "$INSTALL_DIR/share/chopstix/setup.sh"
 
 set -e
 set -x
