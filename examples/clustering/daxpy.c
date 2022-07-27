@@ -19,50 +19,62 @@
 # ----------------------------------------------------------------------------
 #
 */
-#include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
 #include <unistd.h>
 
-#define log(p, ...)                       \
-    do {                                  \
-            fprintf(stderr, "=%s= ", p);  \
-            fprintf(stderr, __VA_ARGS__); \
-            fprintf(stderr, "\n");        \
-            fflush(stderr);               \
+#define LOG(...)                      \
+    do {                              \
+        fprintf(stdout, "-- ");  \
+        fprintf(stdout, __VA_ARGS__); \
+        fprintf(stdout, "\n");        \
     } while (0)
 
-#define logt(...) log("t", __VA_ARGS__)
-
-double daxpy(double *x, double *y, int n, double a) {
-    for (int i = 1; i < n; ++i) {
-        y[i] = a * x[i] + y[i-1];
-        x[i] = a * x[i] + y[i-1];
+double daxpy(double *x, double *y, int n, double a, int it) {
+    int i = 0;
+    for (int j = 0; j < (it/333)+1; ++j) {
+        for (i = 3; i < n; ++i) {
+            if (it < 333) {
+                y[i] = 1;
+            } else if (it < 666) {
+                y[i] = y[i-1];
+            } else {
+                y[i-3] = y[i]/y[i-1];
+                y[i-2] = y[i-1]/y[i-3];
+                y[i-1] = y[i-2]/y[i-3];
+                y[i] = (y[i-1]/y[i-2])/y[i-3]; 
+            }
+        }
     }
-    return y[n-1];
+    return y[i];
 }
 
 double rand_next() { return (rand() + 0.0) / RAND_MAX; }
 
 int main(int argc, char **argv) {
-    int iter = getenv("TEST_ITER") ? atoi(getenv("TEST_ITER")) : 10;
-    int n = getenv("TEST_SIZE") ? atoi(getenv("TEST_SIZE")) : 10000;
+    int n = getenv("TEST_SIZE") ? atoi(getenv("TEST_SIZE")) : 20000;
+    int iter = getenv("TEST_ITER") ? atoi(getenv("TEST_ITER")) : 1000;
     double a = rand_next();
-    logt("allocating memory (size: %d)", n);
+
+    LOG("allocating memory (size: %d)", n);
     double *x = malloc(sizeof(double) * n);
     double *y = malloc(sizeof(double) * n);
-    logt("x: %p   y: %p", (void *)x, (void *)y);
+
+    LOG("x: %p   y: %p", (void*) x, (void*) y);
     srand(19940617);
     for (int i = 0; i < n; ++i) {
         x[i] = rand_next();
         y[i] = rand_next();
     }
-    logt("starting daxpy (iter: %d)", iter);
+
+    LOG("starting daxpy (iter: %d)", iter);
+
     for (int i = 0; i < iter; ++i) {
-        daxpy(x, y, n, a);
+        daxpy(x, y, n, a, i);
     }
-    logt("done (y[0] = %.1f)", y[0]);
+
+    LOG("done (y[0] = %.1f)", y[0]);
     free(y);
     free(x);
 }

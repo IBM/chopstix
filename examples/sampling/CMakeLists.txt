@@ -22,22 +22,22 @@
 # DESCRIPTION : Test ChopStiX on a simple daxpy kernel
 ############################################################
 
-add_executable(example-daxpy
+add_executable(example-sampling
     daxpy.c
 )
 
-set_target_properties(example-daxpy PROPERTIES
+set_target_properties(example-sampling PROPERTIES
     OUTPUT_NAME "daxpy"
     COMPILE_FLAGS "-O0 -Wall -Werror -pedantic"
 )
 
 install (
-    TARGETS example-daxpy
-    DESTINATION ${EXAMPLES}/daxpy
+    TARGETS example-sampling
+    DESTINATION ${EXAMPLES}/sampling
 )
 
 install (
     PROGRAMS tryme.sh
-    DESTINATION ${EXAMPLES}/daxpy
+    DESTINATION ${EXAMPLES}/sampling
 )
 

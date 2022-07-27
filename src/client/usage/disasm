@@ -3,17 +3,17 @@ Usage: chop disasm [<options>] [<modules>..]
 Disassemble a list of modules, i.e. object files.
 Checks the database if no modules are given. This step
 is mandatory to populate the database with information
-form the binary. This includes the functions, basic 
+form the binary. This includes the functions, basic
 blocks and instructions.
 
 Options:
-  -data <path>          Use database in path (default: chop.db).
-  -arch <x86|ppc|sysz>  Change the ISA to <arch>. Support tools for disassembling
-                        are automatically search in the $PATH.
-  -ignore <pattern>     Libraries whose name matches the pattern will be ignored
-                        (not disassembled). This can be useful to ignore system 
-                        libraries. To ignore 'libc' for example use the pattern 
-                        '%libc%'. This option is ignored if modules are provided 
-                        manually. <pattern> should be a regular expression in 
-                        SQLite.
-                        (default: %libc%,%ld%).
+  -data <path>                Use database in path (default: chop.db).
+  -arch <x86|ppc|sysz|riscv>  Change the ISA to <arch>. Support tools for disassembling
+                              are automatically search in the $PATH.
+  -ignore <pattern>           Libraries whose name matches the pattern will be ignored
+                              (not disassembled). This can be useful to ignore system
+                              libraries. To ignore 'libc' for example use the pattern
+                              '%libc%'. This option is ignored if modules are provided
+                              manually. <pattern> should be a regular expression in
+                              SQLite.
+                              (default: %libc%,%ld%).
