@@ -30,6 +30,7 @@ tryme() {
     printf ">>>> command: > %s\\n(press return to continue)" "$*"
     read -r _ 
     printf ">>>> start command\\n"
+    # shellcheck disable=SC2294
     eval "$@"
     printf ">>>> end command\\n"
     printf ">>>> (press return to continue)" 
@@ -69,6 +70,7 @@ tryme "chop-marks daxpy daxpy"
 echo "########################################################################"
 echo "# 2. Then, profile the function execution (in profile.csv)"
 echo "########################################################################"
+# shellcheck disable=SC2005,SC2046
 tryme "chop-perf-invok -o profile.csv $(echo $(chop-marks ./daxpy daxpy)) -max 1000000 -- ./daxpy"
 
 echo "########################################################################"

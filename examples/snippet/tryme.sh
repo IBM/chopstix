@@ -30,6 +30,7 @@ tryme() {
     printf ">>>> command: > %s\\n(press return to continue)" "$*"
     read -r _ 
     printf ">>>> start command\\n"
+    # shellcheck disable=SC2294
     eval "$@"
     printf ">>>> end command\\n"
     printf ">>>> (press return to continue)" 
@@ -77,13 +78,13 @@ clear
 echo "########################################################################"
 echo "# Generate an MPT of the execution snippet for Microprobe in stdout"
 echo "########################################################################"
-tryme chop text path -id 1 -fmt mpt -arch $(uname -m)
+tryme chop text path -id 1 -fmt mpt -arch "$(uname -m)"
 
 clear
 echo "########################################################################"
 echo "# Generate an MPT of the execution snippet for Microprobe in a file"
 echo "########################################################################"
-tryme chop text path -id 1 -fmt mpt -out daxpy.1.mpt -arch $(uname -m)
+tryme chop text path -id 1 -fmt mpt -out daxpy.1.mpt -arch "$(uname -m)"
 tryme ls -l
 
 clear

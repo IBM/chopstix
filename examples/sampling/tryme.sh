@@ -30,6 +30,7 @@ tryme() {
     printf ">>>> command: > %s\\n(press return to continue)" "$*"
     read -r _ 
     printf ">>>> start command\\n"
+    # shellcheck disable=SC2294
     eval "$@"
     printf ">>>> end command\\n"
     printf ">>>> (press return to continue)" 

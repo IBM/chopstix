@@ -33,6 +33,7 @@ tryme() {
     printf ">>>> command: > %s\\n(press return to continue)" "$*"
     read -r _ 
     printf ">>>> start command\\n"
+    # shellcheck disable=SC2294
     eval "$@"
     printf ">>>> end command\\n"
     printf ">>>> (press return to continue)" 
@@ -42,6 +43,7 @@ tryme() {
 flags=""
 if [ "$(uname -m)" = "s390x" ]; then
     target="z16-z16-z64_linux_gcc"
+    # shellcheck disable=SC2089
     flags="--compiler-flags='-march=arch13'"
 else
     die "Unable to detect target for $(uname -m)"
@@ -62,6 +64,7 @@ tryme chop sample -events task-clock ./daxpy
 tryme chop disasm ./daxpy
 tryme chop count
 tryme chop annotate
+# shellcheck disable=SC2005,SC2046
 tryme "chop-perf-invok -o profile.csv $(echo $(chop-marks ./daxpy daxpy)) -max 1000000 -- ./daxpy"
 tryme "cti_cluster instr_ipc_density --max-clusters 20 --output clusters.json --benchmark-name DAXPY --function-name daxpy --plot-path plot.daxpy profile.csv"
 tryme "cti_cluster_info representative --cluster 0 clusters.json"
@@ -70,6 +73,7 @@ clear
 echo "########################################################################"
 echo "# Trace the representative invocation of the hottest function"
 echo "########################################################################"
+# shellcheck disable=SC2005,SC2046
 tryme "chop trace $(echo $(chop-marks daxpy daxpy)) -indices $(cti_cluster_info representative --cluster 0 clusters.json) -trace-dir $OUTPUT_DIR/trace_data -max-traces 1 ./daxpy"
 
 echo "########################################################################"
@@ -82,6 +86,7 @@ clear
 echo "########################################################################"
 echo "# Convert MPT to runnable ELF"
 echo "########################################################################"
+# shellcheck disable=SC2090
 tryme mp_mpt2elf -T "$MICROPROBE_TARGET" -t "$OUTPUT_DIR/$BASE_NAME#0.mpt" -O "$OUTPUT_DIR/$BASE_NAME#0.s" --safe-bin --raw-bin --fix-long-jump --compiler gcc --reset --wrap-endless --wrap-endless-threshold 1000 $flags
 
 echo "########################################################################"
@@ -105,6 +110,7 @@ tryme chop-trace-mem -output "$OUTPUT_DIR/$BASE_NAME#0" -base-mpt "$OUTPUT_DIR/$
 echo "########################################################################"
 echo "# Convert the new MPT, with memory accesses, to runnable ELF"
 echo "########################################################################"
+# shellcheck disable=SC2090
 tryme mp_mpt2elf -T "$MICROPROBE_TARGET" -t "$OUTPUT_DIR/$BASE_NAME#0#memory.mpt" -O "$OUTPUT_DIR/$BASE_NAME#0#memory.s" --safe-bin --raw-bin --fix-long-jump --compiler gcc --reset --wrap-endless --wrap-endless-threshold 1000 $flags
 
 echo "########################################################################"
