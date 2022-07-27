@@ -36,5 +36,7 @@ add_custom_command(OUTPUT ${OUTPUT}/clustering_package
 add_custom_target(clustering ALL DEPENDS ${OUTPUT}/clustering_package ${DEPS})
 
 install(CODE "execute_process(COMMAND ${PYTHON} -m virtualenv -p ${PYTHON} --prompt=\\(chopstix\\) ${CMAKE_INSTALL_PREFIX})")
-install(CODE "execute_process(COMMAND sh -c \". ${CMAKE_INSTALL_PREFIX}/bin/activate && pip3 install -r ${CMAKE_CURRENT_SOURCE_DIR}/requirements.txt\")")
-install(CODE "execute_process(COMMAND sh -c \". ${CMAKE_INSTALL_PREFIX}/bin/activate && pip3 install --no-deps --prefix ${CMAKE_INSTALL_PREFIX} ${CMAKE_CURRENT_BINARY_DIR}\" WORKING_DIRECTORY ${OUTPUT})")
+install(CODE "execute_process(COMMAND sh -c \"wget http://yktgsa.ibm.com/gsa/yktgsa/projects/m/microprobe/pip.conf.devel.http -O ${CMAKE_INSTALL_PREFIX}/pip.conf || rm -f ~/chopstix-install/pip.conf\")")
+install(CODE "execute_process(COMMAND sh -c \". ${CMAKE_INSTALL_PREFIX}/bin/activate && pip3 install --trusted-host yktgsa.ibm.com -U -r ${CMAKE_CURRENT_SOURCE_DIR}/requirements.txt\")")
+install(CODE "execute_process(COMMAND sh -c \". ${CMAKE_INSTALL_PREFIX}/bin/activate && test -f ${CMAKE_INSTALL_PREFIX}/pip.conf && pip3 install --trusted-host yktgsa.ibm.com -U microprobe_target_z microprobe_target_private microprobe_target_power_priv\")")
+install(CODE "execute_process(COMMAND sh -c \". ${CMAKE_INSTALL_PREFIX}/bin/activate && pip3 install --trusted-host yktgsa.ibm.com --no-deps --prefix ${CMAKE_INSTALL_PREFIX} ${CMAKE_CURRENT_BINARY_DIR}\" WORKING_DIRECTORY ${OUTPUT})")

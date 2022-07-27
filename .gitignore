@@ -6,4 +6,5 @@ build*/
 !scripts/build
 *.swp
 __pycache__
-examples/tracing/daxpy
+examples/*/daxpy
+examples/*/chop.db

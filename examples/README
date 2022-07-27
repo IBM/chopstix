@@ -1,0 +1,46 @@
+#
+# ----------------------------------------------------------------------------
+#
+# Copyright 2019 IBM Corporation
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+# ----------------------------------------------------------------------------
+#
+
+This example directory contains the following subdirectories:
+
+1. Sampling: step by step example on how to sample an application and show
+   different sampling information.
+
+2. Snippet: step by step example on how to extract snippets (i.e. code execution
+   paths) from a given application and convert them into a self executable
+   microbenchmark.
+
+3. Clustering: step by step guide on how to profile in detail a function within
+   an application and perform cluster analysis to know which invocation or set
+   of invocations are the most representatives ones.
+
+4. Tracing: step by step guide on how to trace a particular function invocation
+   and convert it into a self executable microbenchmark.
+
+To execute the examples, do the following:
+
+# Setup the chop environment
+> source <INSTALL_DIR>/share/chopstix/setup.sh
+
+# Go to the example directory
+> cd <INSTALL_DIR>/share/chopstix/examples/<EXAMPLE>
+
+# Execute the step by step guide
+> ./tryme.sh

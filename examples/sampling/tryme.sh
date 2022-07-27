@@ -30,70 +30,81 @@ tryme() {
     printf ">>>> command: > %s\\n(press return to continue)" "$*"
     read -r _ 
     printf ">>>> start command\\n"
-    "$@"
+    # shellcheck disable=SC2294
+    eval "$@"
     printf ">>>> end command\\n"
+    printf ">>>> (press return to continue)" 
+    read -r _ 
 }
 
 chop -version >/dev/null || die "ChopStiX not setup correctly"
 
 rm -f chop.db daxpy.1.mpt
 
+clear
 echo "########################################################################"
 echo "# Start by sampling an invocation of daxpy"
 echo "########################################################################"
 tryme chop sample -events task-clock ./daxpy
 
+clear
 echo "########################################################################"
-echo "# List sessions" 
+echo "# List sampling sessions"
 echo "########################################################################"
 tryme chop list sessions
 
+# clear
 # echo "########################################################################"
 # echo "# List samples" 
 # echo "########################################################################"
 # tryme chop list samples 
 
+clear
 echo "########################################################################"
-echo "# Build the control flow graph (CFG) for daxpy"
+echo "# Build the control flow graph (CFG) for daxpy program"
 echo "########################################################################"
 tryme chop disasm ./daxpy
 
+clear
 echo "########################################################################"
-echo "# Show the text for daxpy"
+echo "# List modules (main binary, and any shared library)" 
+echo "########################################################################"
+tryme chop list modules
+
+clear
+echo "########################################################################"
+echo "# Show the text (code) for daxpy function"
 echo "########################################################################"
 tryme chop text function -name daxpy
 
+clear
 echo "########################################################################"
 echo "# Group/count samples" 
 echo "########################################################################"
 tryme chop count
 
+clear
 echo "########################################################################"
-echo "# Annotate the CFG"
+echo "# Annotate the CFG (link the samples to the instructions)"
 echo "########################################################################"
 tryme chop annotate
 
+clear
 echo "########################################################################"
-echo "# Show the annotated text for daxpy"
+echo "# Show the annotated text for daxpy (output similar to perf)"
 echo "########################################################################"
 tryme chop text function -name daxpy -fmt annotate
 
+clear
 echo "########################################################################"
-echo "# Search snippet paths"
+echo "# Show the list of functions and their score (# of samples)" 
 echo "########################################################################"
-tryme chop search -target-coverage 90%
+tryme "chop list functions | column -t"
 
+clear
 echo "########################################################################"
-echo "# List snippets"
+echo "# Show the top 10 basic blocks and their score (# of samples)" 
 echo "########################################################################"
-tryme chop list paths 
+tryme "chop list blocks | column -t | head -n 11"
 
-echo "########################################################################"
-echo "# Generate mpt for Microprobe in stdout"
-echo "########################################################################"
-tryme chop text path -id 1 -fmt mpt
 
-echo "########################################################################"
-echo "# Generate mpt for Microprobe in a file"
-echo "########################################################################"
-tryme chop text path -id 1 -fmt mpt -out daxpy.1.mpt

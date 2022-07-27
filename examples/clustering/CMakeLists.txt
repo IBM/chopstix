@@ -17,14 +17,27 @@
 #
 # ----------------------------------------------------------------------------
 #
-set(EXAMPLES "share/chopstix/examples")
-add_subdirectory(sampling)
-add_subdirectory(snippet)
-add_subdirectory(clustering)
-add_subdirectory(tracing)
+############################################################
+# NAME        : daxpy/CMakeLists.txt
+# DESCRIPTION : Test ChopStiX on a simple daxpy kernel
+############################################################
+
+add_executable(example-clustering
+    daxpy.c
+)
+
+set_target_properties(example-clustering PROPERTIES
+    OUTPUT_NAME "daxpy"
+    COMPILE_FLAGS "-O0 -Wall -Werror -pedantic"
+)
 
 install (
-    PROGRAMS README
-    DESTINATION ${EXAMPLES}
+    TARGETS example-clustering
+    DESTINATION ${EXAMPLES}/clustering
+)
+
+install (
+    PROGRAMS tryme.sh
+    DESTINATION ${EXAMPLES}/clustering
 )
 
