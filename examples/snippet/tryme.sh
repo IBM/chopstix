@@ -45,7 +45,7 @@ else
     die "Unable to detect target for $(uname -m)"
 fi
 
-rm -f chop.db daxpy.1.mpt
+rm -f chop.db daxpy.1.mpt daxpy_snippet.c
 
 clear
 echo "########################################################################"
