@@ -47,10 +47,36 @@
 void setBreakpoint(unsigned long pid, unsigned long long address,
                    Breakpoint *breakpoint) {
     breakpoint->address = address;
-    errno = 0;
     debug_print("setBreakpoint 0x%016llX to 0x%08X (orig 0x%08llX)\n", address, 0, breakpoint->originalData);
-    breakpoint->originalData = ptrace(PTRACE_PEEKDATA, pid, address, 0);
-    if (errno != 0) { perror("ERROR while setting breakpoint (read)"); exit(EXIT_FAILURE);};
+    debug_print("setBreakpoint %p\n", (void *) address);
+    errno = 0;
+    breakpoint->originalData = ptrace(PTRACE_PEEKTEXT, pid, address, NULL);
+    if (errno != 0) {
+        switch (errno) {
+            case EBUSY:
+                debug_print("Error: EBUSY: %s\n", strerror(errno));
+                break;
+            case EFAULT:
+                debug_print("Error: EFAULT: %s\n", strerror(errno));
+                break;
+            case EINVAL:
+                debug_print("Error: EINVAL: %s\n", strerror(errno));
+                break;
+            case EIO:
+                debug_print("Error: EIO: %s\n", strerror(errno));
+                break;
+            case EPERM:
+                debug_print("Error: EPERM: %s\n", strerror(errno));
+                break;
+            case ESRCH:
+                debug_print("Error: ESRCH: %s\n", strerror(errno));
+                break;
+            default:
+                debug_print("Error: %s\n", strerror(errno));
+                break;
+        }
+        perror("ERROR while setting breakpoint (read)"); exit(EXIT_FAILURE);
+    };
 #if defined(__s390x__)
     unsigned long long mask = 0x0000FFFFFFFFFFFF;
 #else
@@ -59,12 +85,14 @@ void setBreakpoint(unsigned long pid, unsigned long long address,
     debug_print("Breakpoint mask: 0x%016llX\n", mask);
     debug_print("Breakpoint previous data: 0x%016llX\n", breakpoint->originalData);
     debug_print("Breakpoint new data: 0x%016llX\n", breakpoint->originalData & mask);
+    errno = 0;
     long ret = ptrace(PTRACE_POKEDATA, pid, address, breakpoint->originalData & mask);
     if (ret != 0) { perror("ERROR while setting breakpoint (write)"); exit(EXIT_FAILURE);};
 }
 
 void resetBreakpoint(unsigned long pid, Breakpoint *breakpoint) {
     debug_print("resetBreakpoint 0x%016llX to 0x%08llX\n", breakpoint->address, breakpoint->originalData);
+    errno = 0;
     long ret = ptrace(PTRACE_POKEDATA, pid, breakpoint->address, breakpoint->originalData);
     if (ret != 0) { perror("ERROR while restoring breakpoint"); exit(EXIT_FAILURE);};
 }
@@ -76,6 +104,7 @@ void displace_pc(long pid, long displ) {
     iov.iov_len = sizeof(buf);
     iov.iov_base = buf;
 
+    errno = 0;
     long ret = ptrace(PTRACE_GETREGSET, pid, NT_PRSTATUS, &iov);
     if (ret != 0) { perror("ERROR while reading PC"); exit(EXIT_FAILURE);};
     long pc = buf[1];
@@ -83,6 +112,7 @@ void displace_pc(long pid, long displ) {
 	debug_print("displace_pc from 0x%016lX to 0x%016lX\n", pc, pc + displ);
 
     buf[1] = pc + displ;
+    errno = 0;
     ret = ptrace(PTRACE_SETREGSET, pid, NT_PRSTATUS, &iov);
     if (ret != 0) { perror("ERROR while setting PC"); exit(EXIT_FAILURE);};
 }
