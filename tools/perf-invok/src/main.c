@@ -26,6 +26,7 @@
 #include <time.h>
 #include <sys/wait.h>
 #include <sys/ptrace.h>
+#include <sys/personality.h>
 #include <unistd.h>
 #include <sched.h>
 #include <signal.h>
@@ -62,12 +63,12 @@ void help(FILE *fd) {
     fprintf(fd, "chop-perf-invok -o output [-begin addr] [-begin addr] ...] [-end addr [-end addr ...]] [-timeout seconds] [-max samples] [-cpu cpu] [-h] -- command-to-execute\n");
     fprintf(fd, "\n");
     fprintf(fd, "-o name          output file name\n");
-    fprintf(fd, "-begin addr      start address of the region to measure\n");
-    fprintf(fd, "-end addr        address of the region to measure (can be specified multiple times)\n");
+    fprintf(fd, "-begin addr      start address of the region to measure (can be specified multiple times)\n");
+    fprintf(fd, "-end addr        end address of the region to measure (can be specified multiple times)\n");
     fprintf(fd, "-timeout seconds stop measuring after the specified number of seconds (default: no timeout)\n");
     fprintf(fd, "-max samples     stop measuring after the specified number of measurements(default: no limit)\n");
     fprintf(fd, "-cpu cpu         pin process to the specified CPU (default: 0)\n");
-    fprintf(fd, "-h:              print this help message\n");
+    fprintf(fd, "-h               print this help message\n");
     fprintf(fd, "\n");
 
     if (fd == stderr){
@@ -316,6 +317,28 @@ int main(int argc, char **argv) {
         newargs[numParams + 1] = NULL;
         long ret = ptrace(PTRACE_TRACEME, 0, 0, 0);
         if (ret != 0) { perror("ERROR setting traced process"); exit(EXIT_FAILURE);};
+
+		int persona = personality(0xffffffff);
+		if (persona == -1)
+		{
+			fprintf(stderr, "ERROR Unable to get ASLR info: %s\n", strerror(errno));
+			exit(EXIT_FAILURE);
+		}
+
+		persona = persona | ADDR_NO_RANDOMIZE;
+		debug_print("Disabling ASLR ...");
+		persona = personality(persona | ADDR_NO_RANDOMIZE);
+		if (persona == -1) {
+			fprintf(stderr, "ERROR Unable to set ASLR info: %s\n", strerror(errno));
+			exit(EXIT_FAILURE);
+		}
+		if (!(personality (0xffffffff) & ADDR_NO_RANDOMIZE))
+		{
+			fprintf(stderr, "ERROR Unable to disable ASLR");
+			exit(EXIT_FAILURE);
+		}
+		debug_print("ASLR disabled");
+
         ret = execvp(argv[programStart], newargs);
         if (ret != 0) { perror("ERROR executing process"); exit(EXIT_FAILURE);};
     } else {
