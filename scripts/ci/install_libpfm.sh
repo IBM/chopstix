@@ -18,7 +18,7 @@
 #
 # ----------------------------------------------------------------------------
 #
-# 
+#
 # ChopStiX CI support scripts
 #
 # Author: Ramon Bertran Monfort <rbertra@us.ibm.com>
@@ -63,21 +63,25 @@ fi
 
 tmp="$dir/src_build/"
 mkdir -p "$tmp"
-cd "$tmp" 
+cd "$tmp"
 
 LIBPFM_VERSION=4.10.1
 if [ ! -f "libpfm-${LIBPFM_VERSION}.tar.gz" ]; then
-    wget https://downloads.sourceforge.net/project/perfmon2/libpfm4/libpfm-${LIBPFM_VERSION}.tar.gz
+    if [ -f "/tmp/libpfm-${LIBPFM_VERSION}.tar.gz" ]; then
+        cp -f "/tmp/libpfm-${LIBPFM_VERSION}.tar.gz" .
+    else
+        wget https://downloads.sourceforge.net/project/perfmon2/libpfm4/libpfm-${LIBPFM_VERSION}.tar.gz
+    fi
     tar xvf libpfm-${LIBPFM_VERSION}.tar.gz
 fi
 
-cd libpfm-${LIBPFM_VERSION} 
+cd libpfm-${LIBPFM_VERSION}
 
 sed -i "s#/usr/local#$dir#g" ./config.mk
 sed -i "s/ARCH := /ARCH ?= /g" ./config.mk
 sed -i "s/ldconfig/echo/g" ./config.mk
 make -j
-make install 
+make install
 
 cd - || exit 1
 
