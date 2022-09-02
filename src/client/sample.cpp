@@ -162,8 +162,6 @@ int run_sample(int argc, char **argv) {
     setup_events(events, child.pid());
     auto &prof = events.front();
 
-    insert_maps(db, child.pid());
-    insert_session(db, child.pid(), argv);
     Sample::value_list last(events.size(), 0);
 
     if (!opt_pid.is_set()) {
@@ -186,7 +184,11 @@ int run_sample(int argc, char **argv) {
         stop_ontimeout.detach();
     }
 
+    insert_session(db, child.pid(), argv);
+    insert_maps(db, child.pid());
+
     while (running) {
+
         if (prof.poll()) {
             auto samples = prof.sample();
 
