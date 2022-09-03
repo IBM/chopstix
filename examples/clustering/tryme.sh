@@ -28,13 +28,13 @@ die() {
 
 tryme() {
     printf ">>>> command: > %s\\n(press return to continue)" "$*"
-    read -r _ 
+    read -r _
     printf ">>>> start command\\n"
     # shellcheck disable=SC2294
     eval "$@"
     printf ">>>> end command\\n"
-    printf ">>>> (press return to continue)" 
-    read -r _ 
+    printf ">>>> (press return to continue)"
+    read -r _
 }
 
 chop -version >/dev/null || die "ChopStiX not setup correctly"
@@ -53,7 +53,7 @@ tryme chop annotate
 
 clear
 echo "########################################################################"
-echo "# Show the list of functions and their score (# of samples)" 
+echo "# Show the list of functions and their score (# of samples)"
 echo "#"
 echo "# Function daxpy is the hottest one"
 echo "########################################################################"
@@ -82,7 +82,7 @@ clear
 echo "########################################################################"
 echo "# Show information on the generated profile"
 echo "########################################################################"
-tryme "cti_trace_info -t ipc profile.csv | column -t -s : -o :"
+tryme "cti_trace_info -t ipc profile.csv | column -t -s:"
 
 clear
 echo "########################################################################"
