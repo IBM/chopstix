@@ -36,11 +36,16 @@ static std::string library_path() {
 }
 
 static void preload(std::string path) {
+    log::debug("Tracer:: preload: start");
+    std::string env;
     char *env_preload = getenv("LD_PRELOAD");
     if (env_preload != NULL) {
-        path += ':' + env_preload;
+        path += ':';
+        env = env_preload;
+        path += env;
     }
     setenv("LD_PRELOAD", path.c_str(), 1);
+    log::debug("Tracer:: preload: end");
 }
 
 namespace chopstix {
@@ -222,6 +227,7 @@ void Tracer::init(int argc, char **argv) {
     log::debug("Tracer:: init start");
     setenv("LD_BIND_NOW", "1", 1);
     preload(library_path());
+    log::debug("Tracer:: preload set");
     child.exec(argv, argc);
     child.ready();
     unsetenv("LD_PRELOAD");
@@ -388,18 +394,18 @@ void Tracer::fix_breakpoint(std::vector<long> address) {
     long cur_pc = Arch::current()->get_pc(child.pid());
     long mask_size;
 
-	switch(Arch::current()->get_breakpoint_size()) {                                                
-        case BreakpointSize::HALF_WORD:                                            
+	switch(Arch::current()->get_breakpoint_size()) {
+        case BreakpointSize::HALF_WORD:
             mask_size = 2;
-            break;                                                                 
-        case BreakpointSize::WORD:                                                 
+            break;
+        case BreakpointSize::WORD:
             mask_size = 4;
-            break;                                                                 
-        default:                                                                   
-        case BreakpointSize::DOUBLE_WORD:                                          
+            break;
+        default:
+        case BreakpointSize::DOUBLE_WORD:
             mask_size = 8;
-            break;                                                                 
-    }            
+            break;
+    }
 
     for (auto addr : address) {
         auto baddr = addr + module_offset.addr();
