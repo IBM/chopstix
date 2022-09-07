@@ -51,7 +51,7 @@ elif [ "$sym" != "_start" ]; then
     static_start_sym=$(readelf -s "$obj" | grep -v UND | grep FUNC | grep GLOBAL | grep " _start$" | tr -s " " | cut -d ' ' -f 3 | sort | uniq)
     dyn_start_sym=$(chop-marks-sysz "$obj" "_start" 2> /dev/null | cut -d ' ' -f 2)
     if [ "$dyn_start_sym" = "" ]; then
-        bdispl=0x$(chop-marks-dyn-addr "$obj" "_start" 2>&1 | grep PT_LOAD | sed "s/(nil)/0x0/" | cut -d "x" -f 3 | cut -d ")" -f 1 | sort | uniq)
+        bdispl=0x$(chop-marks-dyn-addr "$obj" "_start" 2>&1 | grep "@@" | grep PT_LOAD | sed "s/(nil)/0x0/" | cut -d "x" -f 3 | cut -d ")" -f 1 | sort | uniq)
         # shellcheck disable=SC2004
         bdispl=$(($bdispl))
     else
@@ -98,7 +98,9 @@ if [ "$(grep -c "<$sym:>" < "$tmp")" -eq 0 ]; then
         found=1
         # shellcheck disable=SC2004
         bdispl=$(($addr))
+        bdispl=0
         obj=$lib
+        echo "-module $(basename "$lib")"
         break
     done;
 fi
