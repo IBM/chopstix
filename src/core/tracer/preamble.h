@@ -2,6 +2,7 @@
 
 #include "state.h"
 
+#include <string>
 #include <vector>
 
 namespace chopstix {
@@ -27,7 +28,8 @@ class TracerTimedPreambleState : public TracerPreambleState {
 
 class TracerRangedPreambleState : public TracerPreambleState {
   public:
-    TracerRangedPreambleState(Tracer *tracer, std::vector<long> &start,
+    TracerRangedPreambleState(Tracer *tracer,
+                              std::vector<long> &start,
                               std::vector<long> &end) :
        TracerPreambleState(tracer), start(start), end(end) {}
 
@@ -41,8 +43,9 @@ class TracerRangedPreambleState : public TracerPreambleState {
 
 class TracerRangedTimedPreambleState : public TracerPreambleState {
   public:
-    TracerRangedTimedPreambleState(Tracer *tracer, std::vector<long> &start,
-                              double time) :
+    TracerRangedTimedPreambleState(Tracer *tracer,
+                                   std::vector<long> &start,
+                                   double time) :
        TracerPreambleState(tracer), start(start), time(time) {}
 
     virtual void execute(Process &child);
