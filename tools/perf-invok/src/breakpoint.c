@@ -217,8 +217,10 @@ void compute_base_address(unsigned long pid, char* module, char* mainmodule) {
         long buf[POWER_NUM_REGS];
         ptrace(PTRACE_GETREGS, pid, 0, buf);
         caddr = buf[POWER_NIP];
-#else
-#error Architecture not supported
+#elif defined(__x86_64__) || defined(__i386__)
+        struct user_regs_struct regs;
+        ptrace(PTRACE_GETREGS, pid, 0, &regs);
+        caddr = regs.rip;
 #endif
         if ((caddr >= basemain_address[0]) && (caddr <basemain_address[1])) { break; };
     }
