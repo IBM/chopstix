@@ -50,10 +50,11 @@ static void preload(std::string path) {
 
 namespace chopstix {
 
-Tracer::Tracer(std::string trace_path, bool dryrun, TraceOptions trace_options) {
+Tracer::Tracer(std::string module, std::string trace_path, bool dryrun, TraceOptions trace_options) {
     log::debug("Tracer:: contructor start");
     regs = Arch::current()->create_regs();
     this->trace_path = trace_path;
+    this->module = module;
     tracing_enabled = !dryrun;
     this->trace_options = trace_options;
     log::debug("Tracer:: contructor end");
@@ -147,6 +148,23 @@ struct mmap_call {
     unsigned long prot;
 };
 
+void Tracer::compute_module_offset() {
+    log::verbose("Tracer:: compute_module_offset start");
+    auto maps = parse_maps(child.pid());
+    std::string bname;
+    for (auto &entry : maps) {
+        bname = entry.path.substr(entry.path.find_last_of("/") + 1);
+        if ((bname.rfind(module,0) == 0) && (entry.perm[2] == 'x'))
+        {
+            log::verbose("Tracer:: compute_module_offset: %s == %s", bname, module);
+            module_offset = Location::Address(entry.addr[0]);
+            log::verbose("Tracer:: compute_module_offset: 0x%x", module_offset);
+            break;
+        }
+    }
+    log::verbose("Tracer:: compute_module_offset end");
+}
+
 void Tracer::track_mmap() {
     log::debug("Tracer:: track_mmap start");
     std::vector<mmap_call> restrict_map;
@@ -237,6 +255,7 @@ void Tracer::init(int argc, char **argv) {
     sleep(2);
 
     track_mmap();
+    if (module != "main") compute_module_offset();
 
     alt_stack = read_alt_stack();
     log::debug("Tracer:: init end");
