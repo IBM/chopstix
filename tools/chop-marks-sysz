@@ -100,6 +100,7 @@ if [ "$(grep -c "<$sym:>" < "$tmp")" -eq 0 ]; then
         bdispl=$(($addr))
         bdispl=0
         obj=$lib
+        # shellcheck disable=SC2039
         echo "-module $(basename "$lib")"
         break
     done;
