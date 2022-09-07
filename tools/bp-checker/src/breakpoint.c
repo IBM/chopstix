@@ -33,7 +33,7 @@ int readBreakpoint(unsigned long pid, unsigned long long address,
     breakpoint->address = address;
     breakpoint->originalData = 0;
     debug_print("readBreakpoint 0x%016llX to 0x%08X (orig 0x%08llX)\n", address, 0, breakpoint->originalData);
-    debug_print("readBreakpoint %p\n", (void *) address); 
+    debug_print("readBreakpoint %p\n", (void *) address);
     errno = 0;
     breakpoint->originalData = ptrace(PTRACE_PEEKTEXT, pid, address, NULL);
     if (errno != 0) {
@@ -56,7 +56,7 @@ int readBreakpoint(unsigned long pid, unsigned long long address,
             case ESRCH:
                 debug_print("Error: ESRCH: %s\n", strerror(errno));
                 break;
-            default: 
+            default:
                 debug_print("Error: %s\n", strerror(errno));
                 break;
         }
@@ -69,7 +69,7 @@ int writeBreakpoint(unsigned long pid, unsigned long long address,
                    Breakpoint *breakpoint) {
     breakpoint->address = address;
     debug_print("readBreakpoint 0x%016llX to 0x%08X (orig 0x%08llX)\n", address, 0, breakpoint->originalData);
-    debug_print("readBreakpoint %p\n", (void *) address); 
+    debug_print("readBreakpoint %p\n", (void *) address);
     errno = 0;
     breakpoint->originalData = ptrace(PTRACE_POKEDATA, pid, address, breakpoint->originalData);
     if (errno != 0) {
@@ -92,7 +92,7 @@ int writeBreakpoint(unsigned long pid, unsigned long long address,
             case ESRCH:
                 debug_print("Error: ESRCH: %s\n", strerror(errno));
                 break;
-            default: 
+            default:
                 debug_print("Error: %s\n", strerror(errno));
                 break;
         }

@@ -1,18 +1,18 @@
 # Tracing
 
-The process of tracing is in charge of obtaining all the required process 
-state to be able to reproduce it afterwards. To do so, one needs the 
+The process of tracing is in charge of obtaining all the required process
+state to be able to reproduce it afterwards. To do so, one needs the
 initial processor register state (i.e. all the user-accessible registers) and
-the initial memory state used by during the tracing period. 
+the initial memory state used by during the tracing period.
 
-Obtaining the initial register state is straightforward since it is just a 
+Obtaining the initial register state is straightforward since it is just a
 matter of dumping all registers when starting the tracing period. One can
 do the same with the memory state. However, it would be impractical since the
 size of the virtual address space of the traced process can be quite large
-(and probably, most of it would not be accessed during the tracing period). 
-In order to obtain only the required memory state, ChopStiX dumps the 
-code and data regions accessed during the tracing period. To do so, it 
-uses the memory protection mechanisms available. When starting the tracing 
+(and probably, most of it would not be accessed during the tracing period).
+In order to obtain only the required memory state, ChopStiX dumps the
+code and data regions accessed during the tracing period. To do so, it
+uses the memory protection mechanisms available. When starting the tracing
 period, ChopStiX forbids access to the entire memory address space of the
 process and whenever an exception is generated due to an access, the
 accessed page is dumped to disk and read/write/execute access is restored.
@@ -39,7 +39,7 @@ modes are the following:
 
 ## ROI Tracing
 
-For defining the Region of Interest (ROI) to be traced, multiple _begin_ and 
+For defining the Region of Interest (ROI) to be traced, multiple _begin_ and
 _end_ addresses can be provided. The first time a begin _address_ is hit, the
 tracing starts until the first time an _end_ address is hit. That corresponds
 to a _ROI invocation_. Using user parameters one can select the _ROI invocations_
@@ -51,32 +51,32 @@ Depending on the toolchain configuration and system the static addresses
 of the binary (i.e. the ones shown when dumping the binary using _objdump_)
 might correspond or not with the addresses of the program image loaded by the
 system loader before starting the execution. The tool `chop-marks-dyn-addr`
-is provided to support the task of finding out the displacement between the 
-objdump address and the address loaded in memory. The steps to perform the 
+is provided to support the task of finding out the displacement between the
+objdump address and the address loaded in memory. The steps to perform the
 find the right addresses are the following:
 
-    objdump -d binary 
+    objdump -d binary
 
 To obtain the dump of the binary.
 
     chop-marks-dyn-addr binary main
 
 To obtain information of the loaded segments in memory when the program is
-executed. Discard any error message, the key information you want to obtain 
-is the base address of the PT\_LOAD segments. You can add that base address 
+executed. Discard any error message, the key information you want to obtain
+is the base address of the PT\_LOAD segments. You can add that base address
 with the address of the binary dump to obtain the final address that should
-be used for tracing. 
+be used for tracing.
 
 ROIs can be defined at any boundary, and it is up to the user to select what
 to trace. This provides flexibility since one can begin/end tracing at function
 entry/exit points or at begin/end of computational loops or a combinations or
-any other address. Typically, the tracing of function invocations is quite 
+any other address. Typically, the tracing of function invocations is quite
 common because previous profiling steps are typically done at function level
-(to know what to trace) and also because having clearly defined boundaries 
-enables some assumptions and optimizations later on when converting the 
+(to know what to trace) and also because having clearly defined boundaries
+enables some assumptions and optimizations later on when converting the
 traced region into a self-executable binary or another format for tracing and
 simulation. Therefore, ChopStiX provides a helper script script to automatically
-compute the begin/end addresses of function-level ROIs (i.e. the function 
+compute the begin/end addresses of function-level ROIs (i.e. the function
 entry/exit addresses). To do so, execute:
 
     chop-marks binary function_name
@@ -89,7 +89,7 @@ parameters can be directly fed into the `chop trace` command as following:
 
 Check `chop trace --help` for all the details and tracing options.  In the
 [usage](usage.md) documentation, there is a simple example on how to
-invoke `chop` for tracing. 
+invoke `chop` for tracing.
 
 Once tracing is done, the raw output needs to be processed in order to be
 converted into a MPTs (Microprobe Test files). To do so execute:
@@ -101,25 +101,25 @@ test definition to another format. Check the Microprobe documentation for
 the different possibilities.  In the `./examples/tracing/` directory,
 you can find a more detailed tracing example, including a script to perform
 all the necessary steps to trace a particular function and convert the
-extracted trace into a self-runnable binary. The example also includes 
+extracted trace into a self-runnable binary. The example also includes
 the steps required to complete the MPTs generated with a detailed memory
 access traces using a Valgrind's based `chop-trace-mem`.
 
 ## Notes about tracing
 
 1. Code pages of specific libc functions (used by the tracing support library)
-   are not protected and always dumped for safety. 
+   are not protected and always dumped for safety.
 2. System calls are not supported during tracing. Whenever a system call is
    hit during tracing. The trace is finished. The system call is serviced, and
    tracing starts again. I.e. tracing a function invocation with a system
    call will generate two traces.
 3. ChopStiX minimizes the number of systems calls using library interposition
    mechanisms. Common libc functions such as _printf_/_puts_ are overridden
-   with custom implementations during tracing to minimize the number of 
+   with custom implementations during tracing to minimize the number of
    system calls. The list of overridden functions is preliminary, and more
    functions will be added in the future to nullify the number of system calls
    while maintaining functional correctness.
 4. Recursive tracing is not supported. Tracing will start a first entry address
    and stop at first end address.
-5. ChopStiX disables ASLR (Address Space Layout Randomization) to ensure 
+5. ChopStiX disables ASLR (Address Space Layout Randomization) to ensure
    reproducibility.

@@ -74,7 +74,7 @@ void TracerRangedPreambleState::execute(Process &child) {
                 tracer->set_breakpoint(start, true);
             }
         } else {
-            // Restore contents and continue executing 
+            // Restore contents and continue executing
             tracer->fix_breakpoint(start);
             child.cont();
             child.waitfor(SIGILL);

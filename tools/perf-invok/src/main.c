@@ -145,7 +145,7 @@ int perInvocationPerformance(unsigned long long * addrStart,
         }
         if (WIFSIGNALED(status)) {
             debug_print("Process signaled: %s\n", strsignal(WTERMSIG(status)));
-            kill(pid, SIGKILL); 
+            kill(pid, SIGKILL);
             exit(EXIT_FAILURE);
         }
         sampleInProgress = 0;

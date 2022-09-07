@@ -60,7 +60,7 @@ else()
 endif()
 # Append our values
 SET(TEMP2 "${TEMP2}${SUPPORT_LIBRARY_LDFLAGS}" )
-set_target_properties(cxtrace PROPERTIES LINK_FLAGS ${TEMP2}) 
+set_target_properties(cxtrace PROPERTIES LINK_FLAGS ${TEMP2})
 
 # install (
 #     FILES cxtrace.h

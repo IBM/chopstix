@@ -39,7 +39,7 @@ for file in $* ; do
     fi
 
     if [ "$(grep -c "Licensed under the Apache License, Version 2.0 (the \"License\");" "$file")" -gt 0 ]; then
-        echo "'$file' already has a header" 
+        echo "'$file' already has a header"
         continue
     fi
 

@@ -54,19 +54,19 @@ static unsigned long max_traces = -1;
 
 static unsigned long indices[MAX_INDICES];
 static const HChar* indices_str = NULL;
-static unsigned long indices_count = 0; 
+static unsigned long indices_count = 0;
 
 static unsigned int enabled = 0;
 static unsigned int num_traces = 0;
 static unsigned int cindice = 0;
 
 typedef
-   IRExpr 
+   IRExpr
    IRAtom;
 
 #define MAX_DSIZE    512
 
-typedef 
+typedef
    enum { Event_Ir, Event_Dr, Event_Dw, Event_Dm }
    EventKind;
 
@@ -111,23 +111,23 @@ static Bool cs_process_cmd_line_option(const HChar* arg)
    }
    else if VG_STR_CLO(arg, "-indices", indices_str) {
         HChar* wcmd;
-        HChar *ssaveptr; 
-        HChar *the_end; 
+        HChar *ssaveptr;
+        HChar *the_end;
         wcmd = VG_(strtok_r) (indices_str, ",", &ssaveptr);
         while (wcmd != NULL) {
-            indices[indices_count] = VG_(strtoll10) (wcmd, &the_end); 
+            indices[indices_count] = VG_(strtoll10) (wcmd, &the_end);
             indices_count++;
             wcmd = VG_(strtok_r) (NULL, ",", &ssaveptr);
-        } 
+        }
    } else return False;
-   
+
    tl_assert(outputname);
    tl_assert(outputname[0]);
    return True;
 }
 
 static void cs_print_usage(void)
-{  
+{
    VG_(printf)(
 "    -output name             Output file name [./memory_trace.bin]\n"
 "    -begin address           Begin address of the region of interest in hex format (can be specified multiple times)\n"
@@ -138,7 +138,7 @@ static void cs_print_usage(void)
 }
 
 static void cs_print_debug_usage(void)
-{  
+{
    VG_(printf)(
 "    (none)\n"
    );
@@ -201,7 +201,7 @@ unsigned int trace_enabled(Addr addr) {
     }
     else if ((is_entry == 1) && (is_exit == 0)) {
         tl_assert(enabled == 0);
-        
+
         if(indices_count == 0) enabled = 1;
         else if (in_list(cindice, indices, indices_count)) enabled = 1;
 
@@ -221,7 +221,7 @@ unsigned int trace_enabled(Addr addr) {
 
         enabled = 0;
     }
-    
+
     return enabled;
 }
 
@@ -265,7 +265,7 @@ static void flushEvents(IRSB* sb)
    for (i = 0; i < events_used; i++) {
 
       ev = &events[i];
-      
+
       // Decide on helper fn to call and args to pass it.
       switch (ev->ekind) {
          case Event_Ir: helperName = "trace_instr";
@@ -285,7 +285,7 @@ static void flushEvents(IRSB* sb)
 
       // Add the helper.
       argv = mkIRExprVec_2( ev->addr, mkIRExpr_HWord( ev->size ) );
-      di   = unsafeIRDirty_0_N( /*regparms*/2, 
+      di   = unsafeIRDirty_0_N( /*regparms*/2,
                                 helperName, VG_(fnptr_to_fnentry)( helperAddr ),
                                 argv );
       if (ev->guard) {
@@ -400,7 +400,7 @@ void addEvent_Dw ( IRSB* sb, IRAtom* daddr, Int dsize )
 static
 IRSB* cs_instrument ( VgCallbackClosure* closure,
                       IRSB* sbIn,
-                      const VexGuestLayout* layout, 
+                      const VexGuestLayout* layout,
                       const VexGuestExtents* vge,
                       const VexArchInfo* archinfo_host,
                       IRType gWordTy, IRType hWordTy )
@@ -462,7 +462,7 @@ IRSB* cs_instrument ( VgCallbackClosure* closure,
             addStmtToIRSB( sbOut, st );
             break; }
 
-         case Ist_StoreG: { 
+         case Ist_StoreG: {
             IRStoreG* sg   = st->Ist.StoreG.details;
             IRExpr*   data = sg->data;
             IRType    type = typeOfIRExpr(tyenv, data);
@@ -471,7 +471,7 @@ IRSB* cs_instrument ( VgCallbackClosure* closure,
                                  sizeofIRType(type), sg->guard );
             addStmtToIRSB( sbOut, st );
             break; }
-         
+
          case Ist_LoadG: {
             IRLoadG* lg       = st->Ist.LoadG.details;
             IRType   type     = Ity_INVALID; /* loaded type */
@@ -544,7 +544,7 @@ IRSB* cs_instrument ( VgCallbackClosure* closure,
             flushEvents(sbOut);
             addStmtToIRSB( sbOut, st );      // Original statement
             break; }
- 
+
          default: {
             ppIRStmt(st);
             tl_assert(0); }

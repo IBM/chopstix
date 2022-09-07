@@ -46,7 +46,7 @@
 #define BREAKPOINT_SIZE 4
 #endif
 
-#if defined(__riscv) 
+#if defined(__riscv)
 struct RiscVRegs {
     union {
         struct {
@@ -156,7 +156,7 @@ void compute_base_address(unsigned long pid, char* module, char* mainmodule) {
     if (base_address_set == 1) return;
     if (strncmp(module, "main", 4) == 0) { base_address_set = 1; return;}
 
-    char path[1024]; 
+    char path[1024];
     char* line = NULL;
     char* addr;
     char* perm;

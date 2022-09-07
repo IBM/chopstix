@@ -26,7 +26,7 @@
 #include <time.h>
 #include <sys/wait.h>
 #include <sys/ptrace.h>
-#include <sys/personality.h> 
+#include <sys/personality.h>
 #include <unistd.h>
 #include <sched.h>
 #include <signal.h>
@@ -148,26 +148,26 @@ int main(int argc, char **argv) {
         long ret = ptrace(PTRACE_TRACEME, 0, 0, 0);
         if (ret != 0) { perror("ERROR setting traced process"); exit(EXIT_FAILURE);};
 
-		int persona = personality(0xffffffff);                                         
-		if (persona == -1)                                                             
-		{                                                                              
+		int persona = personality(0xffffffff);
+		if (persona == -1)
+		{
 			fprintf(stderr, "ERROR Unable to get ASLR info: %s\n", strerror(errno));
-			exit(EXIT_FAILURE);                                                        
-		}                                                                              
-																					   
-		persona = persona | ADDR_NO_RANDOMIZE;                                         
-		debug_print("Disabling ASLR ...\n");                              
-		persona = personality(persona | ADDR_NO_RANDOMIZE);                            
-		if (persona == -1) {                                                           
+			exit(EXIT_FAILURE);
+		}
+
+		persona = persona | ADDR_NO_RANDOMIZE;
+		debug_print("Disabling ASLR ...\n");
+		persona = personality(persona | ADDR_NO_RANDOMIZE);
+		if (persona == -1) {
 			fprintf(stderr, "ERROR Unable to set ASLR info: %s\n", strerror(errno));
-			exit(EXIT_FAILURE);                                                        
-		}                                                                              
-		if (!(personality (0xffffffff) & ADDR_NO_RANDOMIZE))                           
-		{                                                                              
-			fprintf(stderr, "ERROR Unable to disable ASLR");                 
-			exit(EXIT_FAILURE);                                                        
-		}                                                                              
-		debug_print("ASLR disabled\n");                                   
+			exit(EXIT_FAILURE);
+		}
+		if (!(personality (0xffffffff) & ADDR_NO_RANDOMIZE))
+		{
+			fprintf(stderr, "ERROR Unable to disable ASLR");
+			exit(EXIT_FAILURE);
+		}
+		debug_print("ASLR disabled\n");
 
         ret = execvp(argv[programStart], newargs);
         if (ret != 0) { perror("ERROR executing process"); exit(EXIT_FAILURE);};

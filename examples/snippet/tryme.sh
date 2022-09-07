@@ -28,13 +28,13 @@ die() {
 
 tryme() {
     printf ">>>> command: > %s\\n(press return to continue)" "$*"
-    read -r _ 
+    read -r _
     printf ">>>> start command\\n"
     # shellcheck disable=SC2294
     eval "$@"
     printf ">>>> end command\\n"
-    printf ">>>> (press return to continue)" 
-    read -r _ 
+    printf ">>>> (press return to continue)"
+    read -r _
 }
 
 chop -version >/dev/null || die "ChopStiX not setup correctly"
@@ -68,9 +68,9 @@ clear
 echo "########################################################################"
 echo "# List snippets (i.e. execution paths) found"
 echo "########################################################################"
-tryme chop list paths 
+tryme chop list paths
 echo "########################################################################"
-echo "# Show the top 10 basic blocks and their score (# of samples)" 
+echo "# Show the top 10 basic blocks and their score (# of samples)"
 echo "########################################################################"
 tryme "chop list blocks | column -t | head -n 11"
 
