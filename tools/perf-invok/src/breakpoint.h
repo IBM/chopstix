@@ -28,6 +28,7 @@ typedef struct {
 void setBreakpoint(unsigned long pid, unsigned long long address,
                    Breakpoint *breakpoint);
 void resetBreakpoint(unsigned long pid, Breakpoint *breakpoint);
+void compute_base_address(unsigned long pid, char* module, char* mainmodule);
 
 #if defined(__s390x__)
 #define NT_PRSTATUS 1
