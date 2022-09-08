@@ -30,7 +30,7 @@ stages:
     - install
 install:
     - if [ "$(ls /tmp/deb/*deb 2> /dev/null | wc -l)" -gt 0 ]; then sudo cp -n -u /tmp/deb/*deb /var/cache/apt/archives/ ; fi;
-    - timeout 10 sudo add-apt-repository -m -y ppa:ubuntu-toolchain-r/test || timeout 10 sudo add-apt-repository -m -y ppa:ubuntu-toolchain-r/test || timeout 10 sudo add-apt-repository -m -y ppa:ubuntu-toolchain-r/test
+    - timeout 20 sudo add-apt-repository -m -y ppa:ubuntu-toolchain-r/test || timeout 20 sudo add-apt-repository -m -y ppa:ubuntu-toolchain-r/test || timeout 20 sudo add-apt-repository -m -y ppa:ubuntu-toolchain-r/test
     - sudo apt-get update -y
     - sudo apt-get install -y cmake cmake-data shellcheck linux-tools-generic zlib1g-dev g++-11 gcc-11 python3 python3-pip python3-virtualenv libsqlite3-dev
     - if [ "$(ls /var/cache/apt/archives/*deb 2> /dev/null | wc -l)" -gt 0 ]; then sudo cp -n -u /var/cache/apt/archives/*deb /tmp/deb/ ; fi;
