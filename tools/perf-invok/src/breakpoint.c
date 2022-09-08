@@ -91,6 +91,8 @@ struct RiscVRegs {
     } fp;
 };
 
+#define PTRACE_GP_REGISTERS 1
+
 #define RISCV_GPR_SIZE sizeof(((struct  RiscVRegs *)0)->gp)
 #define RISCV_FPR_SIZE sizeof(((struct  RiscVRegs *)0)->fp)
 #endif
