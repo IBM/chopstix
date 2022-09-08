@@ -199,7 +199,7 @@ void compute_base_address(unsigned long pid, char* module, char* mainmodule) {
 #if defined(__riscv) // RISC-V (Valid with or without C extension)
         struct RiscVRegs regs;
         struct iovec data = {
-            .iov_base = &((struct RiscVRegs *) regs)->gp,
+            .iov_base = &regs,
             .iov_len  = RISCV_GPR_SIZE
         };
         ptrace(PTRACE_GETREGSET, pid, PTRACE_GP_REGISTERS, &data);
