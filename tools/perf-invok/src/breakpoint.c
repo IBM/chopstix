@@ -25,6 +25,7 @@
 #include <stdio.h>
 #include <sys/ptrace.h>
 #include <sys/user.h>
+#include <sys/uio.h>
 #include <errno.h>
 #include <stdlib.h>
 #include <string.h>
