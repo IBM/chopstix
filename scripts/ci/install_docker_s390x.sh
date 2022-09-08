@@ -18,7 +18,7 @@
 #
 # ----------------------------------------------------------------------------
 #
-# 
+#
 # ChopStiX CI support scripts
 #
 # Author: Ramon Bertran Monfort <rbertra@us.ibm.com>
@@ -40,7 +40,7 @@ cp dockcross-linux-s390x /usr/bin/
 cd - || exit 1
 
 for elem in $(dockcross-linux-s390x ls /usr/xcc/s390x-ibm-linux-gnu/bin/); do
-    
+
     echo "#!/usr/bin/env sh" > "/usr/bin/$elem"
     echo "extra_dirs=\$(for elem in \$(find $(pwd) -type d | grep -v .git); do echo -v \$elem:\$elem; done;)" >> "/usr/bin/$elem"
     echo "dockcross-linux-s390x --args \"-v /tmp/libpfm/:/tmp/libpfm/ \$extra_dirs -v \$(pwd):\$(pwd) -v /usr/share:/usr/share \" -- bash -c \" cd \$(pwd) && /usr/xcc/s390x-ibm-linux-gnu/bin/$elem \$* \"" >> "/usr/bin/$elem"

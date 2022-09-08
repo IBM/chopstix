@@ -51,9 +51,13 @@ elif [ "$sym" != "_start" ]; then
     static_start_sym=$(readelf -s "$obj" | grep -v UND | grep FUNC | grep GLOBAL | grep " _start$" | tr -s " " | cut -d ' ' -f 3 | sort | uniq)
     dyn_start_sym=$(chop-marks-ppc64 "$obj" "_start" 2> /dev/null | cut -d ' ' -f 2)
     if [ "$dyn_start_sym" = "" ]; then
-        bdispl=0x$(chop-marks-dyn-addr "$obj" "_start" 2>&1 | grep PT_LOAD | sed "s/(nil)/0x0/" | cut -d "x" -f 3 | cut -d ")" -f 1 | sort | uniq)
-        # shellcheck disable=SC2004
-        bdispl="$(($bdispl))"
+        bdispl=0x$(chop-marks-dyn-addr "$obj" "_start" 2>&1 | grep "@@" | grep PT_LOAD | sed "s/(nil)/0x0/" | cut -d "x" -f 3 | cut -d ")" -f 1 | sort | uniq)
+        if [ "$bdispl" != 0x ]; then
+            # shellcheck disable=SC2004
+            bdispl=$(($bdispl))
+        else
+            bdispl=0
+        fi
     else
         bdispl=$((0x$dyn_start_sym - 0x$static_start_sym))
     fi
@@ -82,6 +86,32 @@ else
         rm -f "$tmp" "$tmp2"
     }
     trap cleanup EXIT
+fi
+
+found=1
+if [ "$(grep -c "<$sym>:" < "$tmp")" -eq 0 ]; then
+    found=0
+    # Symbol not found in the objdump, is in the libraries?
+    for lib in $(setarch "$(uname -m)" -R ldd "$obj" | grep "=" | cut -d ">" -f 2 | tr "(" ":" | tr -d " " | tr -d ")"); do
+        addr="$(echo "$lib" | cut -d ":" -f 2)"
+        lib="$(echo "$lib" | cut -d ":" -f 1)"
+        objdump -d "$lib" > "$tmp"
+        if [ "$(grep -c "<$sym>:" < "$tmp")" -eq 0 ]; then
+            continue
+        fi
+        found=1
+        # shellcheck disable=SC2004
+        bdispl=$(($addr))
+        bdispl=0
+        # shellcheck disable=SC2039
+        echo "-module $(basename "$lib")"
+        obj=$lib
+        break
+    done;
+fi
+
+if [ "$found" -eq 0 ]; then
+    exit 1
 fi
 
 set +e

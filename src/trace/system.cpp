@@ -278,7 +278,7 @@ void System::start_trace(bool isNewInvocation) {
     //
     // If sharing the same IO buffer, any flushing during the start/end
     // dynamic calls can have side effect. Need to avoid sharing the same
-    // IO buffers or not create IO to such buffers. Typically the only 
+    // IO buffers or not create IO to such buffers. Typically the only
     // shared buffer can be stdout and stderr.
     //
 
@@ -337,7 +337,7 @@ void System::stop_trace() {
     //
     // If sharing the same IO buffer, any flushing during the start/end
     // dynamic calls can have side effect. Need to avoid sharing the same
-    // IO buffers or not create IO to such buffers. Typically the only 
+    // IO buffers or not create IO to such buffers. Typically the only
     // shared buffer can be stdout and stderr.
     //
 

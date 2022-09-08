@@ -26,6 +26,7 @@
 #include <time.h>
 #include <sys/wait.h>
 #include <sys/ptrace.h>
+#include <sys/personality.h>
 #include <unistd.h>
 #include <sched.h>
 #include <signal.h>
@@ -49,6 +50,8 @@ int sampleInProgress = 1;
 FILE *outputFile;
 unsigned int endpoint_count = 0;
 unsigned int startpoint_count = 0;
+char *module = "main";
+char *mainmodule = "main";
 
 void help(FILE *fd) {
     if (fd == stderr){
@@ -59,15 +62,16 @@ void help(FILE *fd) {
     }
     fprintf(fd, "Usage:\n");
     fprintf(fd, "\n");
-    fprintf(fd, "chop-perf-invok -o output [-begin addr] [-begin addr] ...] [-end addr [-end addr ...]] [-timeout seconds] [-max samples] [-cpu cpu] [-h] -- command-to-execute\n");
+    fprintf(fd, "chop-perf-invok -o output [-begin addr] [-begin addr] ...] [-end addr [-end addr ...]] [-timeout seconds] [-max samples] [-module] [-cpu cpu] [-h] -- command-to-execute\n");
     fprintf(fd, "\n");
     fprintf(fd, "-o name          output file name\n");
-    fprintf(fd, "-begin addr      start address of the region to measure\n");
-    fprintf(fd, "-end addr        address of the region to measure (can be specified multiple times)\n");
+    fprintf(fd, "-begin addr      start address of the region to measure (can be specified multiple times)\n");
+    fprintf(fd, "-end addr        end address of the region to measure (can be specified multiple times)\n");
+    fprintf(fd, "-module name     module to be traced (if different than main)\n");
     fprintf(fd, "-timeout seconds stop measuring after the specified number of seconds (default: no timeout)\n");
     fprintf(fd, "-max samples     stop measuring after the specified number of measurements(default: no limit)\n");
     fprintf(fd, "-cpu cpu         pin process to the specified CPU (default: 0)\n");
-    fprintf(fd, "-h:              print this help message\n");
+    fprintf(fd, "-h               print this help message\n");
     fprintf(fd, "\n");
 
     if (fd == stderr){
@@ -79,7 +83,7 @@ void help(FILE *fd) {
 
 void handler(int signum) {
     int ret = kill(pid, signum);
-    if (ret != 0) { perror("ERROR killing process"); exit(EXIT_FAILURE);};
+    if (ret != 0) { perror("ERROR Sending signal to process"); kill(pid, SIGKILL); exit(EXIT_FAILURE);};
 
     if (sampleInProgress) {
         endSample(&samples[sampleCount - flushedSampleCount]);
@@ -90,7 +94,7 @@ void handler(int signum) {
 
     if (outputFile != stderr) {
         ret = fclose(outputFile);
-        if (ret != 0) { perror("ERROR closing file"); exit(EXIT_FAILURE);};
+        if (ret != 0) { perror("ERROR closing file"); kill(pid, SIGKILL); exit(EXIT_FAILURE);};
     }
     exit(EXIT_FAILURE);
 }
@@ -105,7 +109,8 @@ int perInvocationPerformance(unsigned long long * addrStart,
     for(int i=0; i<startpoint_count; i++) setBreakpoint(pid, addrStart[i], &bp[i]);
 
     long ret = ptrace(PTRACE_CONT, pid, 0, 0);
-    if (ret != 0) { perror("ERROR on initial tracing"); exit(EXIT_FAILURE);};
+
+    if (ret != 0) { perror("ERROR on initial tracing"); kill(pid, SIGKILL); exit(EXIT_FAILURE);};
 
     while (waitpid(pid, &status, 0) != -1 && sampleCount < maxSamples &&
            !WIFEXITED(status)) {
@@ -128,9 +133,9 @@ int perInvocationPerformance(unsigned long long * addrStart,
         }
         #endif
         ret = ptrace(PTRACE_CONT, pid, 0, 0);
-        if (ret != 0) { perror("ERROR during tracing"); exit(EXIT_FAILURE);};
+        if (ret != 0) { perror("ERROR during tracing"); kill(pid, SIGKILL); exit(EXIT_FAILURE);};
         ret = waitpid(pid, &status, 0);
-        if (ret == -1) { perror("ERROR during waiting"); exit(EXIT_FAILURE);};
+        if (ret == -1) { perror("ERROR during waiting"); kill(pid, SIGKILL); exit(EXIT_FAILURE);};
         if (WIFSTOPPED(status)) {
             debug_print("Process stopped: %s\n", strsignal(WSTOPSIG(status)));
         }
@@ -140,6 +145,7 @@ int perInvocationPerformance(unsigned long long * addrStart,
         }
         if (WIFSIGNALED(status)) {
             debug_print("Process signaled: %s\n", strsignal(WTERMSIG(status)));
+            kill(pid, SIGKILL);
             exit(EXIT_FAILURE);
         }
         sampleInProgress = 0;
@@ -167,7 +173,7 @@ int perInvocationPerformance(unsigned long long * addrStart,
         }
         #endif
         ret = ptrace(PTRACE_CONT, pid, 0, 0);
-        if (ret != 0) { perror("ERROR during next tracing"); exit(EXIT_FAILURE);};
+        if (ret != 0) { perror("ERROR during next tracing"); kill(pid, SIGKILL); exit(EXIT_FAILURE);};
     }
 
     if (sampleCount == maxSamples) kill(pid, SIGTERM);
@@ -181,18 +187,18 @@ int globalPerformance(unsigned int timeout) {
     sampleInProgress = 1;
 
     int ret =  ptrace(PTRACE_CONT, pid, 0, 0);
-    if (ret != 0) { perror("ERROR while setting trace"); exit(EXIT_FAILURE);};
+    if (ret != 0) { perror("ERROR while setting trace"); kill(pid, SIGKILL); exit(EXIT_FAILURE);};
 
     if (timeout > 0 ) {
         fprintf(stderr, "Timeout set to %d seconds\n", timeout);
         ret = alarm(timeout);
-        if (ret != 0) { perror("ERROR while setting timeout"); exit(EXIT_FAILURE);};
+        if (ret != 0) { perror("ERROR while setting timeout"); kill(pid, SIGKILL); exit(EXIT_FAILURE);};
     } else {
         fprintf(stderr, "No timeout set. Waiting process to finish\n");
     }
 
     ret = waitpid(pid, &status, 0);
-    if (ret == -1) { perror("ERROR while waiting"); exit(EXIT_FAILURE);};
+    if (ret == -1) { perror("ERROR while waiting"); kill(pid, SIGKILL); exit(EXIT_FAILURE);};
 
     sampleInProgress = 0;
     endSample(&samples[0]);
@@ -218,7 +224,7 @@ int main(int argc, char **argv) {
     enum {
         EXPECTING_OPT, EXPECTING_ADDR_START, EXPECTING_ADDR_END,
         EXPECTING_MAX_SAMPLES, EXPECTING_PROGRAM, EXPECTING_OUTPUT,
-        EXPECTING_TIMEOUT, EXPECTING_CPU
+        EXPECTING_TIMEOUT, EXPECTING_CPU, EXPECTING_MODULE
     } state = EXPECTING_OPT;
 
     for (int i = 1; i < argc; i++) {
@@ -231,6 +237,7 @@ int main(int argc, char **argv) {
                 else if (strcmp(arg, "-o") == 0) state = EXPECTING_OUTPUT;
                 else if (strcmp(arg, "-timeout") == 0) state = EXPECTING_TIMEOUT;
                 else if (strcmp(arg, "-cpu") == 0) state = EXPECTING_CPU;
+                else if (strcmp(arg, "-module") == 0) state = EXPECTING_MODULE;
                 else if (strcmp(arg, "-h") == 0) help(stdout);
                 else if (strcmp(arg, "--") == 0) {
                     state = EXPECTING_PROGRAM;
@@ -273,6 +280,10 @@ int main(int argc, char **argv) {
                 output = argv[i];
                 state = EXPECTING_OPT;
                 break;
+            case EXPECTING_MODULE:
+                module = argv[i];
+                state = EXPECTING_OPT;
+                break;
             case EXPECTING_PROGRAM:
                 break;
         }
@@ -307,6 +318,8 @@ int main(int argc, char **argv) {
     for (int i = programStart; i < argc; i++) fprintf(stderr, "%s ", argv[i]);
     fprintf(stderr, "'\n");
 
+    mainmodule = argv[programStart];
+
     pid = fork();
     if (pid == 0) {
         unsigned int numParams = argc - 3;
@@ -316,6 +329,28 @@ int main(int argc, char **argv) {
         newargs[numParams + 1] = NULL;
         long ret = ptrace(PTRACE_TRACEME, 0, 0, 0);
         if (ret != 0) { perror("ERROR setting traced process"); exit(EXIT_FAILURE);};
+
+		int persona = personality(0xffffffff);
+		if (persona == -1)
+		{
+			fprintf(stderr, "ERROR Unable to get ASLR info: %s\n", strerror(errno));
+			exit(EXIT_FAILURE);
+		}
+
+		persona = persona | ADDR_NO_RANDOMIZE;
+		debug_print("Disabling ASLR ...");
+		persona = personality(persona | ADDR_NO_RANDOMIZE);
+		if (persona == -1) {
+			fprintf(stderr, "ERROR Unable to set ASLR info: %s\n", strerror(errno));
+			exit(EXIT_FAILURE);
+		}
+		if (!(personality (0xffffffff) & ADDR_NO_RANDOMIZE))
+		{
+			fprintf(stderr, "ERROR Unable to disable ASLR");
+			exit(EXIT_FAILURE);
+		}
+		debug_print("ASLR disabled");
+
         ret = execvp(argv[programStart], newargs);
         if (ret != 0) { perror("ERROR executing process"); exit(EXIT_FAILURE);};
     } else {
@@ -325,19 +360,20 @@ int main(int argc, char **argv) {
         struct sigaction sa;
         sa.sa_handler = handler;
         int ret = sigemptyset(&sa.sa_mask);
-        if (ret != 0) { perror("ERROR setting empty signals"); exit(EXIT_FAILURE);};
+        if (ret != 0) { perror("ERROR setting empty signals"); kill(pid, SIGKILL); exit(EXIT_FAILURE);};
         sa.sa_flags = 0;
         ret = sigaction(SIGTERM, &sa, NULL);
-        if (ret != 0) { perror("ERROR setting SIGTERM"); exit(EXIT_FAILURE);};
+        if (ret != 0) { perror("ERROR setting SIGTERM"); kill(pid, SIGKILL); exit(EXIT_FAILURE);};
         ret = sigaction(SIGINT, &sa, NULL);
-        if (ret != 0) { perror("ERROR setting SIGINT"); exit(EXIT_FAILURE);};
+        if (ret != 0) { perror("ERROR setting SIGINT"); kill(pid, SIGKILL); exit(EXIT_FAILURE);};
         ret = sigaction(SIGALRM, &sa, NULL);
-        if (ret != 0) { perror("ERROR setting SIALRM"); exit(EXIT_FAILURE);};
+        if (ret != 0) { perror("ERROR setting SIALRM"); kill(pid, SIGKILL); exit(EXIT_FAILURE);};
 
         int status;
         ret = waitpid(pid, &status, 0); // Wait for child to start
-        if (ret == -1) { perror("ERROR waiting child to start"); exit(EXIT_FAILURE);};
+        if (ret == -1) { perror("ERROR waiting child to start"); kill(pid, SIGKILL); exit(EXIT_FAILURE);};
 
+        compute_base_address(pid, module, mainmodule);
         configureEvents(pid);
 
         if (addrStart[0] > 0 && addrEnd[0] > 0 && endpoint_count > 0 && startpoint_count > 0) {

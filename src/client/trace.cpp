@@ -59,6 +59,7 @@ int run_trace(int argc, char **argv) {
     trace_options.dump_info = getopt("info").as_bool();
     trace_options.max_traces = getopt("max-traces").as_int();
     std::string trace_path = getopt("trace-dir").as_string();
+    std::string module = getopt("module").as_string();
     double sample_freq = getopt("prob").as_float();
     bool notrace = !getopt("trace").as_bool();
     double tidle = getopt("interval").as_time();
@@ -73,19 +74,24 @@ int run_trace(int argc, char **argv) {
     checkx(!fs::exists(trace_path), "Output trace directory path '%s' already exists!", trace_path);
     fs::mkdir(trace_path);
 
+    if (module == "") {
+        module = "main";
+    }
+    log::info("Tracing module: %s", module);
+
     Tracer *tracer;
     if (getopt("prob").is_set()) {
         log::info("Performing randomized tracing");
-        tracer = new RandomizedTracer(trace_path, notrace, trace_options,
+        tracer = new RandomizedTracer(module, trace_path, notrace, trace_options,
                                       sample_freq);
     } else if(getopt("indices").is_set()) {
         log::info("Performing index tracing");
         std::vector<unsigned int> vec(begin(indices), end(indices));
         std::sort(vec.begin(), vec.end());
-        tracer = new IndexedTracer(trace_path, notrace, trace_options, vec);
+        tracer = new IndexedTracer(module, trace_path, notrace, trace_options, vec);
     } else {
         log::info("Tracing all invocations");
-        tracer = new Tracer(trace_path, notrace, trace_options);
+        tracer = new Tracer(module, trace_path, notrace, trace_options);
     }
 
     TracerState *preamble, *roi, *prologue;

@@ -15,7 +15,7 @@ class TracerState;
 
 class Tracer {
   public:
-    Tracer(std::string trace_path, bool dryrun, TraceOptions trace_options);
+    Tracer(std::string module, std::string trace_path, bool dryrun, TraceOptions trace_options);
     ~Tracer();
 
     void start(TracerState *initial_state, int argc, char **argv);
@@ -46,6 +46,7 @@ class Tracer {
   private:
     void init(int argc, char **argv);
     void track_mmap();
+    void compute_module_offset();
 
     long read_alt_stack();
     Location& get_symbol(std::string name);
@@ -58,14 +59,15 @@ class Tracer {
     Arch::regbuf_type regs;
     Location module_offset = Location::Address(0);
     std::string trace_path;
+    std::string module;
     bool tracing_enabled;
 };
 
 class RandomizedTracer : public Tracer {
   public:
-    RandomizedTracer(std::string trace_path, bool dryrun,
+    RandomizedTracer(std::string module, std::string trace_path, bool dryrun,
                      TraceOptions trace_options, double probability) :
-        Tracer(trace_path, dryrun, trace_options), probability(probability) {}
+        Tracer(module, trace_path, dryrun, trace_options), probability(probability) {}
 
     virtual bool should_trace();
   private:
@@ -74,9 +76,9 @@ class RandomizedTracer : public Tracer {
 
 class IndexedTracer : public Tracer {
   public:
-    IndexedTracer(std::string trace_path, bool dryrun,
+    IndexedTracer(std::string module, std::string trace_path, bool dryrun,
                   TraceOptions trace_options, std::vector<unsigned int> indices) :
-        Tracer(trace_path, dryrun, trace_options), indices(indices) {}
+        Tracer(module, trace_path, dryrun, trace_options), indices(indices) {}
 
     virtual bool should_trace();
   private:

@@ -77,3 +77,4 @@ install (TARGETS
 add_subdirectory (clustering)
 add_subdirectory (perf-invok)
 add_subdirectory (valgrind)
+add_subdirectory (bp-checker)

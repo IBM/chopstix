@@ -21,7 +21,7 @@
 
 
 #
-# Configuration options 
+# Configuration options
 #
 OUTPUT_DIR=./run_example/
 BASE_NAME=ubench_daxpy
@@ -62,7 +62,7 @@ chop-trace2mpt --trace-dir "$OUTPUT_DIR/trace_data" -o "$OUTPUT_DIR/$BASE_NAME"
 mp_mpt2elf -T "$MICROPROBE_TARGET" -t "$OUTPUT_DIR/$BASE_NAME#0.mpt" -O "$OUTPUT_DIR/$BASE_NAME#0.s" --safe-bin --raw-bin --fix-long-jump --compiler gcc --reset --wrap-endless --wrap-endless-threshold 1000 $flags
 # Test generated ELF
 set +e
-timeout 10s "$OUTPUT_DIR/$BASE_NAME#0.elf"  
+timeout 10s "$OUTPUT_DIR/$BASE_NAME#0.elf"
 if [ $? -ne 124 ]; then
     echo "ELF not functional"
     exit 1
@@ -76,7 +76,7 @@ chop-trace-mem -output "$OUTPUT_DIR/$BASE_NAME#0" -base-mpt "$OUTPUT_DIR/$BASE_N
 mp_mpt2elf -T "$MICROPROBE_TARGET" -t "$OUTPUT_DIR/$BASE_NAME#0#memory.mpt" -O "$OUTPUT_DIR/$BASE_NAME#0#memory.s" --safe-bin --raw-bin --fix-long-jump --compiler gcc --reset --wrap-endless --wrap-endless-threshold 1000 $flags
 # Test generated ELF
 set +e
-timeout 10s "$OUTPUT_DIR/$BASE_NAME#0#memory.elf"  
+timeout 10s "$OUTPUT_DIR/$BASE_NAME#0#memory.elf"
 if [ $? -ne 124 ]; then
     echo "ELF not functional"
     exit 1

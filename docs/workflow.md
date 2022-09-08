@@ -1,4 +1,4 @@
-# Example workflow 
+# Example workflow
 
 This document explains how to **_generate a microbenchmark from the most
 representative function invocation of the hottest function of a benchmark_**.
@@ -32,7 +32,7 @@ pipeline vector stalls, etc.
 
 In this example, we are going to focus on CYCLES, which at the end of the day,
 it is the first type of analysis one performs before going into more detailed
-ones. The command to execute will be as follows: 
+ones. The command to execute will be as follows:
 
     chop sample -data CHOPSTIX_DB -events CYCLES -period 100000 -- BINARY ARGUMENTS
 
@@ -59,7 +59,7 @@ of view. To do so, execute the following commands:
 
     chop disasm -data CHOPSTIX_DB BINARY $(ldd BINARY)
     chop count -data CHOPSTIX_DB
-    chop annotate -data CHOPSTIX_DB 
+    chop annotate -data CHOPSTIX_DB
     chop list functions -data CHOPSTIX_DB
 
 The commands above first disassemble the executed binary and the dynamic
@@ -83,36 +83,37 @@ function size).
 
 ## Function profiling
 
-Once a `HOTFUNC` is has been selected. The next step is to know which 
+Once a `HOTFUNC` is has been selected. The next step is to know which
 particular invocation we want to trace and reproduce. This is not straightforward
 since hot functions typically are executed multiple times and most of the time
 exhibit much different behaviors over time depending on the input parameters.
-In such case, the question is: which particular invocation (or set of 
-invocations) represent best the typical behavior of the function? 
+In such case, the question is: which particular invocation (or set of
+invocations) represent best the typical behavior of the function?
 
 First, we need to obtain the corresponding addresses in memory where the
 function starts and ends. i.e. the entry and exit points of the function.
 One can do so manually, by inspecting the code but ChopStiX provides a helper
-script that facilitates the process: 
+script that facilitates the process:
 
     chop-marks BINARY HOTFUNC
 
-will return the addresses of the being/end points for the function. From now
-on, we call them `HOTFUNC_MARKS`. This information is going to be used for 
-profiling the function in the next step as well as for tracing the selected
-invocation in the tracing step.
+will return the addresses of the begin/end points for the function (as
+well as the library to profile, if the function is within a dynamic library).
+From now on, we call them `HOTFUNC_MARKS`. This information is going to be
+used for profiling the function in the next step as well as for tracing the
+selected invocation in the tracing step.
 
 Now that we know the `HOTFUNC_MARKS` that define the region of interest (ROI),
-we can profile its performance using the following command: 
+we can profile its performance using the following command:
 
     chop-perf-invok HOTFUNC_MARKS -o HOTFUNC_PROFILE -max 1000000 -- BINARY ARGUMENTS
 
-The command will generate a CSV file named `HOTFUNC_PROFILE` with a maximum 
+The command will generate a CSV file named `HOTFUNC_PROFILE` with a maximum
 of 1M entries. The stats include instruction, cycle and execution time
 information, etc. Therefore, they are subject to experimental noise. Like in
 the first step, you might want to minimize the activity on the rest of the
 system or repeat the experiment various times to improve the robustness
-of the approach. 
+of the approach.
 
 ## Invocation selection
 
@@ -122,7 +123,7 @@ invocation you find worth to trace. Alternatively, you can use the clustering
 analysis explained in the rest of the section to perform the selection
 automatically.
 
-ChopStiX provide a set of support scripts to analyze the generated CSV, 
+ChopStiX provide a set of support scripts to analyze the generated CSV,
 create clusters and select a representative invocation for each of them.
 To do so, execute:
 
@@ -132,7 +133,7 @@ where:
 
 - `CLUSTER_INFO` is the output JSON file that will contain of the clustering
   information.
-- `CLUSTER_PLOT` is the path to the plot that will be generated to visually 
+- `CLUSTER_PLOT` is the path to the plot that will be generated to visually
   debug the clustering analysis.
 - `BINARY_NAME` is the benchmark name.
 
@@ -142,7 +143,7 @@ exists more parameters to control the clustering process. Please refer to the
 actual command line information for further details. Once the `CLUSTER_INFO`
 is generated a summary can be viewed using:
 
-    cti_cluster_info summary CLUSTER_INFO 
+    cti_cluster_info summary CLUSTER_INFO
 
 and a representative of a cluster can be obtained using:
 
@@ -159,10 +160,10 @@ most representative behavior of the function, `HOTFUNC_INVOCATION` from now on.
 
 ## Invocation tracing
 
-Next step is to trace that particular `HOTFUNC_INVOCATION` of the `HOTFUNC`. 
+Next step is to trace that particular `HOTFUNC_INVOCATION` of the `HOTFUNC`.
 To do so, execute:
 
-chop trace HOTFUNC_MARKS -indices HOTFUNC_INVOCATION -max-traces 1 -trace-dir TRACEDIR -gzip BINARY ARGUMENTS 
+chop trace HOTFUNC_MARKS -indices HOTFUNC_INVOCATION -max-traces 1 -trace-dir TRACEDIR -gzip BINARY ARGUMENTS
 
 where:
 
@@ -182,9 +183,9 @@ where:
 
 ## Microbenchmark generation
 
-From the MPTs generated in the previous step, we can then use Microprobe 
+From the MPTs generated in the previous step, we can then use Microprobe
 framework to process them and convert them to different formats. Check the
-documentation of Microprobe for all the possibilities available. 
+documentation of Microprobe for all the possibilities available.
 
 A typically use case is to convert the MPT into a self runnable ELF. I.e. the
 function invocation will converted into an executable that will continuously
@@ -204,15 +205,15 @@ where:
 The command will generate an assembly file `UBENCH_NAME.s` and its corresponding
 compiled program `UBENCH_NAME.elf`. Microprobe will maintain all original code
 and addresses. The extra initialization code added is to wrap the ROI into an
-endless loop and reset the user registers to the original state so that each 
-iteration the function is executed with the same initial values in the 
+endless loop and reset the user registers to the original state so that each
+iteration the function is executed with the same initial values in the
 registers. You can debug the assembly generated by opening the assembly file
 generated.
 
-You can try the functional correctness of the `UBENCH_NAME.elf` by executing 
+You can try the functional correctness of the `UBENCH_NAME.elf` by executing
 it and checking the functional correctness and the performance profile. For
 most of the simple functions, the workflow stops here and you succeeded in
-generating a small version (microbenchmark) of the most representative 
+generating a small version (microbenchmark) of the most representative
 function invocation of the **_hottest_** function of a benchmark.
 
 Still, there might be errors or the performance might not be expected.
@@ -223,7 +224,7 @@ To fix such errors and mismatches, we need to proceed to the next step.
 
 ## Microbenchmark tuning
 
-The final microbenchmark tuning step traces the memory activity of a single 
+The final microbenchmark tuning step traces the memory activity of a single
 microbenchmark iteration of `UBENCH_NAME.elf` and generates an enriched MPT
 from `MPTFILE` that includes the memory access trace information. To do
 so, execute:

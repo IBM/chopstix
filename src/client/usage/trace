@@ -139,4 +139,4 @@ Other options:
 
   -group <num>           Group <num> region into one trace (default: 1) (experimental)
   -module <name>         Name of module to trace. This is always mandatory if
-                         the module to trace is not the main module (experimental)
+                         the module to trace is not the main module. 

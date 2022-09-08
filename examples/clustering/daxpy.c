@@ -43,7 +43,7 @@ double daxpy(double *x, double *y, int n, double a, int it) {
                 y[i-3] = y[i]/y[i-1];
                 y[i-2] = y[i-1]/y[i-3];
                 y[i-1] = y[i-2]/y[i-3];
-                y[i] = (y[i-1]/y[i-2])/y[i-3]; 
+                y[i] = (y[i-1]/y[i-2])/y[i-3];
             }
         }
     }

@@ -85,7 +85,6 @@ size_t ArchX86::regsize() const {
     return sizeof(struct user_regs_struct) + sizeof(struct user_fpregs_struct);
 }
 
-
 void ArchX86::serialize_regs(FILE *os, Arch::regbuf_type regs) const {
     failx("Not implemented for '%s'", name());
 }

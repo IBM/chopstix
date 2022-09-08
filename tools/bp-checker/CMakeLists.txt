@@ -1,7 +1,7 @@
 #
 # ----------------------------------------------------------------------------
 #
-# Copyright 2019 IBM Corporation
+# Copyright 2021 CHOPSTIX Authors
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -17,35 +17,13 @@
 #
 # ----------------------------------------------------------------------------
 #
-include_directories (${COMMON_INCLUDE_DIRS})
 
-# Helper functions and macros
-# - Utilities (strings, streams)
-# - Error checking
-# - Options (environment)
-add_subdirectory (support)
+add_executable(chop-bp-checker
+    src/breakpoint.c
+    src/main.c
+)
 
-# Database scripts and helpers
-# - Wrapper classes
-# - SQL (transpiled to header)
-add_subdirectory (database)
-
-# Core functionalities
-# - CFG (Modules, Functions, ...)
-# - Process control
-# - Sampling interface
-# - Path finding
-add_subdirectory (core)
-
-# Architecture specific files
-# -
-add_subdirectory (arch)
-
-
-# Support library for tracing
-add_subdirectory (trace)
-
-# Main CX executable client
-# - Implements individual commands
-add_subdirectory (client)
-
+install (TARGETS
+    chop-bp-checker
+    DESTINATION bin
+)

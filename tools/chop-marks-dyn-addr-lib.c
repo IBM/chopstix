@@ -33,12 +33,14 @@ static int callback(struct dl_phdr_info *info, size_t size, void *data)
     char *type;
     int p_type, j;
 
-    fprintf(stderr, "chop-marks-dyn-addr: name: \"%s\" (%d segments)\n", "main program",
+    fprintf(stderr, "chop-marks-dyn-addr: name: \"%s\" (%d segments)\n", info->dlpi_name,
             info->dlpi_phnum);
+
+    char const *name = info->dlpi_name;
 
     for (j = 0; j < info->dlpi_phnum; j++) {
         p_type = info->dlpi_phdr[j].p_type;
-        type =  (p_type == PT_LOAD) ? "PT_LOAD" :
+        type = (p_type == PT_LOAD) ? "PT_LOAD" :
             (p_type == PT_DYNAMIC) ? "PT_DYNAMIC" :
             (p_type == PT_INTERP) ? "PT_INTERP" :
             (p_type == PT_NOTE) ? "PT_NOTE" :
@@ -55,23 +57,25 @@ static int callback(struct dl_phdr_info *info, size_t size, void *data)
                 info->dlpi_phdr[j].p_memsz,
                 info->dlpi_phdr[j].p_flags);
         if (type != NULL)
-            fprintf(stderr, "%s\n", type);
+            fprintf(stderr, "%s", type);
         else
-            fprintf(stderr, "[other (0x%x)]\n", p_type);
+            fprintf(stderr, "[other (0x%x)]", p_type);
+
+        fprintf(stderr, " @%s@\n", name);
     }
 
-    return 1;
+    return 0;
 }
 
 static void check_address() {
-
-    dl_iterate_phdr(callback, NULL);
 
     char * symbol = getenv("LD_SYMBOL");
     if (symbol == NULL) {
         fprintf(stderr, "chop-marks-dyn-addr: not symbol specified in LD_SYMBOL");
         exit(EXIT_FAILURE);
     }
+
+    dl_iterate_phdr(callback, NULL);
 
     fprintf(stderr, "chop-marks-dyn-addr: search symbol: %s\n", symbol);
 

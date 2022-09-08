@@ -147,7 +147,7 @@ void TracerRangedRegionOfInterestState::handle_signal(Process &child,
         if (tracer->check_breakpoint(end)) {
             change_state();
         } else {
-            // Restore contents and continue executing 
+            // Restore contents and continue executing
             tracer->fix_breakpoint(end);
             child.syscall(0);
         }

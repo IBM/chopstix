@@ -18,13 +18,13 @@ Change `<prefix>` for the location where you want to install ChopStiX.
     make
     make install
 
-If you need to change the default compiler and/or compilation flags, 
+If you need to change the default compiler and/or compilation flags,
 you can preset custom settings as following:
 
     CXX=<your_compiler> CXXFLAGS=<cxxflags> CFLAGS=<cflags> LDFLAGS=<ldflags> cmake -DCMAKE_INSTALL_PREFIX=<prefix> ..
 
 Use `make VERBOSE=1`, if you need extra output from the compilation
-process. More details on other options, such as the ones that control the 
+process. More details on other options, such as the ones that control the
 target architecture to support (RISCV, PowerPC, PowerPC LE, Z or x86) follow.
 
 ## Build options

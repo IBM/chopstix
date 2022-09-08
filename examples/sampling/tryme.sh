@@ -28,13 +28,13 @@ die() {
 
 tryme() {
     printf ">>>> command: > %s\\n(press return to continue)" "$*"
-    read -r _ 
+    read -r _
     printf ">>>> start command\\n"
     # shellcheck disable=SC2294
     eval "$@"
     printf ">>>> end command\\n"
-    printf ">>>> (press return to continue)" 
-    read -r _ 
+    printf ">>>> (press return to continue)"
+    read -r _
 }
 
 chop -version >/dev/null || die "ChopStiX not setup correctly"
@@ -55,9 +55,9 @@ tryme chop list sessions
 
 # clear
 # echo "########################################################################"
-# echo "# List samples" 
+# echo "# List samples"
 # echo "########################################################################"
-# tryme chop list samples 
+# tryme chop list samples
 
 clear
 echo "########################################################################"
@@ -67,7 +67,7 @@ tryme chop disasm ./daxpy
 
 clear
 echo "########################################################################"
-echo "# List modules (main binary, and any shared library)" 
+echo "# List modules (main binary, and any shared library)"
 echo "########################################################################"
 tryme chop list modules
 
@@ -79,7 +79,7 @@ tryme chop text function -name daxpy
 
 clear
 echo "########################################################################"
-echo "# Group/count samples" 
+echo "# Group/count samples"
 echo "########################################################################"
 tryme chop count
 
@@ -97,13 +97,13 @@ tryme chop text function -name daxpy -fmt annotate
 
 clear
 echo "########################################################################"
-echo "# Show the list of functions and their score (# of samples)" 
+echo "# Show the list of functions and their score (# of samples)"
 echo "########################################################################"
 tryme "chop list functions | column -t"
 
 clear
 echo "########################################################################"
-echo "# Show the top 10 basic blocks and their score (# of samples)" 
+echo "# Show the top 10 basic blocks and their score (# of samples)"
 echo "########################################################################"
 tryme "chop list blocks | column -t | head -n 11"
 

@@ -31,13 +31,13 @@ die() {
 
 tryme() {
     printf ">>>> command: > %s\\n(press return to continue)" "$*"
-    read -r _ 
+    read -r _
     printf ">>>> start command\\n"
     # shellcheck disable=SC2294
     eval "$@"
     printf ">>>> end command\\n"
-    printf ">>>> (press return to continue)" 
-    read -r _ 
+    printf ">>>> (press return to continue)"
+    read -r _
 }
 
 flags=""
@@ -93,7 +93,7 @@ echo "########################################################################"
 echo "# Test generated ELF in $OUTPUT_DIR/$BASE_NAME#0.elf"
 echo "########################################################################"
 set +e
-timeout 10s "$OUTPUT_DIR/$BASE_NAME#0.elf"  
+timeout 10s "$OUTPUT_DIR/$BASE_NAME#0.elf"
 if [ $? -ne 124 ]; then
     echo "ELF not functional"
     exit 1
@@ -117,7 +117,7 @@ echo "########################################################################"
 echo "# Test generated ELF in $OUTPUT_DIR/$BASE_NAME#0#memory.elf"
 echo "########################################################################"
 set +e
-timeout 10s "$OUTPUT_DIR/$BASE_NAME#0#memory.elf"  
+timeout 10s "$OUTPUT_DIR/$BASE_NAME#0#memory.elf"
 if [ $? -ne 124 ]; then
     echo "ELF not functional"
     exit 1

@@ -298,7 +298,7 @@ long Process::peek(long addr) {
                 check(false, "Process:: poke: ptrace_poke failed: EPERM: %s", strerror(errno));
             case ESRCH:
                 check(false, "Process:: poke: ptrace_poke failed: ESRCH: %s", strerror(errno));
-            default: 
+            default:
                 check(false, "Process:: poke: ptrace_poke failed: %s", strerror(errno));
         }
     }
@@ -323,7 +323,7 @@ void Process::poke(long addr, long data) {
                 check(false, "Process:: poke: ptrace_poke failed: EPERM: %s", strerror(errno));
             case ESRCH:
                 check(false, "Process:: poke: ptrace_poke failed: ESRCH: %s", strerror(errno));
-            default: 
+            default:
                 check(false, "Process:: poke: ptrace_poke failed: %s", strerror(errno));
         }
     }
@@ -356,18 +356,18 @@ void Process::set_break_size(long addr, long size) {
     long addr_content = peek(addr);
     if (it == breaks_.end()) breaks_[addr] = addr_content;
     long mask;
-	switch(Arch::current()->get_breakpoint_size()) {                                                
-        case BreakpointSize::HALF_WORD:                                            
+	switch(Arch::current()->get_breakpoint_size()) {
+        case BreakpointSize::HALF_WORD:
             mask = (((long)1 << ((2 - size)*8)) - 1);
-            break;                                                                 
-        case BreakpointSize::WORD:                                                 
+            break;
+        case BreakpointSize::WORD:
             mask = (((long)1 << ((4 - size)*8)) - 1);
-            break;                                                                 
-        default:                                                                   
-        case BreakpointSize::DOUBLE_WORD:                                          
+            break;
+        default:
+        case BreakpointSize::DOUBLE_WORD:
             mask = (((long)1 << ((8 - size)*8)) - 1);
-            break;                                                                 
-    } 
+            break;
+    }
     addr_content &= mask;
     log::debug("Process:: set break size: break contents are %x", addr_content);
     poke(addr, addr_content);

@@ -34,12 +34,12 @@ To download and setup ChopStiX for installation follow these steps:
 
     git clone https://github.com/IBM/chopstix.git chopstix
     cd chopstix
-    git submodule sync 
+    git submodule sync
     git submodule update --init --recursive
 
-If you download the repository contents directly from `github.com` as a 
+If you download the repository contents directly from `github.com` as a
 compressed zip file, you also have to download the external dependencies
-and decompress them into the `./external` directory. 
+and decompress them into the `./external` directory.
 
 ### Compilation
 
@@ -53,7 +53,7 @@ The basic build workflow is as follows:
     ../configure
     make && make install
 
-For more detailed information regarding configuration options see 
+For more detailed information regarding configuration options see
 [installation](docs/installation.md) documentation.
 
 ## Basic usage
@@ -68,7 +68,7 @@ There are also some utility scripts (i.e. `chop-marks`) which are generally
 prefixed by `chop-`.
 
 The basic workflow for ChopStiX is as follows:
-    
+
     chop sample ./my_app     # Sample invocation of ./my_app
     chop disasm              # Detect and disassemble used object files
     chop count               # Group and count samples per instruction

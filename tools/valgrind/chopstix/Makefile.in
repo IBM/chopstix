@@ -145,11 +145,11 @@ am__v_P_1 = :
 AM_V_GEN = $(am__v_GEN_@AM_V@)
 am__v_GEN_ = $(am__v_GEN_@AM_DEFAULT_V@)
 am__v_GEN_0 = @echo "  GEN     " $@;
-am__v_GEN_1 = 
+am__v_GEN_1 =
 AM_V_at = $(am__v_at_@AM_V@)
 am__v_at_ = $(am__v_at_@AM_DEFAULT_V@)
 am__v_at_0 = @
-am__v_at_1 = 
+am__v_at_1 =
 DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir)
 depcomp = $(SHELL) $(top_srcdir)/depcomp
 am__maybe_remake_depfiles = depfiles
@@ -160,19 +160,19 @@ am__mv = mv -f
 AM_V_lt = $(am__v_lt_@AM_V@)
 am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
 am__v_lt_0 = --silent
-am__v_lt_1 = 
+am__v_lt_1 =
 COMPILE = $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) \
 	$(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
 AM_V_CC = $(am__v_CC_@AM_V@)
 am__v_CC_ = $(am__v_CC_@AM_DEFAULT_V@)
 am__v_CC_0 = @echo "  CC      " $@;
-am__v_CC_1 = 
+am__v_CC_1 =
 CCLD = $(CC)
 LINK = $(CCLD) $(AM_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) $(LDFLAGS) -o $@
 AM_V_CCLD = $(am__v_CCLD_@AM_V@)
 am__v_CCLD_ = $(am__v_CCLD_@AM_DEFAULT_V@)
 am__v_CCLD_0 = @echo "  CCLD    " $@;
-am__v_CCLD_1 = 
+am__v_CCLD_1 =
 SOURCES = $(chopstix_@VGCONF_ARCH_PRI@_@VGCONF_OS@_SOURCES) \
 	$(chopstix_@VGCONF_ARCH_SEC@_@VGCONF_OS@_SOURCES)
 DIST_SOURCES = $(chopstix_@VGCONF_ARCH_PRI@_@VGCONF_OS@_SOURCES) \
@@ -466,7 +466,7 @@ AM_CFLAGS_BASE = -O2 -g -Wall -Wmissing-prototypes -Wshadow \
 
 # Power ISA flag for use by guest_ppc_helpers.c
 @HAS_DARN_TRUE@@HAS_XSCVHPDP_TRUE@ISA_3_0_BUILD_FLAG = -DHAS_XSCVHPDP -DHAS_DARN -DHAS_ISA_3_00
-@HAS_XSCVHPDP_FALSE@ISA_3_0_BUILD_FLAG = 
+@HAS_XSCVHPDP_FALSE@ISA_3_0_BUILD_FLAG =
 @VGCONF_OS_IS_DARWIN_FALSE@@VGCONF_OS_IS_FREEBSD_FALSE@AM_CFLAGS_PSO_BASE = -O -g -fno-omit-frame-pointer -fno-strict-aliasing \
 @VGCONF_OS_IS_DARWIN_FALSE@@VGCONF_OS_IS_FREEBSD_FALSE@		     -fpic -fno-builtin @FLAG_FNO_IPA_ICF@
 
@@ -476,7 +476,7 @@ AM_CFLAGS_BASE = -O2 -g -Wall -Wmissing-prototypes -Wshadow \
 
 # These flags are used for building the preload shared objects (PSOs).
 # The aim is to give reasonable performance but also to have good
-# stack traces, since users often see stack traces extending 
+# stack traces, since users often see stack traces extending
 # into (and through) the preloads.  Also, we must use any
 # -mpreferred-stack-boundary flag to build the preload shared
 # objects, since that risks misaligning the client's stack and
@@ -614,7 +614,7 @@ AM_FLAG_M3264_PRI = $(AM_FLAG_M3264_@VGCONF_PLATFORM_PRI_CAPS@)
 AM_CPPFLAGS_PRI = $(AM_CPPFLAGS_@VGCONF_PLATFORM_PRI_CAPS@)
 AM_CFLAGS_PRI = $(AM_CFLAGS_@VGCONF_PLATFORM_PRI_CAPS@)
 AM_CCASFLAGS_PRI = $(AM_CCASFLAGS_@VGCONF_PLATFORM_PRI_CAPS@)
-@VGCONF_HAVE_PLATFORM_SEC_FALSE@AM_FLAG_M3264_SEC = 
+@VGCONF_HAVE_PLATFORM_SEC_FALSE@AM_FLAG_M3264_SEC =
 @VGCONF_HAVE_PLATFORM_SEC_TRUE@AM_FLAG_M3264_SEC = $(AM_FLAG_M3264_@VGCONF_PLATFORM_SEC_CAPS@)
 
 # Baseline link flags for making vgpreload shared objects.
@@ -964,11 +964,11 @@ $(am__aclocal_m4_deps):
 clean-noinstPROGRAMS:
 	-test -z "$(noinst_PROGRAMS)" || rm -f $(noinst_PROGRAMS)
 
-chopstix-@VGCONF_ARCH_PRI@-@VGCONF_OS@$(EXEEXT): $(chopstix_@VGCONF_ARCH_PRI@_@VGCONF_OS@_OBJECTS) $(chopstix_@VGCONF_ARCH_PRI@_@VGCONF_OS@_DEPENDENCIES) $(EXTRA_chopstix_@VGCONF_ARCH_PRI@_@VGCONF_OS@_DEPENDENCIES) 
+chopstix-@VGCONF_ARCH_PRI@-@VGCONF_OS@$(EXEEXT): $(chopstix_@VGCONF_ARCH_PRI@_@VGCONF_OS@_OBJECTS) $(chopstix_@VGCONF_ARCH_PRI@_@VGCONF_OS@_DEPENDENCIES) $(EXTRA_chopstix_@VGCONF_ARCH_PRI@_@VGCONF_OS@_DEPENDENCIES)
 	@rm -f chopstix-@VGCONF_ARCH_PRI@-@VGCONF_OS@$(EXEEXT)
 	$(AM_V_GEN)$(chopstix_@VGCONF_ARCH_PRI@_@VGCONF_OS@_LINK) $(chopstix_@VGCONF_ARCH_PRI@_@VGCONF_OS@_OBJECTS) $(chopstix_@VGCONF_ARCH_PRI@_@VGCONF_OS@_LDADD) $(LIBS)
 
-chopstix-@VGCONF_ARCH_SEC@-@VGCONF_OS@$(EXEEXT): $(chopstix_@VGCONF_ARCH_SEC@_@VGCONF_OS@_OBJECTS) $(chopstix_@VGCONF_ARCH_SEC@_@VGCONF_OS@_DEPENDENCIES) $(EXTRA_chopstix_@VGCONF_ARCH_SEC@_@VGCONF_OS@_DEPENDENCIES) 
+chopstix-@VGCONF_ARCH_SEC@-@VGCONF_OS@$(EXEEXT): $(chopstix_@VGCONF_ARCH_SEC@_@VGCONF_OS@_OBJECTS) $(chopstix_@VGCONF_ARCH_SEC@_@VGCONF_OS@_DEPENDENCIES) $(EXTRA_chopstix_@VGCONF_ARCH_SEC@_@VGCONF_OS@_DEPENDENCIES)
 	@rm -f chopstix-@VGCONF_ARCH_SEC@-@VGCONF_OS@$(EXEEXT)
 	$(AM_V_GEN)$(chopstix_@VGCONF_ARCH_SEC@_@VGCONF_OS@_LINK) $(chopstix_@VGCONF_ARCH_SEC@_@VGCONF_OS@_OBJECTS) $(chopstix_@VGCONF_ARCH_SEC@_@VGCONF_OS@_LDADD) $(LIBS)
 

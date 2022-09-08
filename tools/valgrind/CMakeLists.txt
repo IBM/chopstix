@@ -26,8 +26,8 @@ add_custom_command(OUTPUT ${OUTPUT}/valgrind_chopstix1
                    COMMAND rm -fr ${CMAKE_CURRENT_BINARY_DIR}/valgrind-3.19.0/
                    COMMAND tar xf ${CMAKE_CURRENT_SOURCE_DIR}/src/valgrind-3.19.0.tar.bz2
                    COMMAND cp -fr ${CMAKE_CURRENT_SOURCE_DIR}/chopstix ${CMAKE_CURRENT_BINARY_DIR}/valgrind-3.19.0/
-                   COMMAND cd ${CMAKE_CURRENT_BINARY_DIR}/valgrind-3.19.0/ && patch Makefile.am < ${CMAKE_CURRENT_SOURCE_DIR}/src/Makefile.am.patch 
-                   COMMAND cd ${CMAKE_CURRENT_BINARY_DIR}/valgrind-3.19.0/ && patch configure.ac < ${CMAKE_CURRENT_SOURCE_DIR}/src/configure.ac.patch 
+                   COMMAND cd ${CMAKE_CURRENT_BINARY_DIR}/valgrind-3.19.0/ && patch Makefile.am < ${CMAKE_CURRENT_SOURCE_DIR}/src/Makefile.am.patch
+                   COMMAND cd ${CMAKE_CURRENT_BINARY_DIR}/valgrind-3.19.0/ && patch configure.ac < ${CMAKE_CURRENT_SOURCE_DIR}/src/configure.ac.patch
                    COMMAND cd ${CMAKE_CURRENT_BINARY_DIR}/valgrind-3.19.0/ && ./autogen.sh
                    COMMAND cd ${CMAKE_CURRENT_BINARY_DIR}/valgrind-3.19.0/ && ./configure --prefix ${CMAKE_INSTALL_PREFIX} --program-prefix chop-
                    COMMAND ${CMAKE_COMMAND} -E touch ${OUTPUT}/valgrind_chopstix1
