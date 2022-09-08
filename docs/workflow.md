@@ -97,10 +97,11 @@ script that facilitates the process:
 
     chop-marks BINARY HOTFUNC
 
-will return the addresses of the being/end points for the function. From now
-on, we call them `HOTFUNC_MARKS`. This information is going to be used for
-profiling the function in the next step as well as for tracing the selected
-invocation in the tracing step.
+will return the addresses of the begin/end points for the function (as
+well as the library to profile, if the function is within a dynamic library).
+From now on, we call them `HOTFUNC_MARKS`. This information is going to be
+used for profiling the function in the next step as well as for tracing the
+selected invocation in the tracing step.
 
 Now that we know the `HOTFUNC_MARKS` that define the region of interest (ROI),
 we can profile its performance using the following command:

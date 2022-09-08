@@ -82,8 +82,12 @@ entry/exit addresses). To do so, execute:
     chop-marks binary function_name
 
 to obtain the list of being/end addresses corresponding to the entry/exit
-points of the *function_name* without requiring further address math. The
-parameters can be directly fed into the `chop trace` command as following:
+points of the *function_name* without requiring further address math.
+Specifically, the command will output a string with the `-begin`/`-end`
+addresses of the region of interest as well as the `-module` option if the
+symbol is found in one of the dynamic libraries. These options can be directly
+fed into the command line options of `chop trace` and `chop-perf-invok`
+commands. For instance, the `chop trace` command can be executed as following:
 
     chop trace $(chop-marks binary function_name) EXTRA_TRACING_OPTIONS ./binary BINARY_ARGUMENTS
 
