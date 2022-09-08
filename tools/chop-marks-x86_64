@@ -85,7 +85,7 @@ else
 fi
 
 found=1
-if [ "$(grep -c "<$sym:>" < "$tmp")" -eq 0 ]; then
+if [ "$(grep -c "<$sym>:" < "$tmp")" -eq 0 ]; then
     found=0
     # Symbol not found in the objdump, is in the libraries?
     for lib in $(setarch "$(uname -m)" -R ldd "$obj" | grep "=" | cut -d ">" -f 2 | tr "(" ":" | tr -d " " | tr -d ")"); do
