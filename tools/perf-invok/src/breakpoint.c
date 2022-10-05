@@ -30,9 +30,12 @@
 #include <stdlib.h>
 #include <string.h>
 #include <signal.h>
+#include <unistd.h>
 #if defined(__s390x__)
 #include <sys/uio.h>
 #endif
+#include <sys/types.h>
+#include <sys/wait.h>
 
 // Breakpoint size, in bytes. Should be the smallest amount of bytes required
 // for a breakpoint by a given architecture.
@@ -156,22 +159,36 @@ void resetBreakpoint(unsigned long pid, Breakpoint *breakpoint) {
 }
 
 void compute_base_address(unsigned long pid, char* module, char* mainmodule) {
+    debug_print("parent: Computing base address... %ld\n", pid);
     if (base_address_set == 1) return;
     if (strncmp(module, "main", 4) == 0) { base_address_set = 1; return;}
 
+    debug_print("parent: Base address not in main. Looking for it...\n");
+
     char path[1024];
+    char mainpath[1024];
     char* line = NULL;
     char* addr;
     char* perm;
     char* cmodule;
+    ssize_t nbytes;
     size_t len = 0;
     ssize_t read = 0;
     snprintf(path, 1024, "/proc/%ld/maps", pid);
     FILE* fp = fopen(path, "r");
     if (fp == NULL) { kill(pid, SIGKILL); exit(EXIT_FAILURE); }
-    mainmodule = basename(mainmodule);
+
+    nbytes = readlink(mainmodule, mainpath, 1024);
+    if ((nbytes == -1) || (nbytes == 1024)) {
+       kill(pid, SIGKILL);
+       fprintf(stderr, "ERROR: while readlink");
+       exit(EXIT_FAILURE);
+    }
+    mainpath[nbytes] = '\0';
+    mainmodule = basename(mainpath);
 
     while ((read = getline(&line, &len, fp)) != -1) {
+        debug_print("maps: %s", line);
         addr = strtok(line, " ");
         if(addr == NULL) continue;
         perm = strtok(NULL, " ");
@@ -183,6 +200,7 @@ void compute_base_address(unsigned long pid, char* module, char* mainmodule) {
         cmodule = strtok(NULL, " \n");
         if(cmodule == NULL) continue;
         cmodule = basename(cmodule);
+        debug_print("%s == %s\n", mainmodule, cmodule);
         if(strncmp(mainmodule, cmodule, strlen(module)) != 0) continue;
         addr = strtok(addr, "-");
         if(addr == NULL) continue;
@@ -193,23 +211,46 @@ void compute_base_address(unsigned long pid, char* module, char* mainmodule) {
         break;
     }
 
-    unsigned long long caddr = 0;
+    debug_print("main address range: 0x%016llX-0x%016llX\n", basemain_address[0], basemain_address[1]);
+
+    if (basemain_address[0] == basemain_address[1])
+    {
+         fprintf(stderr, "ERROR: while computing main module addresses\n");
+         kill(pid, SIGKILL);
+         exit(EXIT_FAILURE);
+    }
+
+    debug_print("parent: Step by step execution...\n");
+    unsigned long long caddr = 0xDEADBEEF;
+    unsigned long long paddr = 0xBEEFDEAD;
+    int status;
+
     while(1) {
-        ptrace(PTRACE_SINGLESTEP, pid, 0, 0);
+        long ret = ptrace(PTRACE_SINGLESTEP, pid, 0, 0);
+        if (ret != 0) { perror("ERROR while PTRACE_SINGLESTEP"); kill(pid, SIGKILL); exit(EXIT_FAILURE);};
+
+        ret = waitpid(pid, &status, 0); // Wait for child to start
+        if (ret == -1) { perror("ERROR waiting child to execute PTRACE_SINGLESTEP"); kill(pid, SIGKILL); exit(EXIT_FAILURE);};
+
 #if defined(__riscv) // RISC-V (Valid with or without C extension)
         struct RiscVRegs regs;
         struct iovec data = {
             .iov_base = &regs,
             .iov_len  = RISCV_GPR_SIZE
         };
-        ptrace(PTRACE_GETREGSET, pid, PTRACE_GP_REGISTERS, &data);
+        ret = ptrace(PTRACE_GETREGSET, pid, PTRACE_GP_REGISTERS, &data);
+        if (ret != 0) { perror("ERROR while PTRACE_GETREGSET"); kill(pid, SIGKILL); exit(EXIT_FAILURE);};
         caddr = regs.gp.pc;
 #elif defined(__s390x__)
         long buf[2];
         struct iovec iov;
         iov.iov_len = sizeof(buf);
         iov.iov_base = buf;
-        ptrace(PTRACE_GETREGSET, pid, NT_PRSTATUS, &iov);
+        ret = ptrace(PTRACE_GETREGSET, pid, NT_PRSTATUS, &iov);
+        if (ret != 0) {
+            continue;
+            perror("ERROR while PTRACE_GETREGSET"); kill(pid, SIGKILL); exit(EXIT_FAILURE);
+        };
         caddr = buf[1];
 #elif defined(__PPC64__) || defined(__ppc64__) || defined(_ARCH_PPC64) // PPC64
 #define POWER_NUM_REGS 44
@@ -218,14 +259,23 @@ void compute_base_address(unsigned long pid, char* module, char* mainmodule) {
 #define PTRACE_GETREGS (__ptrace_request)12
 #endif
         long buf[POWER_NUM_REGS];
-        ptrace(PTRACE_GETREGS, pid, 0, buf);
+        ret = ptrace(PTRACE_GETREGS, pid, 0, buf);
+        if (ret != 0) { perror("ERROR while PTRACE_GETREGSET"); kill(pid, SIGKILL); exit(EXIT_FAILURE);};
         caddr = buf[POWER_NIP];
 #elif defined(__x86_64__) || defined(__i386__)
         struct user_regs_struct regs;
-        ptrace(PTRACE_GETREGS, pid, 0, &regs);
+        ret = ptrace(PTRACE_GETREGS, pid, 0, &regs);
+        if (ret != 0) { perror("ERROR while PTRACE_GETREGSET"); kill(pid, SIGKILL); exit(EXIT_FAILURE);};
         caddr = regs.rip;
 #endif
+        if (caddr == paddr) {
+             fprintf(stderr, "ERROR: Same address as before? Something wrong\n");
+             kill(pid, SIGKILL);
+             exit(EXIT_FAILURE);
+        }
+        //debug_print("parent: Current address: 0x%016llX\n", caddr);
         if ((caddr >= basemain_address[0]) && (caddr <basemain_address[1])) { break; };
+        paddr = caddr;
     }
 
     fclose(fp);
@@ -233,6 +283,7 @@ void compute_base_address(unsigned long pid, char* module, char* mainmodule) {
     if (fp == NULL) { kill(pid, SIGKILL); exit(EXIT_FAILURE); }
 
     while ((read = getline(&line, &len, fp)) != -1) {
+        debug_print("maps: %s", line);
         addr = strtok(line, " ");
         if(addr == NULL) continue;
         perm = strtok(NULL, " ");
@@ -244,6 +295,7 @@ void compute_base_address(unsigned long pid, char* module, char* mainmodule) {
         cmodule = strtok(NULL, " \n");
         if(cmodule == NULL) continue;
         cmodule = basename(cmodule);
+        debug_print("%s == %s\n", module, cmodule);
         if(strncmp(module, cmodule, strlen(module)) != 0) continue;
         addr = strtok(addr, "-");
         if(addr == NULL) continue;
@@ -253,6 +305,7 @@ void compute_base_address(unsigned long pid, char* module, char* mainmodule) {
     }
 
     fclose(fp);
+    fprintf(stderr, "INFO: module '%s' base address range: 0x%016llX\n", module, base_address);
 
 }
 
@@ -268,7 +321,7 @@ void displace_pc(long pid, long displ) {
     if (ret != 0) { perror("ERROR while reading PC"); kill(pid, SIGKILL); exit(EXIT_FAILURE);};
     long pc = buf[1];
 
-	debug_print("displace_pc from 0x%016lX to 0x%016lX\n", pc, pc + displ);
+    debug_print("displace_pc from 0x%016lX to 0x%016lX\n", pc, pc + displ);
 
     buf[1] = pc + displ;
     errno = 0;

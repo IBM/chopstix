@@ -52,6 +52,7 @@ unsigned int endpoint_count = 0;
 unsigned int startpoint_count = 0;
 char *module = "main";
 char *mainmodule = "main";
+extern unsigned long long base_address;
 
 void help(FILE *fd) {
     if (fd == stderr){
@@ -109,14 +110,26 @@ int perInvocationPerformance(unsigned long long * addrStart,
     for(int i=0; i<startpoint_count; i++) setBreakpoint(pid, addrStart[i], &bp[i]);
 
     long ret = ptrace(PTRACE_CONT, pid, 0, 0);
+    if (ret != 0) { perror("ERROR: on initial tracing"); kill(pid, SIGKILL); exit(EXIT_FAILURE);};
 
-    if (ret != 0) { perror("ERROR on initial tracing"); kill(pid, SIGKILL); exit(EXIT_FAILURE);};
+    while (1) {
+        ret = waitpid(pid, &status, 0);
+        if (ret == -1) { perror("ERROR: during tracing"); kill(pid, SIGKILL); exit(EXIT_FAILURE);};
+        if (sampleCount >= maxSamples) { fprintf(stderr, "INFO: Max samples reached\n"); break;}
+        if (WIFEXITED(status)) {
+            fprintf(stderr, "INFO: Process finished\n");
+            if (sampleCount == 0 ) { 
+                fprintf(stderr, "ERROR: No samples gathered\n");
+                fprintf(stderr, "ERROR: - Check for the correctness of the breakpoint addresses\n");
+                fprintf(stderr, "ERROR: - Check if the function is executed *AFTER* the main (initialization functions might be skipped)\n");
+            }
+            return WEXITSTATUS(status);
+        };
 
-    while (waitpid(pid, &status, 0) != -1 && sampleCount < maxSamples &&
-           !WIFEXITED(status)) {
         if (WIFSTOPPED(status)) {
             debug_print("%s\n", strsignal(WSTOPSIG(status)));
         }
+
         for(int i=0; i<startpoint_count; i++) resetBreakpoint(pid, &bp[i]);
         for(int i=0; i<endpoint_count; i++) setBreakpoint(pid, addrEnd[i], &bp[i]);
 
@@ -133,18 +146,20 @@ int perInvocationPerformance(unsigned long long * addrStart,
         }
         #endif
         ret = ptrace(PTRACE_CONT, pid, 0, 0);
-        if (ret != 0) { perror("ERROR during tracing"); kill(pid, SIGKILL); exit(EXIT_FAILURE);};
+        if (ret != 0) { perror("ERROR: during tracing"); kill(pid, SIGKILL); exit(EXIT_FAILURE);};
         ret = waitpid(pid, &status, 0);
-        if (ret == -1) { perror("ERROR during waiting"); kill(pid, SIGKILL); exit(EXIT_FAILURE);};
+        if (ret == -1) { perror("ERROR: during waiting"); kill(pid, SIGKILL); exit(EXIT_FAILURE);};
         if (WIFSTOPPED(status)) {
-            debug_print("Process stopped: %s\n", strsignal(WSTOPSIG(status)));
+            if (WSTOPSIG(status) != SIGILL) {
+                fprintf(stderr, "WARNING: Process stopped during sampling: %s\n", strsignal(WSTOPSIG(status)));
+            }
         }
         if (WIFEXITED(status)) {
-            debug_print("Process exit code: %d\n", WEXITSTATUS(status));
+            fprintf(stderr, "ERROR: Process exited during sampling: %d\n", WEXITSTATUS(status));
             return WEXITSTATUS(status);
         }
         if (WIFSIGNALED(status)) {
-            debug_print("Process signaled: %s\n", strsignal(WTERMSIG(status)));
+            debug_print("ERROR: Process signaled during sampling: %s\n", strsignal(WTERMSIG(status)));
             kill(pid, SIGKILL);
             exit(EXIT_FAILURE);
         }
@@ -173,11 +188,10 @@ int perInvocationPerformance(unsigned long long * addrStart,
         }
         #endif
         ret = ptrace(PTRACE_CONT, pid, 0, 0);
-        if (ret != 0) { perror("ERROR during next tracing"); kill(pid, SIGKILL); exit(EXIT_FAILURE);};
+        if (ret != 0) { perror("ERROR: during next tracing"); kill(pid, SIGKILL); exit(EXIT_FAILURE);};
     }
 
     if (sampleCount == maxSamples) kill(pid, SIGTERM);
-
     return 0;
 }
 
@@ -310,18 +324,19 @@ int main(int argc, char **argv) {
     cpu_set_t mask;
     CPU_ZERO(&mask);
     CPU_SET(cpu, &mask);
-    fprintf(stderr, "Pinning process to CPU: %d\n", cpu);
+    fprintf(stderr, "INFO: Pinning process to CPU: %d\n", cpu);
     int ret = sched_setaffinity(0, sizeof(cpu_set_t), &mask);
     if (ret != 0) { perror("ERROR while setting affinity"); exit(EXIT_FAILURE);};
 
-    fprintf(stderr, "Executing '");
+    fprintf(stderr, "INFO: Executing command: ");
     for (int i = programStart; i < argc; i++) fprintf(stderr, "%s ", argv[i]);
-    fprintf(stderr, "'\n");
+    fprintf(stderr, "\n");
 
     mainmodule = argv[programStart];
 
     pid = fork();
     if (pid == 0) {
+        // Child
         unsigned int numParams = argc - 3;
         char **newargs = malloc(sizeof(char*) * (numParams + 2));
         if (newargs == NULL) { perror("ERROR copying args"); exit(EXIT_FAILURE);};
@@ -330,30 +345,33 @@ int main(int argc, char **argv) {
         long ret = ptrace(PTRACE_TRACEME, 0, 0, 0);
         if (ret != 0) { perror("ERROR setting traced process"); exit(EXIT_FAILURE);};
 
-		int persona = personality(0xffffffff);
-		if (persona == -1)
-		{
-			fprintf(stderr, "ERROR Unable to get ASLR info: %s\n", strerror(errno));
-			exit(EXIT_FAILURE);
-		}
+        int persona = personality(0xffffffff);
+        if (persona == -1)
+        {
+            fprintf(stderr, "ERROR: Unable to get ASLR info: %s\n", strerror(errno));
+            exit(EXIT_FAILURE);
+        }
 
-		persona = persona | ADDR_NO_RANDOMIZE;
-		debug_print("Disabling ASLR ...");
-		persona = personality(persona | ADDR_NO_RANDOMIZE);
-		if (persona == -1) {
-			fprintf(stderr, "ERROR Unable to set ASLR info: %s\n", strerror(errno));
-			exit(EXIT_FAILURE);
-		}
-		if (!(personality (0xffffffff) & ADDR_NO_RANDOMIZE))
-		{
-			fprintf(stderr, "ERROR Unable to disable ASLR");
-			exit(EXIT_FAILURE);
-		}
-		debug_print("ASLR disabled");
+        persona = persona | ADDR_NO_RANDOMIZE;
+        debug_print("child: Disabling ASLR ...\n");
+        persona = personality(persona | ADDR_NO_RANDOMIZE);
+        if (persona == -1) {
+            fprintf(stderr, "ERROR: Unable to set ASLR info: %s\n", strerror(errno));
+            exit(EXIT_FAILURE);
+        }
+        if (!(personality (0xffffffff) & ADDR_NO_RANDOMIZE))
+        {
+            fprintf(stderr, "ERROR: Unable to disable ASLR");
+            exit(EXIT_FAILURE);
+        }
+        debug_print("child: ASLR disabled\n");
+
+        setenv("LD_BIND_NOW", "1", 1);
 
         ret = execvp(argv[programStart], newargs);
         if (ret != 0) { perror("ERROR executing process"); exit(EXIT_FAILURE);};
     } else {
+        // Parent
         outputFile = (output != NULL ? fopen(output, "w") : NULL);
         assert(outputFile != NULL);
 
@@ -370,21 +388,28 @@ int main(int argc, char **argv) {
         if (ret != 0) { perror("ERROR setting SIALRM"); kill(pid, SIGKILL); exit(EXIT_FAILURE);};
 
         int status;
+        debug_print("parent: Waiting for child...\n");
         ret = waitpid(pid, &status, 0); // Wait for child to start
         if (ret == -1) { perror("ERROR waiting child to start"); kill(pid, SIGKILL); exit(EXIT_FAILURE);};
+        debug_print("parent: Waiting for child... OK\n");
+
+        ret = ptrace(PTRACE_SYSCALL, pid, 0, 0);
+        if (ret != 0) { perror("ERROR while PTRACE_SYSCALL"); kill(pid, SIGKILL); exit(EXIT_FAILURE);};
+        ret = waitpid(pid, &status, 0); // Wait for child to start
+        if (ret == -1) { perror("ERROR waiting child to execute first system call"); kill(pid, SIGKILL); exit(EXIT_FAILURE);};
 
         compute_base_address(pid, module, mainmodule);
         configureEvents(pid);
 
         if (addrStart[0] > 0 && addrEnd[0] > 0 && endpoint_count > 0 && startpoint_count > 0) {
-            fprintf(stderr, "Measuring performance counters from ");
-            for(int i=0; i<startpoint_count; i++) fprintf(stderr, "0x%llx ", addrStart[i]);
+            fprintf(stderr, "INFO: Measuring performance counters from ");
+            for(int i=0; i<startpoint_count; i++) fprintf(stderr, "0x%016llX ", addrStart[i] + base_address);
             fprintf(stderr, " to ");
-            for(int i=0; i<endpoint_count; i++) fprintf(stderr, "0x%llx ", addrEnd[i]);
+            for(int i=0; i<endpoint_count; i++) fprintf(stderr, "0x%016llX ", addrEnd[i] + base_address);
             fprintf(stderr, "(max. samples: %u)\n", maxSamples);
             status = perInvocationPerformance(addrStart, addrEnd, maxSamples, outputFile);
         } else {
-            fprintf(stderr, "Measuring performance counters from global execution\n");
+            fprintf(stderr, "INFO: Measuring performance counters from global execution\n");
             status = globalPerformance(timeout);
         }
 
@@ -393,7 +418,7 @@ int main(int argc, char **argv) {
 
         if (outputFile != stderr)  {
             ret = fclose(outputFile);
-            if (ret != 0) { perror("ERROR closing file"); exit(EXIT_FAILURE);};
+            if (ret != 0) { perror("ERROR: closing file"); exit(EXIT_FAILURE);};
         }
         return status;
     }
