@@ -149,6 +149,7 @@ int run_sample(int argc, char **argv) {
 
     setup_database(db, events);
     auto query = prepare_insert_sample(db, events);
+    std::thread stop_onexit;
 
     if (opt_pid.is_set()) {
         child.copy(opt_pid.as_int());
@@ -158,34 +159,49 @@ int run_sample(int argc, char **argv) {
         child.exec_wait(argv, argc);
     }
 
-    log::debug("chop sample: setting events");
-    setup_events(events, child.pid());
-    auto &prof = events.front();
-
-    Sample::value_list last(events.size(), 0);
-
     if (!opt_pid.is_set()) {
         log::debug("chop sample: waiting for ready");
         child.ready();
+        log::debug("chop sample: process ready");
+
+        child.step_to_main_module();
+        log::info("chop sample: process in main module");
+        log::debug("chop sample: process in main");
+
+        insert_session(db, child.pid(), argv);
+        insert_maps(db, child.pid());
+
+        log::debug("chop sample: setting events");
+        setup_events(events, child.pid());
+
         child.cont();
-        std::thread stop_onexit([&]() {
+
+        stop_onexit = std::thread([&]() {
             child.wait(0);
             running = false;
+            log::debug("chop sample: stop_onexit called");
         });
         stop_onexit.detach();
+    } else {
+        log::debug("chop sample: setting events");
+        setup_events(events, child.pid());
+        insert_session(db, child.pid(), argv);
+        insert_maps(db, child.pid());
     }
 
     if (opt_timeout.is_set()) {
+        log::debug("chop sample: setting timeout");
         std::thread stop_ontimeout([&]() {
             std::this_thread::sleep_for(
                 std::chrono::duration<double>(opt_timeout.as_time()));
             running = false;
+            log::debug("chop sample: process timed out");
         });
         stop_ontimeout.detach();
     }
 
-    insert_session(db, child.pid(), argv);
-    insert_maps(db, child.pid());
+    auto &prof = events.front();
+    Sample::value_list last(events.size(), 0);
 
     while (running) {
 
