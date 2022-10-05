@@ -119,6 +119,16 @@ void Process::exec(char **argv, int argc) {
 
 void Process::exec_wait(char **argv, int argc) {
     log::debug("Process:: exec_wait start");
+	char mainpath[1024];
+    ssize_t nbytes = readlink(argv[0], mainpath, 1024);
+    if ((nbytes == -1) || (nbytes == 1024)) {
+         fprintf(stderr, "Process:: exec_wait: Error: Main module name truncated\n");
+         abandon();
+         exit(EXIT_FAILURE);
+    }
+    mainpath[nbytes] = '\0';
+    mainmodule_ = basename(mainpath);
+
     pid_ = fork();
     check(pid_ != -1, "Process:: exec_wait: Unable to spawn process");
     if (pid_ != 0) {
@@ -127,7 +137,7 @@ void Process::exec_wait(char **argv, int argc) {
         log::debug("Process:: exec_wait: wait for child done");
         return;
     }
-    log::debug("Process:: exec_wait child");
+    log::debug("Process:: exec_wait child created %d", pid_);
     ptrace(PTRACE_TRACEME, 0, NULL, NULL);
 
     int persona = personality(0xffffffff);
@@ -166,9 +176,11 @@ void Process::exec_wait(char **argv, int argc) {
 }
 
 void Process::ready() {
+    log::debug("Process:: ready: start");
     wait(0);
     checkx(stopped(), "Process:: ready: The provided command failed");
     checkx(stop_sig() == SIGTRAP, "Process:: ready: The provided command failed");
+    log::debug("Process:: ready: end");
 }
 
 void Process::abandon() {
@@ -337,6 +349,38 @@ void Process::step(int sig) {
     log::debug("Process:: step one (%d)", sig);
     long ret = ptrace(PTRACE_SINGLESTEP, pid_, 0, sig);
     check(ret != -1, "Process: step: ptrace_singlestep failed");
+}
+
+void Process::step_to_main_module() {
+    log::debug("Process:: step to main module: start");
+
+    long main_module_start = 0xdeadbeef;
+    long main_module_end = 0xdeadbeef;
+    const char* cmodule;
+
+    auto maps = parse_maps(pid());
+    for (auto &entry : maps) {
+        if(entry.perm[2] != 'x') continue;
+        cmodule = basename(entry.path.c_str());
+        if(strncmp(mainmodule_, cmodule, strlen(mainmodule_)) != 0) continue;
+        main_module_start = entry.addr[0];
+        main_module_end = entry.addr[1];
+    }
+
+    if(main_module_start == 0xdeadbeef) {
+        send(SIGKILL);
+        errno = 0;
+        check(false, "Process:: step_to_main_module : unable to compute address");
+    }
+
+    while(1) {
+        long pc = Arch::current()->get_pc(pid());
+        log::debug("Step: PC = 0x%x", pc);
+        if ((pc >= main_module_start) && (pc < main_module_end)) break;
+        Process::step(0);
+        wait(0);
+    }
+    log::debug("Process:: step to main module: end");
 }
 
 void Process::set_break(long addr) {
