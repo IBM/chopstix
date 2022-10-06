@@ -129,6 +129,7 @@ int run_sample(int argc, char **argv) {
     auto opt_pid = getopt("pid");
     auto opt_events = getopt("events");
     auto opt_timeout = getopt("timeout");
+    auto opt_cpu = getopt("cpu");
 
     checkx(opt_db.is_set(), "Database not set");
     checkx(opt_events.is_set(), "Events not set");
@@ -150,6 +151,14 @@ int run_sample(int argc, char **argv) {
     setup_database(db, events);
     auto query = prepare_insert_sample(db, events);
     std::thread stop_onexit;
+
+    /* Pin to a particular CPU */
+    cpu_set_t mask;
+    CPU_ZERO(&mask);
+    CPU_SET(opt_cpu.as_int(), &mask);
+    log::debug("chop sample: pinning to CPU: %d", opt_cpu.as_int());
+    int ret = sched_setaffinity(0, sizeof(cpu_set_t), &mask);
+    if (ret != 0) { perror("ERROR: while setting affinity"); exit(EXIT_FAILURE);};
 
     if (opt_pid.is_set()) {
         child.copy(opt_pid.as_int());

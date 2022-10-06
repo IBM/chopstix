@@ -326,7 +326,7 @@ int main(int argc, char **argv) {
     CPU_SET(cpu, &mask);
     fprintf(stderr, "INFO: Pinning process to CPU: %d\n", cpu);
     int ret = sched_setaffinity(0, sizeof(cpu_set_t), &mask);
-    if (ret != 0) { perror("ERROR while setting affinity"); exit(EXIT_FAILURE);};
+    if (ret != 0) { perror("ERROR: while setting affinity"); exit(EXIT_FAILURE);};
 
     fprintf(stderr, "INFO: Executing command: ");
     for (int i = programStart; i < argc; i++) fprintf(stderr, "%s ", argv[i]);
@@ -339,11 +339,11 @@ int main(int argc, char **argv) {
         // Child
         unsigned int numParams = argc - 3;
         char **newargs = malloc(sizeof(char*) * (numParams + 2));
-        if (newargs == NULL) { perror("ERROR copying args"); exit(EXIT_FAILURE);};
+        if (newargs == NULL) { perror("ERROR: copying args"); exit(EXIT_FAILURE);};
         memcpy(newargs, &argv[programStart], sizeof(char*) * (numParams + 1));
         newargs[numParams + 1] = NULL;
         long ret = ptrace(PTRACE_TRACEME, 0, 0, 0);
-        if (ret != 0) { perror("ERROR setting traced process"); exit(EXIT_FAILURE);};
+        if (ret != 0) { perror("ERROR: setting traced process"); exit(EXIT_FAILURE);};
 
         int persona = personality(0xffffffff);
         if (persona == -1)
@@ -369,7 +369,7 @@ int main(int argc, char **argv) {
         setenv("LD_BIND_NOW", "1", 1);
 
         ret = execvp(argv[programStart], newargs);
-        if (ret != 0) { perror("ERROR executing process"); exit(EXIT_FAILURE);};
+        if (ret != 0) { perror("ERROR: executing process"); exit(EXIT_FAILURE);};
     } else {
         // Parent
         outputFile = (output != NULL ? fopen(output, "w") : NULL);
@@ -378,25 +378,25 @@ int main(int argc, char **argv) {
         struct sigaction sa;
         sa.sa_handler = handler;
         int ret = sigemptyset(&sa.sa_mask);
-        if (ret != 0) { perror("ERROR setting empty signals"); kill(pid, SIGKILL); exit(EXIT_FAILURE);};
+        if (ret != 0) { perror("ERROR: setting empty signals"); kill(pid, SIGKILL); exit(EXIT_FAILURE);};
         sa.sa_flags = 0;
         ret = sigaction(SIGTERM, &sa, NULL);
-        if (ret != 0) { perror("ERROR setting SIGTERM"); kill(pid, SIGKILL); exit(EXIT_FAILURE);};
+        if (ret != 0) { perror("ERROR: setting SIGTERM"); kill(pid, SIGKILL); exit(EXIT_FAILURE);};
         ret = sigaction(SIGINT, &sa, NULL);
-        if (ret != 0) { perror("ERROR setting SIGINT"); kill(pid, SIGKILL); exit(EXIT_FAILURE);};
+        if (ret != 0) { perror("ERROR: setting SIGINT"); kill(pid, SIGKILL); exit(EXIT_FAILURE);};
         ret = sigaction(SIGALRM, &sa, NULL);
-        if (ret != 0) { perror("ERROR setting SIALRM"); kill(pid, SIGKILL); exit(EXIT_FAILURE);};
+        if (ret != 0) { perror("ERROR: setting SIALRM"); kill(pid, SIGKILL); exit(EXIT_FAILURE);};
 
         int status;
         debug_print("parent: Waiting for child...\n");
         ret = waitpid(pid, &status, 0); // Wait for child to start
-        if (ret == -1) { perror("ERROR waiting child to start"); kill(pid, SIGKILL); exit(EXIT_FAILURE);};
+        if (ret == -1) { perror("ERROR: waiting child to start"); kill(pid, SIGKILL); exit(EXIT_FAILURE);};
         debug_print("parent: Waiting for child... OK\n");
 
         ret = ptrace(PTRACE_SYSCALL, pid, 0, 0);
-        if (ret != 0) { perror("ERROR while PTRACE_SYSCALL"); kill(pid, SIGKILL); exit(EXIT_FAILURE);};
+        if (ret != 0) { perror("ERROR: while PTRACE_SYSCALL"); kill(pid, SIGKILL); exit(EXIT_FAILURE);};
         ret = waitpid(pid, &status, 0); // Wait for child to start
-        if (ret == -1) { perror("ERROR waiting child to execute first system call"); kill(pid, SIGKILL); exit(EXIT_FAILURE);};
+        if (ret == -1) { perror("ERROR: waiting child to execute first system call"); kill(pid, SIGKILL); exit(EXIT_FAILURE);};
 
         compute_base_address(pid, module, mainmodule);
         configureEvents(pid);

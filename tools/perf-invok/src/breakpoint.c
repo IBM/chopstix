@@ -180,12 +180,17 @@ void compute_base_address(unsigned long pid, char* module, char* mainmodule) {
 
     nbytes = readlink(mainmodule, mainpath, 1024);
     if ((nbytes == -1) || (nbytes == 1024)) {
-       kill(pid, SIGKILL);
-       fprintf(stderr, "ERROR: while readlink");
-       exit(EXIT_FAILURE);
+       if(nbytes == -1) { 
+            mainmodule = basename(mainmodule);
+       } else {
+           kill(pid, SIGKILL);
+           fprintf(stderr, "ERROR: while readlink");
+           exit(EXIT_FAILURE);
+       }
+    } else {
+        mainpath[nbytes] = '\0';
+        mainmodule = basename(mainpath);
     }
-    mainpath[nbytes] = '\0';
-    mainmodule = basename(mainpath);
 
     while ((read = getline(&line, &len, fp)) != -1) {
         debug_print("maps: %s", line);

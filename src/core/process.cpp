@@ -120,14 +120,22 @@ void Process::exec(char **argv, int argc) {
 void Process::exec_wait(char **argv, int argc) {
     log::debug("Process:: exec_wait start");
 	char mainpath[1024];
+    errno = 0;
     ssize_t nbytes = readlink(argv[0], mainpath, 1024);
     if ((nbytes == -1) || (nbytes == 1024)) {
-         fprintf(stderr, "Process:: exec_wait: Error: Main module name truncated\n");
-         abandon();
-         exit(EXIT_FAILURE);
+         if(nbytes == -1) { 
+            log::debug("Process:: exec_wait: path is not a symlink");
+            mainmodule_ = basename(argv[0]);
+         } else { 
+             fprintf(stderr, "Process:: exec_wait: Error: Main module name truncated\n");
+             abandon();
+             exit(EXIT_FAILURE);
+        }
+    } else {
+        log::debug("Process:: exec_wait: path is a symlink");
+        mainpath[nbytes] = '\0';
+        mainmodule_ = basename(mainpath);
     }
-    mainpath[nbytes] = '\0';
-    mainmodule_ = basename(mainpath);
 
     pid_ = fork();
     check(pid_ != -1, "Process:: exec_wait: Unable to spawn process");
