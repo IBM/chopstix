@@ -35,17 +35,35 @@ if [ $# -eq 3 ]; then
     cache=1
 fi
 
-obj=$1
-sym=$2
+obj="$1"
+sym="$2"
 
 displ=0
 bdispl=0
+
+if [ "$cache" -eq 1 ]; then
+    tmp="$obj.S"
+    tmp2="$obj.S.$sym"
+
+    if [ ! -f "$tmp" ]; then
+        objdump -d "$obj" > "$tmp"
+    fi
+else
+    tmp=$(mktemp)
+    tmp2=$(mktemp)
+    objdump -d "$obj" > "$tmp"
+
+    cleanup() {
+        rm -f "$tmp" "$tmp2"
+    }
+    trap cleanup EXIT
+fi
 
 set +e
 chop-marks-dyn-addr "$obj" "$sym" > /dev/null 2> /dev/null
 error=$?
 set -e
-if [ "$error" -eq 0 ]; then
+if [ "$error" -eq 0 ] && [ "$(grep -c "<$sym>:" < "$tmp")" -ne 0 ]; then
     displ=$(chop-marks-dyn-addr "$obj" "$sym" 2> /dev/null)
 elif [ "$sym" != "_start" ]; then
     static_start_sym=$(readelf -s "$obj" | grep -v UND | grep FUNC | grep GLOBAL | grep " _start$" | tr -s " " | cut -d ' ' -f 3 | sort | uniq)
@@ -63,29 +81,6 @@ elif [ "$sym" != "_start" ]; then
     fi
 else
     die "$(basename "$0"): Unable to find address for $sym in $obj"
-fi
-
-if [ "$cache" -eq 1 ]; then
-    tmp="$obj.S"
-    tmp2="$obj.S.$sym"
-
-    if [ -f "$tmp2" ]; then
-        cat "$tmp2"
-        exit 0
-    fi
-
-    if [ ! -f "$tmp" ]; then
-        objdump -d "$obj" > "$tmp"
-    fi
-else
-    tmp=$(mktemp)
-    tmp2=$(mktemp)
-    objdump -d "$obj" > "$tmp"
-
-    cleanup() {
-        rm -f "$tmp" "$tmp2"
-    }
-    trap cleanup EXIT
 fi
 
 found=1
@@ -160,6 +155,12 @@ flag && $8 ~ "jg" {
     addr=$1;
 }
 
+flag && $8 ~ "jg" && $10 ~ ".part.[0-9]" {
+    gsub(">", "", $10);
+    gsub("<", "", $10);
+    printf("subcall: %s\n", $10);
+}
+
 /^$/ {
     if (longjmp) {
         printf("-end %x\n",strtonum("0x"addr) + displ + base);
@@ -168,7 +169,13 @@ flag && $8 ~ "jg" {
     longjmp=0;
     addr=0;
 }
-' "$tmp" | tee "$tmp2"
+' "$tmp" > "$tmp2"
+
+for elem in $(cat "$tmp2" | grep ^subcall: | cut -d ' ' -f 2); do
+    "$0" "$1" "$elem" | grep -v "^-begin" | sort -n | uniq >> "$tmp2"
+done;
+
+cat "$tmp2" | grep -v ^subcall: | sort -n | uniq
 
 if [ $cache -eq 0 ]; then
     rm -f "$tmp" "$tmp2"
