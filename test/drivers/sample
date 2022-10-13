@@ -43,7 +43,7 @@ test_sample() {
         rm -rf chop.db
         echo "> Testing $event"
         test_event $event
-        if [ ! -n "$event" ]; then echo "> skip $event"; continue; fi
+        if [ -z "$event" ]; then echo "> skip $event"; continue; fi
 
         echo "using $event@$period"
 
