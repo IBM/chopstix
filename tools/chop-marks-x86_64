@@ -139,7 +139,22 @@ flag && $3 ~ "retq" {
     printf("-end %x\n",strtonum("0x"$1) + displ + base);
 }
 /^$/ { flag=0; }
-' "$tmp" | tee "$tmp2"
+' "$tmp" > "$tmp2"
+
+for elem in $(cat "$tmp2" | grep ^subcall: | cut -d ' ' -f 2); do
+    "$0" "$1" "$elem" | grep -v "^-begin" | sort -n | uniq >> "$tmp2"
+done;
+
+
+if [ "$(cat "$tmp2" | grep -v ^subcall: | sort -n | uniq | grep -c end)" -eq 0 ]; then
+    die "No -end points found"
+fi
+
+if [ "$(cat "$tmp2" | grep -v ^subcall: | sort -n | uniq | grep -c begin)" -eq 0 ]; then
+    die "No -begin points found"
+fi
+
+cat "$tmp2" | grep -v ^subcall: | sort -n | uniq
 
 if [ $cache -eq 0 ]; then
     rm -f "$tmp" "$tmp2"

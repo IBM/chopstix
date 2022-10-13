@@ -46,12 +46,12 @@ if [ "$cache" -eq 1 ]; then
     tmp2="$obj.S.$sym"
 
     if [ ! -f "$tmp" ]; then
-        objdump -d "$obj" > "$tmp"
+        objdump -d -M insnlength "$obj" > "$tmp"
     fi
 else
     tmp=$(mktemp)
     tmp2=$(mktemp)
-    objdump -d "$obj" > "$tmp"
+    objdump -d -M insnlength "$obj" > "$tmp"
 
     cleanup() {
         rm -f "$tmp" "$tmp2"
@@ -174,6 +174,15 @@ flag && $8 ~ "jg" && $10 ~ ".part.[0-9]" {
 for elem in $(cat "$tmp2" | grep ^subcall: | cut -d ' ' -f 2); do
     "$0" "$1" "$elem" | grep -v "^-begin" | sort -n | uniq >> "$tmp2"
 done;
+
+
+if [ "$(cat "$tmp2" | grep -v ^subcall: | sort -n | uniq | grep -c end)" -eq 0 ]; then
+    die "No -end points found"
+fi
+
+if [ "$(cat "$tmp2" | grep -v ^subcall: | sort -n | uniq | grep -c begin)" -eq 0 ]; then
+    die "No -begin points found"
+fi
 
 cat "$tmp2" | grep -v ^subcall: | sort -n | uniq
 
