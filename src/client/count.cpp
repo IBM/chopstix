@@ -72,6 +72,23 @@ int run_count(int argc, char **argv) {
                    id, name);
         auto q = db.query(SQL_COUNT_INSTS);
         q.bind(1, id).finish();
+
+        auto q2 = db.query(SQL_COUNT_INSTS_DEBUG);
+        q2.bind(1, id);
+
+        auto count = 0;
+        if (q2.next()) {
+            do {
+                count++;
+                auto rec2 = q2.record();
+            } while (q2.next());
+            fmt::print("          {} different PCs sampled for module id: {} name: {}\n",
+                   count, id, name);
+        } else {
+            fmt::print("          No samples for module id: {} name: {}\n",
+                   id, name);
+        }
+
     } while (ids.next());
 
     prog.next();
