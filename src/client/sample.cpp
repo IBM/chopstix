@@ -152,13 +152,22 @@ int run_sample(int argc, char **argv) {
     auto query = prepare_insert_sample(db, events);
     std::thread stop_onexit;
 
-    /* Pin to a particular CPU */
-    cpu_set_t mask;
-    CPU_ZERO(&mask);
-    CPU_SET(opt_cpu.as_int(), &mask);
-    log::debug("chop sample: pinning to CPU: %d", opt_cpu.as_int());
-    int ret = sched_setaffinity(0, sizeof(cpu_set_t), &mask);
-    if (ret != 0) { perror("ERROR: while setting affinity"); exit(EXIT_FAILURE);};
+    if (opt_cpu.as_int() != -1) {
+        /* Pin to a particular CPU */
+        cpu_set_t mask;
+        int ret = sched_getaffinity(0, sizeof(cpu_set_t), &mask);
+        if (ret != 0) { perror("ERROR: while getting affinity"); exit(EXIT_FAILURE);};
+
+        if (!CPU_ISSET(opt_cpu.as_int(), &mask)) {
+            perror("ERROR: CPU specified is not allowed"); exit(EXIT_FAILURE);
+        }
+
+        log::debug("chop sample: pinning to CPU: %d", opt_cpu.as_int());
+        CPU_ZERO(&mask);
+        CPU_SET(opt_cpu.as_int(), &mask);
+        ret = sched_setaffinity(0, sizeof(cpu_set_t), &mask);
+        if (ret != 0) { perror("ERROR: while setting affinity"); exit(EXIT_FAILURE);};
+    }
 
     if (opt_pid.is_set()) {
         child.copy(opt_pid.as_int());

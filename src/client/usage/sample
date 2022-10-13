@@ -27,7 +27,8 @@ Options:
                          (hours), m(minutes), s(seconds), ms
                          (milliseconds), us(microseconds).
   -cpu <num>             Pin the sampled process to the specified cpu.
-                         (default: 0)
+                         -1 values, no pinning is done.
+                         (default: -1)
   -log-path <path>       Path to log file.
   -log-level <level>     Set verbosity of the log file (default: info)
                          Options are: debug, verbose, info, warn, error.
