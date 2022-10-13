@@ -141,20 +141,20 @@ flag && $6 ~ "bc?lr" {
 /^$/ { flag=0; }
 ' "$tmp" > "$tmp2"
 
-for elem in $(cat "$tmp2" | grep ^subcall: | cut -d ' ' -f 2); do
+for elem in $(grep ^subcall: < "$tmp2" | cut -d ' ' -f 2); do
     "$0" "$1" "$elem" | grep -v "^-begin" | sort -n | uniq >> "$tmp2"
 done;
 
 
-if [ "$(cat "$tmp2" | grep -v ^subcall: | sort -n | uniq | grep -c end)" -eq 0 ]; then
+if [ "$(grep -v ^subcall:  < "$tmp2" | sort -n | uniq | grep -c end)" -eq 0 ]; then
     die "No -end points found"
 fi
 
-if [ "$(cat "$tmp2" | grep -v ^subcall: | sort -n | uniq | grep -c begin)" -eq 0 ]; then
+if [ "$(grep -v ^subcall:  < "$tmp2" | sort -n | uniq | grep -c begin)" -eq 0 ]; then
     die "No -begin points found"
 fi
 
-cat "$tmp2" | grep -v ^subcall: | sort -n | uniq
+grep -v ^subcall: < "$tmp2" | sort -n | uniq
 
 if [ $cache -eq 0 ]; then
     rm -f "$tmp" "$tmp2"
