@@ -50,7 +50,7 @@ test_sample() {
         set +e
         echo "> chop sample -events $event -period $period $testbin $*"
         # shellcheck disable=SC2068
-        "$chop" sample -cpu 20 -events "$event" -period "$period" "$testbin" $@ > /dev/null
+        "$chop" sample -events "$event" -period "$period" "$testbin" $@ > /dev/null
         error=$?
         set -e
 
