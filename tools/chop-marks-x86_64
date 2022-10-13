@@ -141,6 +141,7 @@ flag && $3 ~ "retq" {
 /^$/ { flag=0; }
 ' "$tmp" > "$tmp2"
 
+# shellcheck disable=SC2013
 for elem in $(grep ^subcall: < "$tmp2" | cut -d ' ' -f 2); do
     "$0" "$1" "$elem" | grep -v "^-begin" | sort -n | uniq >> "$tmp2"
 done;
