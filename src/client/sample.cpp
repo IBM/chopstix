@@ -155,6 +155,7 @@ int run_sample(int argc, char **argv) {
     if (opt_cpu.as_int() != -1) {
         /* Pin to a particular CPU */
         cpu_set_t mask;
+        CPU_ZERO(&mask);
         int ret = sched_getaffinity(0, sizeof(cpu_set_t), &mask);
         if (ret != 0) { perror("ERROR: while getting affinity"); exit(EXIT_FAILURE);};
 

@@ -230,7 +230,7 @@ int main(int argc, char **argv) {
     unsigned int programStart = 0;
     unsigned int programStartSet = 0;
     unsigned int timeout = 0;
-    unsigned int cpu = 0;
+    unsigned int cpu = -1;
     char *output = NULL;
     addrStart[0] = 0;
     addrEnd[0] = 0;
@@ -321,12 +321,23 @@ int main(int argc, char **argv) {
         help(stderr);
     }
 
-    cpu_set_t mask;
-    CPU_ZERO(&mask);
-    CPU_SET(cpu, &mask);
-    fprintf(stderr, "INFO: Pinning process to CPU: %d\n", cpu);
-    int ret = sched_setaffinity(0, sizeof(cpu_set_t), &mask);
-    if (ret != 0) { perror("ERROR: while setting affinity"); exit(EXIT_FAILURE);};
+    if (cpu != -1) {
+        cpu_set_t mask;
+
+        CPU_ZERO(&mask);
+        int ret = sched_getaffinity(0, sizeof(cpu_set_t), &mask);
+        if (ret != 0) { perror("ERROR: while getting affinity"); exit(EXIT_FAILURE);};
+
+        if (!CPU_ISSET(cpu, &mask)) {
+            perror("ERROR: CPU specified is not allowed"); exit(EXIT_FAILURE);
+        }
+
+        CPU_ZERO(&mask);
+        CPU_SET(cpu, &mask);
+        fprintf(stderr, "INFO: Pinning process to CPU: %d\n", cpu);
+        ret = sched_setaffinity(0, sizeof(cpu_set_t), &mask);
+        if (ret != 0) { perror("ERROR: while setting affinity"); exit(EXIT_FAILURE);};
+    }
 
     fprintf(stderr, "INFO: Executing command: ");
     for (int i = programStart; i < argc; i++) fprintf(stderr, "%s ", argv[i]);
