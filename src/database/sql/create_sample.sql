@@ -7,4 +7,4 @@ CREATE TABLE IF NOT EXISTS sample (
 );
 
 -- DROP INDEX IF EXISTS sample_pid_index
-CREATE INDEX IF NOT EXISTS sample_pid_index ON sample(pid); 
+CREATE INDEX IF NOT EXISTS sample_pid_index ON sample(pid);

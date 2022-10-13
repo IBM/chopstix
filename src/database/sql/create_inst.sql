@@ -14,7 +14,7 @@ CREATE TABLE IF NOT EXISTS inst (
 );
 
 -- DROP INDEX IF EXISTS inst_addr_index;
-CREATE INDEX IF NOT EXISTS inst_addr_index ON inst(addr); 
+CREATE INDEX IF NOT EXISTS inst_addr_index ON inst(addr);
 -- DROP INDEX IF EXISTS inst_block_id_index;
 CREATE INDEX IF NOT EXISTS inst_block_id_index ON inst(block_id);
 -- DROP INDEX IF EXISTS inst_func_id_index;
@@ -34,4 +34,4 @@ CREATE TABLE IF NOT EXISTS inst_annot (
 );
 
 -- DROP INDEX IF EXISTS inst_annot_inst_id_index;
-CREATE INDEX IF NOT EXISTS inst_annot_inst_id_index ON inst_annot(inst_id); 
+CREATE INDEX IF NOT EXISTS inst_annot_inst_id_index ON inst_annot(inst_id);

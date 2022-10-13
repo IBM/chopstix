@@ -8,4 +8,4 @@ CREATE TABLE IF NOT EXISTS map (
 );
 
 -- DROP INDEX IF EXISTS map_pid_index
-CREATE INDEX IF NOT EXISTS map_pid_index ON map(pid); 
+CREATE INDEX IF NOT EXISTS map_pid_index ON map(pid);

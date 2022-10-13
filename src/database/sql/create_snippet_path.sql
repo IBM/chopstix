@@ -9,7 +9,7 @@ CREATE TABLE IF NOT EXISTS snippet_path (
 );
 
 -- DROP INDEX IF EXISTS snippet_path_id_index
-CREATE INDEX IF NOT EXISTS snippet_path_id_index ON snippet_path(id); 
+CREATE INDEX IF NOT EXISTS snippet_path_id_index ON snippet_path(id);
 
 -- DROP INDEX IF EXISTS snippet_block_id_index
-CREATE INDEX IF NOT EXISTS snippet_block_id_index ON snippet_path(block_id); 
+CREATE INDEX IF NOT EXISTS snippet_block_id_index ON snippet_path(block_id);

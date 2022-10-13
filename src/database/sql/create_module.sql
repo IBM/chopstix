@@ -9,7 +9,7 @@ CREATE TABLE IF NOT EXISTS module (
 );
 
 -- DROP INDEX IF EXISTS module_name_index;
-CREATE INDEX IF NOT EXISTS module_name_index ON module(name); 
+CREATE INDEX IF NOT EXISTS module_name_index ON module(name);
 
 -- DROP TABLE IF EXISTS module_annot;
 CREATE TABLE IF NOT EXISTS module_annot (

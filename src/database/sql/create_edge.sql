@@ -10,7 +10,7 @@ CREATE TABLE IF NOT EXISTS edge (
 );
 
 -- DROP INDEX IF EXISTS edge_from_id_index;
-CREATE INDEX IF NOT EXISTS edge_from_id_index ON edge(from_id); 
+CREATE INDEX IF NOT EXISTS edge_from_id_index ON edge(from_id);
 
 -- DROP INDEX IF EXISTS edge_to_id_index;
-CREATE INDEX IF NOT EXISTS edge_to_id_index ON edge(to_id); 
+CREATE INDEX IF NOT EXISTS edge_to_id_index ON edge(to_id);

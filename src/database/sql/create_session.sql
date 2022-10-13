@@ -5,4 +5,4 @@ CREATE TABLE IF NOT EXISTS session (
 );
 
 -- DROP INDEX IF EXISTS session_pid_index
-CREATE INDEX IF NOT EXISTS session_pid_index ON session(pid); 
+CREATE INDEX IF NOT EXISTS session_pid_index ON session(pid);

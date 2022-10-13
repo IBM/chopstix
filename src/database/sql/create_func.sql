@@ -9,7 +9,7 @@ CREATE TABLE IF NOT EXISTS func (
 );
 
 -- DROP INDEX IF EXISTS func_module_id_index;
-CREATE INDEX IF NOT EXISTS func_module_id_index ON func(module_id); 
+CREATE INDEX IF NOT EXISTS func_module_id_index ON func(module_id);
 
 -- DROP TABLE IF EXISTS func_annot;
 CREATE TABLE IF NOT EXISTS func_annot (
@@ -21,4 +21,4 @@ CREATE TABLE IF NOT EXISTS func_annot (
 );
 
 -- DROP INDEX IF EXISTS func_annot_func_id_index;
-CREATE INDEX IF NOT EXISTS func_annot_func_id_index ON func_annot(func_id); 
+CREATE INDEX IF NOT EXISTS func_annot_func_id_index ON func_annot(func_id);
