@@ -150,9 +150,10 @@ flag && $4 ~ "ber" && $5 ~ r14 {
 }
 
 flag && $8 ~ "jg" {
-    longjmp=1;
-    gsub(":", "", $1);
-    addr=$1;
+    longjmp=0;
+    gsub(">", "", $10);
+    gsub("<", "", $10);
+    printf("subcall: %s\n", $10);
 }
 
 flag && $8 ~ "jg" && $10 ~ ".part.[0-9]" {
