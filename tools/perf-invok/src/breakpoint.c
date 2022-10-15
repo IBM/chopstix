@@ -136,7 +136,7 @@ void setBreakpoint(unsigned long pid, unsigned long long address,
                 debug_print("Error: %s\n", strerror(errno));
                 break;
         }
-        perror("ERROR while setting breakpoint (read)"); kill(pid, SIGKILL); exit(EXIT_FAILURE);
+        perror("ERROR: while setting breakpoint (read)"); kill(pid, SIGKILL); exit(EXIT_FAILURE);
     };
 #if defined(__s390x__)
     unsigned long long mask = 0x0000FFFFFFFFFFFF;
@@ -148,14 +148,14 @@ void setBreakpoint(unsigned long pid, unsigned long long address,
     debug_print("Breakpoint new data: 0x%016llX\n", breakpoint->originalData & mask);
     errno = 0;
     long ret = ptrace(PTRACE_POKEDATA, pid, address, breakpoint->originalData & mask);
-    if (ret != 0) { perror("ERROR while setting breakpoint (write)"); kill(pid, SIGKILL); exit(EXIT_FAILURE);};
+    if (ret != 0) { perror("ERROR: while setting breakpoint (write)"); kill(pid, SIGKILL); exit(EXIT_FAILURE);};
 }
 
 void resetBreakpoint(unsigned long pid, Breakpoint *breakpoint) {
     debug_print("resetBreakpoint 0x%016llX to 0x%08llX\n", breakpoint->address, breakpoint->originalData);
     errno = 0;
     long ret = ptrace(PTRACE_POKEDATA, pid, breakpoint->address, breakpoint->originalData);
-    if (ret != 0) { perror("ERROR while restoring breakpoint"); kill(pid, SIGKILL); exit(EXIT_FAILURE);};
+    if (ret != 0) { perror("ERROR: while restoring breakpoint"); kill(pid, SIGKILL); exit(EXIT_FAILURE);};
 }
 
 void compute_base_address(unsigned long pid, char* module, char* mainmodule) {
@@ -232,14 +232,14 @@ void compute_base_address(unsigned long pid, char* module, char* mainmodule) {
 
     while(1) {
         long ret = ptrace(PTRACE_SINGLESTEP, pid, 0, 0);
-        if (ret != 0) { perror("ERROR while PTRACE_SINGLESTEP"); kill(pid, SIGKILL); exit(EXIT_FAILURE);};
+        if (ret != 0) { perror("ERROR: while PTRACE_SINGLESTEP"); kill(pid, SIGKILL); exit(EXIT_FAILURE);};
 
         ret = waitpid(-1, &status, 0); // Wait for child to start
         if (ret != pid) { perror("ERROR: during tracing. Unexpected pid (did the process created subprocesses?)."); kill(ret, SIGKILL); kill(pid, SIGKILL); exit(EXIT_FAILURE);};
-        if (ret == -1) { perror("ERROR waiting child to execute PTRACE_SINGLESTEP"); kill(pid, SIGKILL); exit(EXIT_FAILURE);};
-        if (!WIFSTOPPED(status) || WSTOPSIG(status) != SIGSTOP) {
-            perror("ERROR unexpected state after PTRACE_SINGLESTEP"); kill(pid, SIGKILL); exit(EXIT_FAILURE);
-        }
+        if (ret == -1) { perror("ERROR: waiting child to execute PTRACE_SINGLESTEP"); kill(pid, SIGKILL); exit(EXIT_FAILURE);};
+        //if (!WIFSTOPPED(status) || WSTOPSIG(status) != SIGSTOP) {
+        //    perror("ERROR: unexpected state after PTRACE_SINGLESTEP"); kill(pid, SIGKILL); exit(EXIT_FAILURE);
+        //}
 
 #if defined(__riscv) // RISC-V (Valid with or without C extension)
         struct RiscVRegs regs;
@@ -248,7 +248,7 @@ void compute_base_address(unsigned long pid, char* module, char* mainmodule) {
             .iov_len  = RISCV_GPR_SIZE
         };
         ret = ptrace(PTRACE_GETREGSET, pid, PTRACE_GP_REGISTERS, &data);
-        if (ret != 0) { perror("ERROR while PTRACE_GETREGSET"); kill(pid, SIGKILL); exit(EXIT_FAILURE);};
+        if (ret != 0) { perror("ERROR: while PTRACE_GETREGSET"); kill(pid, SIGKILL); exit(EXIT_FAILURE);};
         caddr = regs.gp.pc;
 #elif defined(__s390x__)
         long buf[2];
@@ -258,7 +258,7 @@ void compute_base_address(unsigned long pid, char* module, char* mainmodule) {
         ret = ptrace(PTRACE_GETREGSET, pid, NT_PRSTATUS, &iov);
         if (ret != 0) {
             continue;
-            perror("ERROR while PTRACE_GETREGSET"); kill(pid, SIGKILL); exit(EXIT_FAILURE);
+            perror("ERROR: while PTRACE_GETREGSET"); kill(pid, SIGKILL); exit(EXIT_FAILURE);
         };
         caddr = buf[1];
 #elif defined(__PPC64__) || defined(__ppc64__) || defined(_ARCH_PPC64) // PPC64
@@ -269,12 +269,12 @@ void compute_base_address(unsigned long pid, char* module, char* mainmodule) {
 #endif
         long buf[POWER_NUM_REGS];
         ret = ptrace(PTRACE_GETREGS, pid, 0, buf);
-        if (ret != 0) { perror("ERROR while PTRACE_GETREGSET"); kill(pid, SIGKILL); exit(EXIT_FAILURE);};
+        if (ret != 0) { perror("ERROR: while PTRACE_GETREGSET"); kill(pid, SIGKILL); exit(EXIT_FAILURE);};
         caddr = buf[POWER_NIP];
 #elif defined(__x86_64__) || defined(__i386__)
         struct user_regs_struct regs;
         ret = ptrace(PTRACE_GETREGS, pid, 0, &regs);
-        if (ret != 0) { perror("ERROR while PTRACE_GETREGSET"); kill(pid, SIGKILL); exit(EXIT_FAILURE);};
+        if (ret != 0) { perror("ERROR: while PTRACE_GETREGSET"); kill(pid, SIGKILL); exit(EXIT_FAILURE);};
         caddr = regs.rip;
 #endif
         if (caddr == paddr) {
@@ -327,7 +327,7 @@ void displace_pc(long pid, long displ) {
 
     errno = 0;
     long ret = ptrace(PTRACE_GETREGSET, pid, NT_PRSTATUS, &iov);
-    if (ret != 0) { perror("ERROR while reading PC"); kill(pid, SIGKILL); exit(EXIT_FAILURE);};
+    if (ret != 0) { perror("ERROR: while reading PC"); kill(pid, SIGKILL); exit(EXIT_FAILURE);};
     long pc = buf[1];
 
     debug_print("displace_pc from 0x%016lX to 0x%016lX\n", pc, pc + displ);
@@ -335,6 +335,6 @@ void displace_pc(long pid, long displ) {
     buf[1] = pc + displ;
     errno = 0;
     ret = ptrace(PTRACE_SETREGSET, pid, NT_PRSTATUS, &iov);
-    if (ret != 0) { perror("ERROR while setting PC"); kill(pid, SIGKILL); exit(EXIT_FAILURE);};
+    if (ret != 0) { perror("ERROR: while setting PC"); kill(pid, SIGKILL); exit(EXIT_FAILURE);};
 }
 #endif
