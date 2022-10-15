@@ -27,6 +27,7 @@
 #include <sys/wait.h>
 #include <sys/ptrace.h>
 #include <sys/personality.h>
+#include <sys/time.h>
 #include <unistd.h>
 #include <sched.h>
 #include <signal.h>
@@ -38,10 +39,11 @@
 #include "sample.h"
 #include "debug.h"
 
-#define MAX_SAMPLES 8192
+#define MAX_SAMPLES (1024*1024)
 #define MAX_BREAKPOINTS 1024
 
 int pid;
+int full = 0;
 Sample samples[MAX_SAMPLES];
 unsigned int sampleCount = 0;
 unsigned int flushedSampleCount = 0;
@@ -53,6 +55,22 @@ unsigned int startpoint_count = 0;
 char *module = "main";
 char *mainmodule = "main";
 extern unsigned long long base_address;
+
+void set_timeout(double timeout) {
+
+   struct itimerval timedef;
+   timedef.it_interval.tv_sec = 0;
+   timedef.it_interval.tv_usec = 0;
+   timedef.it_value.tv_sec = (long long) timeout;
+   timedef.it_value.tv_usec = (timeout - ((long long) timeout)) * 1000000;
+
+   //fprintf(stderr, "Timeout set to %ld seconds\n", timedef.it_value.tv_sec);
+   //fprintf(stderr, "Timeout set to %ld useconds\n", timedef.it_value.tv_usec);
+
+   int ret = setitimer(ITIMER_REAL, &timedef, NULL);
+   if (ret != 0) { perror("ERROR while setting timeout"); kill(pid, SIGKILL); exit(EXIT_FAILURE);};
+   fprintf(stderr, "Timeout set to %f seconds\n", timeout);
+}
 
 void help(FILE *fd) {
     if (fd == stderr){
@@ -83,12 +101,31 @@ void help(FILE *fd) {
 }
 
 void handler(int signum) {
+
+    fprintf(stderr, "WARNING: Process timeout reached!\n");
+
     int ret = kill(pid, signum);
     if (ret != 0) { perror("ERROR Sending signal to process"); kill(pid, SIGKILL); exit(EXIT_FAILURE);};
 
     if (sampleInProgress) {
         endSample(&samples[sampleCount - flushedSampleCount]);
-        sampleCount++;
+        // Only account the interrupted sample if it is the only one (full
+        // application execution)
+        if ((sampleCount == 0) && full) {
+            sampleCount++;
+        }
+    } else if (sampleCount == 0) {
+        fprintf(stderr, "ERROR: Process timeout too short\n");
+        exit(EXIT_FAILURE);
+    }
+
+    if ((sampleCount < 1000) && !full) {
+        if (outputFile != stderr) {
+            ret = fclose(outputFile);
+            if (ret != 0) { perror("ERROR closing file"); kill(pid, SIGKILL); exit(EXIT_FAILURE);};
+        }
+        fprintf(stderr, "ERROR: Process timeout with less than 1000 samples\n");
+        exit(EXIT_FAILURE);
     }
 
     printSamples(outputFile, sampleCount - flushedSampleCount, samples, printHeaders);
@@ -97,10 +134,11 @@ void handler(int signum) {
         ret = fclose(outputFile);
         if (ret != 0) { perror("ERROR closing file"); kill(pid, SIGKILL); exit(EXIT_FAILURE);};
     }
-    exit(EXIT_FAILURE);
+    exit(EXIT_SUCCESS);
 }
 
-int perInvocationPerformance(unsigned long long * addrStart,
+int perInvocationPerformance( double timeout,
+                              unsigned long long * addrStart,
                               unsigned long long * addrEnd,
                               unsigned int maxSamples,
                               FILE *outputFile) {
@@ -112,13 +150,32 @@ int perInvocationPerformance(unsigned long long * addrStart,
     long ret = ptrace(PTRACE_CONT, pid, 0, 0);
     if (ret != 0) { perror("ERROR: on initial tracing"); kill(pid, SIGKILL); exit(EXIT_FAILURE);};
 
+    if (timeout > 0) {
+        set_timeout(timeout);
+    } else {
+        fprintf(stderr, "No timeout set. Waiting process to finish or max number of samples to be reached.\n");
+    }
+
     while (1) {
-        ret = waitpid(pid, &status, 0);
+        ret = waitpid(-1, &status, 0);
+        if (ret != pid) { perror("ERROR: during tracing. Unexpected pid (did the process created subprocesses?)."); kill(ret, SIGKILL); kill(pid, SIGKILL); exit(EXIT_FAILURE);};
         if (ret == -1) { perror("ERROR: during tracing"); kill(pid, SIGKILL); exit(EXIT_FAILURE);};
         if (sampleCount >= maxSamples) { fprintf(stderr, "INFO: Max samples reached\n"); break;}
+
+        if (WIFSTOPPED(status)) {
+            debug_print("%s\n", strsignal(WSTOPSIG(status)));
+            while (((WSTOPSIG(status) != SIGILL) && WIFSTOPPED(status)) && !(WIFEXITED(status))) {
+                ret = ptrace(PTRACE_CONT, pid, 0, WSTOPSIG(status));
+                if (ret != 0) { perror("ERROR: during signal tracing (out of sample)"); kill(pid, SIGKILL); exit(EXIT_FAILURE);};
+                ret = waitpid(-1, &status, 0);
+                if (ret != pid) { perror("ERROR: during tracing. Unexpected pid (did the process created subprocesses?)."); kill(ret, SIGKILL); kill(pid, SIGKILL); exit(EXIT_FAILURE);};
+                if (ret == -1) { perror("ERROR: during tracing (out of sample)"); kill(pid, SIGKILL); exit(EXIT_FAILURE);};
+            }
+        }
+
         if (WIFEXITED(status)) {
-            fprintf(stderr, "INFO: Process finished\n");
-            if (sampleCount == 0 ) { 
+            fprintf(stderr, "INFO: Process finished normally\n");
+            if (sampleCount == 0 ) {
                 fprintf(stderr, "ERROR: No samples gathered\n");
                 fprintf(stderr, "ERROR: - Check for the correctness of the breakpoint addresses\n");
                 fprintf(stderr, "ERROR: - Check if the function is executed *AFTER* the main (initialization functions might be skipped)\n");
@@ -126,16 +183,24 @@ int perInvocationPerformance(unsigned long long * addrStart,
             return WEXITSTATUS(status);
         };
 
-        if (WIFSTOPPED(status)) {
-            debug_print("%s\n", strsignal(WSTOPSIG(status)));
+        if (WIFSIGNALED(status)) {
+            fprintf(stderr, "WARNING: Process finished by a signal: %s\n", strsignal(WTERMSIG(status)));
+
+            //#ifdef WCOREDUMP
+            //if (WCOREDUMP(status)) {
+            //    fprintf(stderr, "WARNING: Process generated a core dump\n");
+            //}
+            //#endif
+            //
+
+            if (sampleCount < 1000) {
+                fprintf(stderr, "ERROR: Process finished by a signal with less than 1000 samples\n");
+                kill(pid, SIGKILL);
+                exit(EXIT_FAILURE);
+            }
+
+            return EXIT_SUCCESS;
         }
-
-        for(int i=0; i<startpoint_count; i++) resetBreakpoint(pid, &bp[i]);
-        for(int i=0; i<endpoint_count; i++) setBreakpoint(pid, addrEnd[i], &bp[i]);
-
-        debug_print("Start sample %d\n", sampleCount);
-        beginSample(&samples[sampleCount - flushedSampleCount]);
-        sampleInProgress = 1;
 
         #if defined(__s390x__)
         if (WIFSTOPPED(status)) {
@@ -145,40 +210,49 @@ int perInvocationPerformance(unsigned long long * addrStart,
             }
         }
         #endif
+
+        debug_print("Restoring start points...\n");
+        for(int i=0; i<startpoint_count; i++) resetBreakpoint(pid, &bp[i]);
+        debug_print("Setting end points...\n");
+        for(int i=0; i<endpoint_count; i++) setBreakpoint(pid, addrEnd[i], &bp[i]);
+
+        debug_print("Start sample %d\n", sampleCount);
+        sampleInProgress = 1;
+        beginSample(&samples[sampleCount - flushedSampleCount]);
+
         ret = ptrace(PTRACE_CONT, pid, 0, 0);
         if (ret != 0) { perror("ERROR: during tracing"); kill(pid, SIGKILL); exit(EXIT_FAILURE);};
-        ret = waitpid(pid, &status, 0);
+
+        ret = waitpid(-1, &status, 0);
+        if (ret != pid) { perror("ERROR: during tracing. Unexpected pid (did the process created subprocesses?)."); kill(ret, SIGKILL); kill(pid, SIGKILL); exit(EXIT_FAILURE);};
         if (ret == -1) { perror("ERROR: during waiting"); kill(pid, SIGKILL); exit(EXIT_FAILURE);};
+
         if (WIFSTOPPED(status)) {
-            if (WSTOPSIG(status) != SIGILL) {
+            while (((WSTOPSIG(status) != SIGILL) && WIFSTOPPED(status)) && !(WIFEXITED(status))) {
                 fprintf(stderr, "WARNING: Process stopped during sampling: %s\n", strsignal(WSTOPSIG(status)));
+                ret = ptrace(PTRACE_CONT, pid, 0, WSTOPSIG(status));
+                if (ret != 0) { perror("ERROR: during signal tracing (in sample)"); kill(pid, SIGKILL); exit(EXIT_FAILURE);};
+                ret = waitpid(-1, &status, 0);
+                if (ret != pid) { perror("ERROR: during tracing. Unexpected pid (did the process created subprocesses?)."); kill(ret, SIGKILL); kill(pid, SIGKILL); exit(EXIT_FAILURE);};
+                if (ret == -1) { perror("ERROR: during tracing (in sample)"); kill(pid, SIGKILL); exit(EXIT_FAILURE);};
             }
         }
+
+        sampleInProgress = 0;
+        endSample(&samples[sampleCount - flushedSampleCount]);
+        sampleCount++;
+
         if (WIFEXITED(status)) {
             fprintf(stderr, "ERROR: Process exited during sampling: %d\n", WEXITSTATUS(status));
             return WEXITSTATUS(status);
         }
+
         if (WIFSIGNALED(status)) {
-            debug_print("ERROR: Process signaled during sampling: %s\n", strsignal(WTERMSIG(status)));
+            debug_print("ERROR: Process signaled during sampling not supported: %s\n", strsignal(WTERMSIG(status)));
             kill(pid, SIGKILL);
             exit(EXIT_FAILURE);
         }
-        sampleInProgress = 0;
 
-        debug_print("End sample %d\n", sampleCount);
-        endSample(&samples[sampleCount - flushedSampleCount]);
-
-        sampleCount++;
-
-        if (sampleCount % MAX_SAMPLES == 0) {
-            printSamples(outputFile, sampleCount - flushedSampleCount,
-                         samples, printHeaders);
-            printHeaders = 0;
-            flushedSampleCount += MAX_SAMPLES;
-        }
-
-        for(int i=0; i<endpoint_count; i++) resetBreakpoint(pid, &bp[i]);
-        for(int i=0; i<startpoint_count; i++) setBreakpoint(pid, addrStart[i], &bp[i]);
         #if defined(__s390x__)
         if (WIFSTOPPED(status)) {
             // Z architecture advances 2 bytes the PC on SIGILL
@@ -187,6 +261,23 @@ int perInvocationPerformance(unsigned long long * addrStart,
             }
         }
         #endif
+
+        debug_print("Need flush?\n");
+        if (sampleCount % MAX_SAMPLES == 0) {
+            debug_print("Flushing ...\n");
+            printSamples(outputFile, sampleCount - flushedSampleCount,
+                         samples, printHeaders);
+            printHeaders = 0;
+            flushedSampleCount += MAX_SAMPLES;
+            debug_print("Flushing DONE\n");
+        }
+
+        debug_print("Restoring end points...\n");
+        for(int i=0; i<endpoint_count; i++) resetBreakpoint(pid, &bp[i]);
+        debug_print("Setting start points...\n");
+        for(int i=0; i<startpoint_count; i++) setBreakpoint(pid, addrStart[i], &bp[i]);
+
+        debug_print("End sample %d\n", sampleCount-1);
         ret = ptrace(PTRACE_CONT, pid, 0, 0);
         if (ret != 0) { perror("ERROR: during next tracing"); kill(pid, SIGKILL); exit(EXIT_FAILURE);};
     }
@@ -195,30 +286,52 @@ int perInvocationPerformance(unsigned long long * addrStart,
     return 0;
 }
 
-int globalPerformance(unsigned int timeout) {
+int globalPerformance(double timeout) {
     int status;
     beginSample(&samples[0]);
     sampleInProgress = 1;
+    full = 1;
 
     int ret =  ptrace(PTRACE_CONT, pid, 0, 0);
     if (ret != 0) { perror("ERROR while setting trace"); kill(pid, SIGKILL); exit(EXIT_FAILURE);};
 
     if (timeout > 0 ) {
-        fprintf(stderr, "Timeout set to %d seconds\n", timeout);
-        ret = alarm(timeout);
-        if (ret != 0) { perror("ERROR while setting timeout"); kill(pid, SIGKILL); exit(EXIT_FAILURE);};
+        set_timeout(timeout);
     } else {
         fprintf(stderr, "No timeout set. Waiting process to finish\n");
     }
 
-    ret = waitpid(pid, &status, 0);
+    ret = waitpid(-1, &status, 0);
+    if (ret != pid) { perror("ERROR: during tracing. Unexpected pid (did the process created subprocesses?)."); kill(ret, SIGKILL); kill(pid, SIGKILL); exit(EXIT_FAILURE);};
     if (ret == -1) { perror("ERROR while waiting"); kill(pid, SIGKILL); exit(EXIT_FAILURE);};
+
+    while (!(WIFSIGNALED(status)) && !(WIFEXITED(status))) {
+        ret =  ptrace(PTRACE_CONT, pid, 0, WSTOPSIG(status));
+        if (ret != 0) { perror("ERROR while setting trace"); kill(pid, SIGKILL); exit(EXIT_FAILURE);};
+        ret = waitpid(-1, &status, 0);
+        if (ret != pid) { perror("ERROR: during tracing. Unexpected pid (did the process created subprocesses?)."); kill(ret, SIGKILL); kill(pid, SIGKILL); exit(EXIT_FAILURE);};
+        if (ret == -1) { perror("ERROR while waiting"); kill(pid, SIGKILL); exit(EXIT_FAILURE);};
+    }
 
     sampleInProgress = 0;
     endSample(&samples[0]);
     sampleCount++;
 
-    return status;
+    if (WIFEXITED(status)) {
+        fprintf(stderr, "INFO: Process exited\n");
+        return WEXITSTATUS(status);
+    }
+
+    if (WIFSIGNALED(status)) {
+        fprintf(stderr, "WARNING: Process finished by a signal: %s\n", strsignal(WTERMSIG(status)));
+        return EXIT_SUCCESS;
+    }
+
+    if (WIFSTOPPED(status)) {
+        fprintf(stderr, "WARNING: Process stoped by signal: %s\n", strsignal(WSTOPSIG(status)));
+    }
+
+    return EXIT_FAILURE;
 }
 
 int main(int argc, char **argv) {
@@ -229,7 +342,7 @@ int main(int argc, char **argv) {
     unsigned int maxSamples = UINT_MAX;
     unsigned int programStart = 0;
     unsigned int programStartSet = 0;
-    unsigned int timeout = 0;
+    double timeout = 0;
     unsigned int cpu = -1;
     char *output = NULL;
     addrStart[0] = 0;
@@ -283,7 +396,9 @@ int main(int argc, char **argv) {
                 state = EXPECTING_OPT;
                 break;
             case EXPECTING_TIMEOUT:
-                timeout = atoi(argv[i]);
+                errno = 0;
+                timeout = strtod(argv[i], NULL);
+                if (errno !=0) perror("Wrong format in timeout");
                 state = EXPECTING_OPT;
                 break;
             case EXPECTING_CPU:
@@ -400,17 +515,27 @@ int main(int argc, char **argv) {
 
         int status;
         debug_print("parent: Waiting for child...\n");
-        ret = waitpid(pid, &status, 0); // Wait for child to start
+        ret = waitpid(-1, &status, 0); // Wait for child to start
+        if (ret != pid) { perror("ERROR: during tracing. Unexpected pid (did the process created subprocesses?)."); kill(ret, SIGKILL); kill(pid, SIGKILL); exit(EXIT_FAILURE);};
         if (ret == -1) { perror("ERROR: waiting child to start"); kill(pid, SIGKILL); exit(EXIT_FAILURE);};
         debug_print("parent: Waiting for child... OK\n");
 
         ret = ptrace(PTRACE_SYSCALL, pid, 0, 0);
         if (ret != 0) { perror("ERROR: while PTRACE_SYSCALL"); kill(pid, SIGKILL); exit(EXIT_FAILURE);};
-        ret = waitpid(pid, &status, 0); // Wait for child to start
+        ret = waitpid(-1, &status, 0); // Wait for child to start
+        if (ret != pid) { perror("ERROR: during tracing. Unexpected pid (did the process created subprocesses?)."); kill(ret, SIGKILL); kill(pid, SIGKILL); exit(EXIT_FAILURE);};
         if (ret == -1) { perror("ERROR: waiting child to execute first system call"); kill(pid, SIGKILL); exit(EXIT_FAILURE);};
 
         compute_base_address(pid, module, mainmodule);
         configureEvents(pid);
+
+#if 0
+        //
+        // TODO: Enable this once we implement a complete multi-thread support
+        //
+        ret = ptrace(PTRACE_SETOPTIONS, pid, 0, PTRACE_O_TRACEFORK | PTRACE_O_TRACEVFORK | PTRACE_O_TRACECLONE);
+        if (ret != 0) { perror("ERROR: while PTRACE_SYSCALL"); kill(pid, SIGKILL); exit(EXIT_FAILURE);};
+#endif
 
         if (addrStart[0] > 0 && addrEnd[0] > 0 && endpoint_count > 0 && startpoint_count > 0) {
             fprintf(stderr, "INFO: Measuring performance counters from ");
@@ -418,7 +543,7 @@ int main(int argc, char **argv) {
             fprintf(stderr, " to ");
             for(int i=0; i<endpoint_count; i++) fprintf(stderr, "0x%016llX ", addrEnd[i] + base_address);
             fprintf(stderr, "(max. samples: %u)\n", maxSamples);
-            status = perInvocationPerformance(addrStart, addrEnd, maxSamples, outputFile);
+            status = perInvocationPerformance(timeout, addrStart, addrEnd, maxSamples, outputFile);
         } else {
             fprintf(stderr, "INFO: Measuring performance counters from global execution\n");
             status = globalPerformance(timeout);
@@ -431,6 +556,6 @@ int main(int argc, char **argv) {
             ret = fclose(outputFile);
             if (ret != 0) { perror("ERROR: closing file"); exit(EXIT_FAILURE);};
         }
-        return status;
+        exit(status);
     }
 }

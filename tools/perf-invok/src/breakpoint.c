@@ -180,7 +180,7 @@ void compute_base_address(unsigned long pid, char* module, char* mainmodule) {
 
     nbytes = readlink(mainmodule, mainpath, 1024);
     if ((nbytes == -1) || (nbytes == 1024)) {
-       if(nbytes == -1) { 
+       if(nbytes == -1) {
             mainmodule = basename(mainmodule);
        } else {
            kill(pid, SIGKILL);
@@ -234,8 +234,12 @@ void compute_base_address(unsigned long pid, char* module, char* mainmodule) {
         long ret = ptrace(PTRACE_SINGLESTEP, pid, 0, 0);
         if (ret != 0) { perror("ERROR while PTRACE_SINGLESTEP"); kill(pid, SIGKILL); exit(EXIT_FAILURE);};
 
-        ret = waitpid(pid, &status, 0); // Wait for child to start
+        ret = waitpid(-1, &status, 0); // Wait for child to start
+        if (ret != pid) { perror("ERROR: during tracing. Unexpected pid (did the process created subprocesses?)."); kill(ret, SIGKILL); kill(pid, SIGKILL); exit(EXIT_FAILURE);};
         if (ret == -1) { perror("ERROR waiting child to execute PTRACE_SINGLESTEP"); kill(pid, SIGKILL); exit(EXIT_FAILURE);};
+        if (!WIFSTOPPED(status) || WSTOPSIG(status) != SIGSTOP) {
+            perror("ERROR unexpected state after PTRACE_SINGLESTEP"); kill(pid, SIGKILL); exit(EXIT_FAILURE);
+        }
 
 #if defined(__riscv) // RISC-V (Valid with or without C extension)
         struct RiscVRegs regs;
