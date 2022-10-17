@@ -110,34 +110,37 @@ void setBreakpoint(unsigned long pid, unsigned long long address,
     breakpoint->address = address;
     debug_print("setBreakpoint 0x%016llX to 0x%08X (orig 0x%08llX)\n", address, 0, breakpoint->originalData);
     debug_print("setBreakpoint %p\n", (void *) address);
-    errno = 0;
-    breakpoint->originalData = ptrace(PTRACE_PEEKTEXT, pid, address, NULL);
-    if (errno != 0) {
-        switch (errno) {
-            case EBUSY:
-                debug_print("Error: EBUSY: %s\n", strerror(errno));
-                break;
-            case EFAULT:
-                debug_print("Error: EFAULT: %s\n", strerror(errno));
-                break;
-            case EINVAL:
-                debug_print("Error: EINVAL: %s\n", strerror(errno));
-                break;
-            case EIO:
-                debug_print("Error: EIO: %s\n", strerror(errno));
-                break;
-            case EPERM:
-                debug_print("Error: EPERM: %s\n", strerror(errno));
-                break;
-            case ESRCH:
-                debug_print("Error: ESRCH: %s\n", strerror(errno));
-                break;
-            default:
-                debug_print("Error: %s\n", strerror(errno));
-                break;
-        }
-        perror("ERROR: while setting breakpoint (read)"); kill(pid, SIGKILL); exit(EXIT_FAILURE);
-    };
+    if (breakpoint->init == 0) {
+        errno = 0;
+        breakpoint->originalData = ptrace(PTRACE_PEEKTEXT, pid, address, NULL);
+        if (errno != 0) {
+            switch (errno) {
+                case EBUSY:
+                    debug_print("Error: EBUSY: %s\n", strerror(errno));
+                    break;
+                case EFAULT:
+                    debug_print("Error: EFAULT: %s\n", strerror(errno));
+                    break;
+                case EINVAL:
+                    debug_print("Error: EINVAL: %s\n", strerror(errno));
+                    break;
+                case EIO:
+                    debug_print("Error: EIO: %s\n", strerror(errno));
+                    break;
+                case EPERM:
+                    debug_print("Error: EPERM: %s\n", strerror(errno));
+                    break;
+                case ESRCH:
+                    debug_print("Error: ESRCH: %s\n", strerror(errno));
+                    break;
+                default:
+                    debug_print("Error: %s\n", strerror(errno));
+                    break;
+            }
+            perror("ERROR: while setting breakpoint (read)"); kill(pid, SIGKILL); exit(EXIT_FAILURE);
+        };
+        breakpoint->init = 1;
+    }
 #if defined(__s390x__)
     // This is is to take into acount the endianness
     unsigned long long mask = 0x0000FFFFFFFFFFFF;
@@ -345,3 +348,44 @@ void displace_pc(long pid, long displ) {
     if (ret != 0) { perror("ERROR: while setting PC"); kill(pid, SIGKILL); exit(EXIT_FAILURE);};
 }
 #endif
+
+
+long get_current_pc(long pid) {
+#if defined(__s390x__)
+    long buf[2];
+    struct iovec iov;
+    iov.iov_len = sizeof(buf);
+    iov.iov_base = buf;
+
+    errno = 0;
+    long ret = ptrace(PTRACE_GETREGSET, pid, NT_PRSTATUS, &iov);
+    if (ret != 0) { perror("ERROR: while reading PC"); kill(pid, SIGKILL); exit(EXIT_FAILURE);};
+    long pc = buf[1];
+#elif defined(__riscv) // RISC-V (Valid with or without C extension)
+    struct RiscVRegs regs;
+    struct iovec data = {
+        .iov_base = &regs,
+        .iov_len  = RISCV_GPR_SIZE
+    };
+    ret = ptrace(PTRACE_GETREGSET, pid, PTRACE_GP_REGISTERS, &data);
+    if (ret != 0) { perror("ERROR: while PTRACE_GETREGSET"); kill(pid, SIGKILL); exit(EXIT_FAILURE);};
+    long pc = regs.gp.pc;
+#elif defined(__PPC64__) || defined(__ppc64__) || defined(_ARCH_PPC64) // PPC64
+#define POWER_NUM_REGS 44
+#define POWER_NIP 32
+#ifndef PTRACE_GETREGS
+#define PTRACE_GETREGS (__ptrace_request)12
+#endif
+    long buf[POWER_NUM_REGS];
+    ret = ptrace(PTRACE_GETREGS, pid, 0, buf);
+    if (ret != 0) { perror("ERROR: while PTRACE_GETREGSET"); kill(pid, SIGKILL); exit(EXIT_FAILURE);};
+    long pc = buf[POWER_NIP];
+#elif defined(__x86_64__) || defined(__i386__)
+    struct user_regs_struct regs;
+    ret = ptrace(PTRACE_GETREGS, pid, 0, &regs);
+    if (ret != 0) { perror("ERROR: while PTRACE_GETREGSET"); kill(pid, SIGKILL); exit(EXIT_FAILURE);};
+    long pc = regs.rip;
+#endif
+    debug_print("current_pc : 0x%016lX\n", pc); 
+    return pc;
+}

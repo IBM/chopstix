@@ -78,7 +78,7 @@ void help(FILE *fd) {
     }
     fprintf(fd, "Usage:\n");
     fprintf(fd, "\n");
-    fprintf(fd, "chop-perf-invok -o output [-begin addr] [-begin addr] ...] [-end addr [-end addr ...]] [-timeout seconds] [-max samples] [-module] [-cpu cpu] [-h] -- command-to-execute\n");
+    fprintf(fd, "chop-perf-invok -o output [-begin addr] [-begin addr] ...] [-end addr [-end addr ...]] [-timeout seconds] [-max samples] [-module] [-cpu cpu] [-level level] [-h] -- command-to-execute\n");
     fprintf(fd, "\n");
     fprintf(fd, "-o name          output file name\n");
     fprintf(fd, "-begin addr      start address of the region to measure (can be specified multiple times)\n");
@@ -87,6 +87,7 @@ void help(FILE *fd) {
     fprintf(fd, "-timeout seconds stop measuring after the specified number of seconds (default: no timeout)\n");
     fprintf(fd, "-max samples     stop measuring after the specified number of measurements(default: no limit)\n");
     fprintf(fd, "-cpu cpu         pin process to the specified CPU (default: 0)\n");
+    fprintf(fd, "-level level     call level to trace, in case of recursion (default: 0, tot level)\n");
     fprintf(fd, "-h               print this help message\n");
     fprintf(fd, "\n");
 
@@ -138,11 +139,14 @@ int perInvocationPerformance( double timeout,
                               unsigned long long * addrStart,
                               unsigned long long * addrEnd,
                               unsigned int maxSamples,
+                              unsigned int start_level,
                               FILE *outputFile) {
     int status;
-    Breakpoint bp[MAX_BREAKPOINTS];
+    static Breakpoint Startbp[MAX_BREAKPOINTS];
+    static Breakpoint Endbp[MAX_BREAKPOINTS];
+    int max_level_seen = -1;
 
-    for(int i=0; i<startpoint_count; i++) setBreakpoint(pid, addrStart[i], &bp[i]);
+    for(int i=0; i<startpoint_count; i++) setBreakpoint(pid, addrStart[i], &Startbp[i]);
 
     long ret = ptrace(PTRACE_CONT, pid, 0, 0);
     if (ret != 0) { perror("ERROR: on initial tracing"); kill(pid, SIGKILL); exit(EXIT_FAILURE);};
@@ -220,13 +224,34 @@ int perInvocationPerformance( double timeout,
         check_child(ret, pid, status);
 
         debug_print("Restoring start points...\n");
-        for(int i=0; i<startpoint_count; i++) resetBreakpoint(pid, &bp[i]);
-        debug_print("Setting end points...\n");
-        for(int i=0; i<endpoint_count; i++) setBreakpoint(pid, addrEnd[i], &bp[i]);
+        for(int i=0; i<startpoint_count; i++) resetBreakpoint(pid, &Startbp[i]);
 
-        debug_print("Start sample %d\n", sampleCount);
-        sampleInProgress = 1;
-        beginSample(&samples[sampleCount - flushedSampleCount]);
+        // Advance one
+        ret = ptrace(PTRACE_SINGLESTEP, pid, 0, 0);
+        if (ret != 0) { perror("ERROR: while PTRACE_SINGLESTEP"); kill(pid, SIGKILL); exit(EXIT_FAILURE);};
+        #if MULTIPROCESS
+        ret = waitpid(-1, &status, 0); // Wait for child to start
+        if (ret != pid) { perror("ERROR: during tracing. Unexpected pid (did the process created subprocesses?)."); kill(ret, SIGKILL); kill(pid, SIGKILL); exit(EXIT_FAILURE);};
+        #else
+        ret = waitpid(pid, &status, 0);
+        #endif
+        if (ret == -1) { perror("ERROR: waiting child to execute PTRACE_SINGLESTEP"); kill(pid, SIGKILL); exit(EXIT_FAILURE);};
+
+        debug_print("Setting end points...\n");
+        for(int i=0; i<startpoint_count; i++) setBreakpoint(pid, addrStart[i], &Startbp[i]);
+
+        debug_print("Setting end points...\n");
+        for(int i=0; i<endpoint_count; i++) setBreakpoint(pid, addrEnd[i], &Endbp[i]);
+
+
+        int level = 0;
+        if (level > max_level_seen) max_level_seen = level;
+
+        if(level == start_level) { 
+            debug_print("Start sample %d\n", sampleCount);
+            sampleInProgress = 1;
+            beginSample(&samples[sampleCount - flushedSampleCount]);
+        }
 
         ret = ptrace(PTRACE_CONT, pid, 0, 0);
         if (ret != 0) { perror("ERROR: during tracing"); kill(pid, SIGKILL); exit(EXIT_FAILURE);};
@@ -240,10 +265,83 @@ int perInvocationPerformance( double timeout,
         if (ret == -1) { perror("ERROR: during waiting"); kill(pid, SIGKILL); exit(EXIT_FAILURE);};
 
         if (WIFSTOPPED(status)) {
-            while (((WSTOPSIG(status) != SIGILL) && WIFSTOPPED(status)) && !(WIFEXITED(status))) {
-                fprintf(stderr, "WARNING: Process stopped during sampling: %s\n", strsignal(WSTOPSIG(status)));
-                check_child(ret, pid, status);
-                ret = ptrace(PTRACE_CONT, pid, 0, WSTOPSIG(status));
+            while (!(WIFEXITED(status))) {
+                if ((WSTOPSIG(status) == SIGILL) && WIFSTOPPED(status)) {
+
+                    // Check for recursive calls
+
+                    #if defined(__s390x__)
+                    if (WIFSTOPPED(status)) {
+                        // Z architecture advances 2 bytes the PC on SIGILL
+                        if (WSTOPSIG(status) == SIGILL) {
+                            displace_pc(pid, -2);
+                        }
+                    }
+                    #endif
+
+                    long pc = get_current_pc(pid);
+                    int found = 0, i = 0;
+                    for(i=0; i<endpoint_count; i++) {
+                        if (addrEnd[i] == pc) { break; }
+                    }
+                    found = i;
+
+                    if(found < endpoint_count) {
+                        // Return recursive 
+                        if ((level == 0) || (level == start_level && sampleInProgress)) {
+                            break;
+                        } else {
+                            level = level - 1;
+                            resetBreakpoint(pid, &Endbp[found]);
+                            ret = ptrace(PTRACE_SINGLESTEP, pid, 0, 0);
+                            if (ret != 0) { perror("ERROR: while PTRACE_SINGLESTEP"); kill(pid, SIGKILL); exit(EXIT_FAILURE);};
+                            #if MULTIPROCESS
+                            ret = waitpid(-1, &status, 0); // Wait for child to start
+                            if (ret != pid) { perror("ERROR: during tracing. Unexpected pid (did the process created subprocesses?)."); kill(ret, SIGKILL); kill(pid, SIGKILL); exit(EXIT_FAILURE);};
+                            #else
+                            ret = waitpid(pid, &status, 0);
+                            #endif
+                            if (ret == -1) { perror("ERROR: waiting child to execute PTRACE_SINGLESTEP"); kill(pid, SIGKILL); exit(EXIT_FAILURE);};
+                            setBreakpoint(pid, addrEnd[found], &Endbp[found]);
+                        }
+                    } else {
+                        for(i=0; i<startpoint_count; i++) {
+                            if (addrStart[i] == pc) {
+                                break;
+                            }
+                        }
+                        found = i;
+                        if(found >= startpoint_count) {
+                            perror("ERROR: during tracing. SIGILL not in -end/-begin addresses"); kill(ret, SIGKILL); kill(pid, SIGKILL); exit(EXIT_FAILURE);
+                        }
+                        // Call recursive
+                        resetBreakpoint(pid, &Startbp[found]);
+                        ret = ptrace(PTRACE_SINGLESTEP, pid, 0, 0);
+                        if (ret != 0) { perror("ERROR: while PTRACE_SINGLESTEP"); kill(pid, SIGKILL); exit(EXIT_FAILURE);};
+                        #if MULTIPROCESS
+                        ret = waitpid(-1, &status, 0); // Wait for child to start
+                        if (ret != pid) { perror("ERROR: during tracing. Unexpected pid (did the process created subprocesses?)."); kill(ret, SIGKILL); kill(pid, SIGKILL); exit(EXIT_FAILURE);};
+                        #else
+                        ret = waitpid(pid, &status, 0);
+                        #endif
+                        if (ret == -1) { perror("ERROR: waiting child to execute PTRACE_SINGLESTEP"); kill(pid, SIGKILL); exit(EXIT_FAILURE);};
+                        setBreakpoint(pid, addrStart[found], &Startbp[found]);
+                        level = level + 1;
+                        if (level > max_level_seen) max_level_seen = level;
+
+                        // Start if we are at the right requested level
+                        if(level == start_level) { 
+                            debug_print("Start sample %d\n", sampleCount);
+                            sampleInProgress = 1;
+                            beginSample(&samples[sampleCount - flushedSampleCount]);
+                        }
+                    }
+                    ret = ptrace(PTRACE_CONT, pid, 0, 0);
+                } else {
+                    fprintf(stderr, "WARNING: Process stopped during sampling: %s\n", strsignal(WSTOPSIG(status)));
+                    check_child(ret, pid, status);
+                    ret = ptrace(PTRACE_CONT, pid, 0, WSTOPSIG(status));
+                }
                 if (ret != 0) { perror("ERROR: during signal tracing (in sample)"); kill(pid, SIGKILL); exit(EXIT_FAILURE);};
 #if MULTIPROCESS
                 ret = waitpid(-1, &status, 0);
@@ -253,6 +351,13 @@ int perInvocationPerformance( double timeout,
 #endif
                 if (ret == -1) { perror("ERROR: during tracing (in sample)"); kill(pid, SIGKILL); exit(EXIT_FAILURE);};
             }
+        }
+
+        if (sampleInProgress == 0) {
+            if (start_level > max_level_seen) {
+                fprintf(stderr, "ERROR: recursivity level requested higher than the maximum one seen.\n");
+            }
+            perror("ERROR: during sampling, trying to end a not started sample"); kill(pid, SIGKILL); exit(EXIT_FAILURE);
         }
 
         sampleInProgress = 0;
@@ -270,15 +375,6 @@ int perInvocationPerformance( double timeout,
             exit(EXIT_FAILURE);
         }
 
-        #if defined(__s390x__)
-        if (WIFSTOPPED(status)) {
-            // Z architecture advances 2 bytes the PC on SIGILL
-            if (WSTOPSIG(status) == SIGILL) {
-                displace_pc(pid, -2);
-            }
-        }
-        #endif
-
         check_child(ret, pid, status);
 
         debug_print("Need flush?\n");
@@ -292,9 +388,9 @@ int perInvocationPerformance( double timeout,
         }
 
         debug_print("Restoring end points...\n");
-        for(int i=0; i<endpoint_count; i++) resetBreakpoint(pid, &bp[i]);
+        for(int i=0; i<endpoint_count; i++) resetBreakpoint(pid, &Endbp[i]);
         debug_print("Setting start points...\n");
-        for(int i=0; i<startpoint_count; i++) setBreakpoint(pid, addrStart[i], &bp[i]);
+        for(int i=0; i<startpoint_count; i++) setBreakpoint(pid, addrStart[i], &Startbp[i]);
 
         debug_print("End sample %d\n", sampleCount-1);
         ret = ptrace(PTRACE_CONT, pid, 0, 0);
@@ -375,6 +471,7 @@ int main(int argc, char **argv) {
     unsigned int programStartSet = 0;
     double timeout = 0;
     unsigned int cpu = -1;
+    unsigned int level = 0;
     char *output = NULL;
     addrStart[0] = 0;
     addrEnd[0] = 0;
@@ -382,7 +479,8 @@ int main(int argc, char **argv) {
     enum {
         EXPECTING_OPT, EXPECTING_ADDR_START, EXPECTING_ADDR_END,
         EXPECTING_MAX_SAMPLES, EXPECTING_PROGRAM, EXPECTING_OUTPUT,
-        EXPECTING_TIMEOUT, EXPECTING_CPU, EXPECTING_MODULE
+        EXPECTING_TIMEOUT, EXPECTING_CPU, EXPECTING_MODULE,
+        EXPECTING_LEVEL,
     } state = EXPECTING_OPT;
 
     for (int i = 1; i < argc; i++) {
@@ -396,6 +494,7 @@ int main(int argc, char **argv) {
                 else if (strcmp(arg, "-timeout") == 0) state = EXPECTING_TIMEOUT;
                 else if (strcmp(arg, "-cpu") == 0) state = EXPECTING_CPU;
                 else if (strcmp(arg, "-module") == 0) state = EXPECTING_MODULE;
+                else if (strcmp(arg, "-level") == 0) state = EXPECTING_LEVEL;
                 else if (strcmp(arg, "-h") == 0) help(stdout);
                 else if (strcmp(arg, "--") == 0) {
                     state = EXPECTING_PROGRAM;
@@ -434,6 +533,10 @@ int main(int argc, char **argv) {
                 break;
             case EXPECTING_CPU:
                 cpu = atoi(argv[i]);
+                state = EXPECTING_OPT;
+                break;
+            case EXPECTING_LEVEL:
+                level = atoi(argv[i]);
                 state = EXPECTING_OPT;
                 break;
             case EXPECTING_OUTPUT:
@@ -579,7 +682,7 @@ int main(int argc, char **argv) {
             fprintf(stderr, " to ");
             for(int i=0; i<endpoint_count; i++) fprintf(stderr, "0x%016llX ", addrEnd[i] + base_address);
             fprintf(stderr, "(max. samples: %u)\n", maxSamples);
-            status = perInvocationPerformance(timeout, addrStart, addrEnd, maxSamples, outputFile);
+            status = perInvocationPerformance(timeout, addrStart, addrEnd, maxSamples, level, outputFile);
         } else {
             fprintf(stderr, "INFO: Measuring performance counters from global execution\n");
             status = globalPerformance(timeout);
