@@ -139,6 +139,7 @@ void setBreakpoint(unsigned long pid, unsigned long long address,
         perror("ERROR: while setting breakpoint (read)"); kill(pid, SIGKILL); exit(EXIT_FAILURE);
     };
 #if defined(__s390x__)
+    // This is is to take into acount the endianness
     unsigned long long mask = 0x0000FFFFFFFFFFFF;
 #else
     unsigned long long mask = ~(BREAKPOINT_SIZE == sizeof(long long) ? -1 : ((1llu << (BREAKPOINT_SIZE * 8)) - 1));
