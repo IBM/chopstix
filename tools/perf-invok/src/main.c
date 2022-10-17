@@ -37,10 +37,7 @@
 
 #include "breakpoint.h"
 #include "sample.h"
-#include "debug.h"
-
-#define MAX_SAMPLES (1024*1024)
-#define MAX_BREAKPOINTS 1024
+#include "config.h"
 
 int pid;
 int full = 0;
@@ -157,18 +154,27 @@ int perInvocationPerformance( double timeout,
     }
 
     while (1) {
+#if MULTIPROCESS
         ret = waitpid(-1, &status, 0);
         if (ret != pid) { perror("ERROR: during tracing. Unexpected pid (did the process created subprocesses?)."); kill(ret, SIGKILL); kill(pid, SIGKILL); exit(EXIT_FAILURE);};
+#else
+        ret = waitpid(pid, &status, 0);
+#endif
         if (ret == -1) { perror("ERROR: during tracing"); kill(pid, SIGKILL); exit(EXIT_FAILURE);};
         if (sampleCount >= maxSamples) { fprintf(stderr, "INFO: Max samples reached\n"); break;}
 
         if (WIFSTOPPED(status)) {
             debug_print("%s\n", strsignal(WSTOPSIG(status)));
             while (((WSTOPSIG(status) != SIGILL) && WIFSTOPPED(status)) && !(WIFEXITED(status))) {
+                check_child(ret, pid, status);
                 ret = ptrace(PTRACE_CONT, pid, 0, WSTOPSIG(status));
                 if (ret != 0) { perror("ERROR: during signal tracing (out of sample)"); kill(pid, SIGKILL); exit(EXIT_FAILURE);};
+#if MULTIPROCESS
                 ret = waitpid(-1, &status, 0);
                 if (ret != pid) { perror("ERROR: during tracing. Unexpected pid (did the process created subprocesses?)."); kill(ret, SIGKILL); kill(pid, SIGKILL); exit(EXIT_FAILURE);};
+#else
+                ret = waitpid(pid, &status, 0);
+#endif
                 if (ret == -1) { perror("ERROR: during tracing (out of sample)"); kill(pid, SIGKILL); exit(EXIT_FAILURE);};
             }
         }
@@ -211,6 +217,8 @@ int perInvocationPerformance( double timeout,
         }
         #endif
 
+        check_child(ret, pid, status);
+
         debug_print("Restoring start points...\n");
         for(int i=0; i<startpoint_count; i++) resetBreakpoint(pid, &bp[i]);
         debug_print("Setting end points...\n");
@@ -223,17 +231,26 @@ int perInvocationPerformance( double timeout,
         ret = ptrace(PTRACE_CONT, pid, 0, 0);
         if (ret != 0) { perror("ERROR: during tracing"); kill(pid, SIGKILL); exit(EXIT_FAILURE);};
 
+#if MULTIPROCESS
         ret = waitpid(-1, &status, 0);
         if (ret != pid) { perror("ERROR: during tracing. Unexpected pid (did the process created subprocesses?)."); kill(ret, SIGKILL); kill(pid, SIGKILL); exit(EXIT_FAILURE);};
+#else
+        ret = waitpid(pid, &status, 0);
+#endif
         if (ret == -1) { perror("ERROR: during waiting"); kill(pid, SIGKILL); exit(EXIT_FAILURE);};
 
         if (WIFSTOPPED(status)) {
             while (((WSTOPSIG(status) != SIGILL) && WIFSTOPPED(status)) && !(WIFEXITED(status))) {
                 fprintf(stderr, "WARNING: Process stopped during sampling: %s\n", strsignal(WSTOPSIG(status)));
+                check_child(ret, pid, status);
                 ret = ptrace(PTRACE_CONT, pid, 0, WSTOPSIG(status));
                 if (ret != 0) { perror("ERROR: during signal tracing (in sample)"); kill(pid, SIGKILL); exit(EXIT_FAILURE);};
+#if MULTIPROCESS
                 ret = waitpid(-1, &status, 0);
                 if (ret != pid) { perror("ERROR: during tracing. Unexpected pid (did the process created subprocesses?)."); kill(ret, SIGKILL); kill(pid, SIGKILL); exit(EXIT_FAILURE);};
+#else
+                ret = waitpid(pid, &status, 0);
+#endif
                 if (ret == -1) { perror("ERROR: during tracing (in sample)"); kill(pid, SIGKILL); exit(EXIT_FAILURE);};
             }
         }
@@ -262,6 +279,8 @@ int perInvocationPerformance( double timeout,
         }
         #endif
 
+        check_child(ret, pid, status);
+
         debug_print("Need flush?\n");
         if (sampleCount % MAX_SAMPLES == 0) {
             debug_print("Flushing ...\n");
@@ -283,6 +302,7 @@ int perInvocationPerformance( double timeout,
     }
 
     if (sampleCount == maxSamples) kill(pid, SIGTERM);
+    fprintf(stderr, "INFO: %d samples gathered\n", sampleCount);
     return 0;
 }
 
@@ -301,15 +321,24 @@ int globalPerformance(double timeout) {
         fprintf(stderr, "No timeout set. Waiting process to finish\n");
     }
 
+#if MULTIPROCESS
     ret = waitpid(-1, &status, 0);
     if (ret != pid) { perror("ERROR: during tracing. Unexpected pid (did the process created subprocesses?)."); kill(ret, SIGKILL); kill(pid, SIGKILL); exit(EXIT_FAILURE);};
+#else
+    ret = waitpid(pid, &status, 0);
+#endif
     if (ret == -1) { perror("ERROR while waiting"); kill(pid, SIGKILL); exit(EXIT_FAILURE);};
 
     while (!(WIFSIGNALED(status)) && !(WIFEXITED(status))) {
+        check_child(ret, pid, status);
         ret =  ptrace(PTRACE_CONT, pid, 0, WSTOPSIG(status));
         if (ret != 0) { perror("ERROR while setting trace"); kill(pid, SIGKILL); exit(EXIT_FAILURE);};
+#if MULTIPROCESS
         ret = waitpid(-1, &status, 0);
         if (ret != pid) { perror("ERROR: during tracing. Unexpected pid (did the process created subprocesses?)."); kill(ret, SIGKILL); kill(pid, SIGKILL); exit(EXIT_FAILURE);};
+#else
+        ret = waitpid(pid, &status, 0);
+#endif
         if (ret == -1) { perror("ERROR while waiting"); kill(pid, SIGKILL); exit(EXIT_FAILURE);};
     }
 
@@ -330,6 +359,8 @@ int globalPerformance(double timeout) {
     if (WIFSTOPPED(status)) {
         fprintf(stderr, "WARNING: Process stoped by signal: %s\n", strsignal(WSTOPSIG(status)));
     }
+
+    check_child(ret, pid, status);
 
     return EXIT_FAILURE;
 }
@@ -501,6 +532,8 @@ int main(int argc, char **argv) {
         outputFile = (output != NULL ? fopen(output, "w") : NULL);
         assert(outputFile != NULL);
 
+        fprintf(stderr, "INFO: New process PID: %d\n", pid);
+
         struct sigaction sa;
         sa.sa_handler = handler;
         int ret = sigemptyset(&sa.sa_mask);
@@ -515,27 +548,30 @@ int main(int argc, char **argv) {
 
         int status;
         debug_print("parent: Waiting for child...\n");
+#if MULTIPROCESS
         ret = waitpid(-1, &status, 0); // Wait for child to start
         if (ret != pid) { perror("ERROR: during tracing. Unexpected pid (did the process created subprocesses?)."); kill(ret, SIGKILL); kill(pid, SIGKILL); exit(EXIT_FAILURE);};
+#else
+        ret = waitpid(pid, &status, 0); // Wait for child to start
+#endif
         if (ret == -1) { perror("ERROR: waiting child to start"); kill(pid, SIGKILL); exit(EXIT_FAILURE);};
         debug_print("parent: Waiting for child... OK\n");
 
         ret = ptrace(PTRACE_SYSCALL, pid, 0, 0);
         if (ret != 0) { perror("ERROR: while PTRACE_SYSCALL"); kill(pid, SIGKILL); exit(EXIT_FAILURE);};
+#if MULTIPROCESS
         ret = waitpid(-1, &status, 0); // Wait for child to start
         if (ret != pid) { perror("ERROR: during tracing. Unexpected pid (did the process created subprocesses?)."); kill(ret, SIGKILL); kill(pid, SIGKILL); exit(EXIT_FAILURE);};
+#else
+        ret = waitpid(pid, &status, 0); // Wait for child to start
+#endif
         if (ret == -1) { perror("ERROR: waiting child to execute first system call"); kill(pid, SIGKILL); exit(EXIT_FAILURE);};
 
         compute_base_address(pid, module, mainmodule);
         configureEvents(pid);
 
-#if 0
-        //
-        // TODO: Enable this once we implement a complete multi-thread support
-        //
         ret = ptrace(PTRACE_SETOPTIONS, pid, 0, PTRACE_O_TRACEFORK | PTRACE_O_TRACEVFORK | PTRACE_O_TRACECLONE);
         if (ret != 0) { perror("ERROR: while PTRACE_SYSCALL"); kill(pid, SIGKILL); exit(EXIT_FAILURE);};
-#endif
 
         if (addrStart[0] > 0 && addrEnd[0] > 0 && endpoint_count > 0 && startpoint_count > 0) {
             fprintf(stderr, "INFO: Measuring performance counters from ");
