@@ -45,7 +45,7 @@ Sample samples[MAX_SAMPLES];
 unsigned int sampleCount = 0;
 unsigned int flushedSampleCount = 0;
 int printHeaders = 1;
-int sampleInProgress = 1;
+int sampleInProgress = 0;
 FILE *outputFile;
 unsigned int endpoint_count = 0;
 unsigned int startpoint_count = 0;
@@ -104,6 +104,7 @@ void handler(int signum) {
 
     int ret = kill(pid, signum);
     if (ret != 0) { perror("ERROR Sending signal to process"); kill(pid, SIGKILL); exit(EXIT_FAILURE);};
+
 
     if (sampleInProgress) {
         endSample(&samples[sampleCount - flushedSampleCount]);
@@ -184,6 +185,8 @@ int perInvocationPerformance( double timeout,
         }
 
         if (WIFEXITED(status)) {
+            fprintf(stderr, "INFO: %d samples gathered\n", sampleCount);
+            fprintf(stderr, "INFO: %d levels of recursivity detected\n", max_level_seen);
             fprintf(stderr, "INFO: Process finished normally\n");
             if (sampleCount == 0 ) {
                 fprintf(stderr, "ERROR: No samples gathered\n");
@@ -194,6 +197,8 @@ int perInvocationPerformance( double timeout,
         };
 
         if (WIFSIGNALED(status)) {
+            fprintf(stderr, "INFO: %d samples gathered\n", sampleCount);
+            fprintf(stderr, "INFO: %d levels of recursivity detected\n", max_level_seen);
             fprintf(stderr, "WARNING: Process finished by a signal: %s\n", strsignal(WTERMSIG(status)));
 
             //#ifdef WCOREDUMP
@@ -355,16 +360,18 @@ int perInvocationPerformance( double timeout,
 
         if (sampleInProgress == 0) {
             if (start_level > max_level_seen) {
-                fprintf(stderr, "ERROR: recursivity level requested higher than the maximum one seen.\n");
+                fprintf(stderr, "WARNING: recursivity level requested higher than the maximum one seen.\n");
             }
-            perror("ERROR: during sampling, trying to end a not started sample"); kill(pid, SIGKILL); exit(EXIT_FAILURE);
+            //perror("ERROR: during sampling, trying to end a not started sample"); kill(pid, SIGKILL); exit(EXIT_FAILURE);
+        } else {
+            sampleInProgress = 0;
+            endSample(&samples[sampleCount - flushedSampleCount]);
+            sampleCount++;
         }
 
-        sampleInProgress = 0;
-        endSample(&samples[sampleCount - flushedSampleCount]);
-        sampleCount++;
-
         if (WIFEXITED(status)) {
+            fprintf(stderr, "INFO: %d samples gathered\n", sampleCount);
+            fprintf(stderr, "INFO: %d levels of recursivity detected\n", max_level_seen);
             fprintf(stderr, "ERROR: Process exited during sampling: %d\n", WEXITSTATUS(status));
             return WEXITSTATUS(status);
         }
@@ -378,7 +385,7 @@ int perInvocationPerformance( double timeout,
         check_child(ret, pid, status);
 
         debug_print("Need flush?\n");
-        if (sampleCount % MAX_SAMPLES == 0) {
+        if ((sampleCount % MAX_SAMPLES == 0) && (sampleCount > 0)) {
             debug_print("Flushing ...\n");
             printSamples(outputFile, sampleCount - flushedSampleCount,
                          samples, printHeaders);
@@ -399,6 +406,7 @@ int perInvocationPerformance( double timeout,
 
     if (sampleCount == maxSamples) kill(pid, SIGTERM);
     fprintf(stderr, "INFO: %d samples gathered\n", sampleCount);
+    fprintf(stderr, "INFO: %d levels of recursivity detected\n", max_level_seen);
     return 0;
 }
 
