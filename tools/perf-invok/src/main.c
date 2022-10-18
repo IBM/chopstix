@@ -287,7 +287,7 @@ int perInvocationPerformance( double timeout,
                     long pc = get_current_pc(pid);
                     int found = 0, i = 0;
                     for(i=0; i<endpoint_count; i++) {
-                        if (addrEnd[i] == pc) { break; }
+                        if ((base_address + addrEnd[i]) == pc) { break; }
                     }
                     found = i;
 
@@ -311,13 +311,14 @@ int perInvocationPerformance( double timeout,
                         }
                     } else {
                         for(i=0; i<startpoint_count; i++) {
-                            if (addrStart[i] == pc) {
+                            if ((base_address + addrStart[i]) == pc) {
                                 break;
                             }
                         }
                         found = i;
+
                         if(found >= startpoint_count) {
-                            perror("ERROR: during tracing. SIGILL not in -end/-begin addresses"); kill(ret, SIGKILL); kill(pid, SIGKILL); exit(EXIT_FAILURE);
+                            fprintf(stderr, "ERROR: during tracing. SIGILL at %lX not in -end/-begin addresses", pc); kill(ret, SIGKILL); kill(pid, SIGKILL); exit(EXIT_FAILURE);
                         }
                         // Call recursive
                         resetBreakpoint(pid, &Startbp[found]);
