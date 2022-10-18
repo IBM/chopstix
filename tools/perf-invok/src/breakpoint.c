@@ -367,7 +367,7 @@ long get_current_pc(long pid) {
         .iov_base = &regs,
         .iov_len  = RISCV_GPR_SIZE
     };
-    ret = ptrace(PTRACE_GETREGSET, pid, PTRACE_GP_REGISTERS, &data);
+    long ret = ptrace(PTRACE_GETREGSET, pid, PTRACE_GP_REGISTERS, &data);
     if (ret != 0) { perror("ERROR: while PTRACE_GETREGSET"); kill(pid, SIGKILL); exit(EXIT_FAILURE);};
     long pc = regs.gp.pc;
 #elif defined(__PPC64__) || defined(__ppc64__) || defined(_ARCH_PPC64) // PPC64
@@ -377,12 +377,12 @@ long get_current_pc(long pid) {
 #define PTRACE_GETREGS (__ptrace_request)12
 #endif
     long buf[POWER_NUM_REGS];
-    ret = ptrace(PTRACE_GETREGS, pid, 0, buf);
+    long ret = ptrace(PTRACE_GETREGS, pid, 0, buf);
     if (ret != 0) { perror("ERROR: while PTRACE_GETREGSET"); kill(pid, SIGKILL); exit(EXIT_FAILURE);};
     long pc = buf[POWER_NIP];
 #elif defined(__x86_64__) || defined(__i386__)
     struct user_regs_struct regs;
-    ret = ptrace(PTRACE_GETREGS, pid, 0, &regs);
+    long ret = ptrace(PTRACE_GETREGS, pid, 0, &regs);
     if (ret != 0) { perror("ERROR: while PTRACE_GETREGSET"); kill(pid, SIGKILL); exit(EXIT_FAILURE);};
     long pc = regs.rip;
 #endif
