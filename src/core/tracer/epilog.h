@@ -6,14 +6,14 @@
 
 namespace chopstix {
 
-class TracerPrologueState : public TracerState {
+class TracerEpilogState : public TracerState {
   public:
-    TracerPrologueState(Tracer *tracer) : TracerState(tracer) {}
+    TracerEpilogState(Tracer *tracer) : TracerState(tracer) {}
 
     virtual void execute(Process &child);
 };
 
-class TracerTimedPrologueState : public TracerPrologueState {
+class TracerTimedEpilogState : public TracerEpilogState {
   public:
     virtual void execute(Process &child);
 };
