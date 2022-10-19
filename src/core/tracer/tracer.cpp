@@ -79,6 +79,11 @@ void Tracer::start(TracerState *initial_state, int argc, char **argv) {
         current_state->execute(child);
     }
 
+    if (child.active()) {
+        child.send(SIGKILL);
+        child.abandon();
+    }
+
     log::info("Tracer captured %d traces", trace_id);
     log::debug("Tracer:: start end");
 }
@@ -249,15 +254,16 @@ void Tracer::init(int argc, char **argv) {
     child.exec(argv, argc);
     child.ready();
     unsetenv("LD_PRELOAD");
+
     log::debug("Tracer:: Spawned child process %d", child.pid());
-
-    // TODO: why this sleep is needed?
-    sleep(2);
-
     track_mmap();
+
+    child.step_to_main_module();
+
     if (module != "main") compute_module_offset();
 
     alt_stack = read_alt_stack();
+
     log::debug("Tracer:: init end");
 }
 
