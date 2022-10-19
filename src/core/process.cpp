@@ -74,9 +74,30 @@ Process &Process::operator=(Process &&other) {
 
 void Process::exec(char **argv, int argc) {
     log::debug("Process:: exec start");
+	char mainpath[1024];
+
+    errno = 0;
+
+    ssize_t nbytes = readlink(argv[0], mainpath, 1024);
+    if ((nbytes == -1) || (nbytes == 1024)) {
+         if(nbytes == -1) {
+            log::debug("Process:: exec_wait: path is not a symlink");
+            mainmodule_ = basename(argv[0]);
+         } else {
+             fprintf(stderr, "Process:: exec_wait: Error: Main module name truncated\n");
+             abandon();
+             exit(EXIT_FAILURE);
+        }
+    } else {
+        log::debug("Process:: exec_wait: path is a symlink");
+        mainpath[nbytes] = '\0';
+        mainmodule_ = basename(mainpath);
+    }
+
     pid_ = fork();
     check(pid_ != -1, "Process:: exec: Unable to spawn process");
     if (pid_ != 0) {
+        ptrace(PTRACE_SETOPTIONS, pid_, 0, PTRACE_O_EXITKILL);
         log::debug("Process:: exec end");
         return;
     }
@@ -123,10 +144,10 @@ void Process::exec_wait(char **argv, int argc) {
     errno = 0;
     ssize_t nbytes = readlink(argv[0], mainpath, 1024);
     if ((nbytes == -1) || (nbytes == 1024)) {
-         if(nbytes == -1) { 
+         if(nbytes == -1) {
             log::debug("Process:: exec_wait: path is not a symlink");
             mainmodule_ = basename(argv[0]);
-         } else { 
+         } else {
              fprintf(stderr, "Process:: exec_wait: Error: Main module name truncated\n");
              abandon();
              exit(EXIT_FAILURE);
@@ -140,6 +161,7 @@ void Process::exec_wait(char **argv, int argc) {
     pid_ = fork();
     check(pid_ != -1, "Process:: exec_wait: Unable to spawn process");
     if (pid_ != 0) {
+        ptrace(PTRACE_SETOPTIONS, pid_, 0, PTRACE_O_EXITKILL);
         log::debug("Process:: exec_wait: wait for child");
         waitpid(pid_, &status_, WNOHANG);
         log::debug("Process:: exec_wait: wait for child done");
@@ -446,6 +468,7 @@ void Process::dyn_call(long addr, Arch::regbuf_type &regs, long sp, std::vector<
     log::debug("Process::dyn_call: Dynamic call from PC = 0x%x", cur_pc);
 
     Arch::current()->read_regs(pid(), regs);
+
     Arch::current()->set_pc(pid(), addr);
     Arch::current()->set_sp(pid(), sp);
     Arch::current()->set_args(pid(), args);
@@ -471,16 +494,18 @@ void Process::dyn_call(long addr, Arch::regbuf_type &regs, long sp, std::vector<
             log::debug(
                 "Process::dyn_call: Ignoring segmentation fault during dynamic "
                 "call");
+
             cont(SIGSEGV);
             wait(0);
 
         } else if (sig != SIGILL) {
             log::debug(
                 "Process::dyn_call: Expected segmentation fault, found %s",
-                strsignal(sig));
+                strsignal(sig)
+            );
             cont(SIGTERM);
             wait(0);
-            exit(1);
+            exit(EXIT_FAILURE);
 
         } else {
             break;
@@ -491,7 +516,7 @@ void Process::dyn_call(long addr, Arch::regbuf_type &regs, long sp, std::vector<
         if (exited()) {
             log::debug("Process:: dyn_call: Process exited with status: %d",
                        exit_status());
-            exit(1);
+            exit(EXIT_FAILURE);
         } else if (signaled()) {
             log::debug("Process:: dyn_call: Process signaled with signal: %d",
                        term_sig());
@@ -508,6 +533,7 @@ void Process::dyn_call(long addr, Arch::regbuf_type &regs, long sp, std::vector<
     Arch::current()->write_regs(pid(), regs);
 
     cur_pc = Arch::current()->get_pc(pid());
+
     log::debug("Process::dyn_call: Restarting from PC = 0x%x", cur_pc);
 
     log::debug("Process::dyn_call: End");
