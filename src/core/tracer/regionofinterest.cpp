@@ -84,7 +84,7 @@ void TracerRegionOfInterestState::handle_signal(Process &child, int signal) {
         }
 
         log::debug("TracerRegionOfInterestState:: Current PC 0x%x", cur_pc);
-        //Arch::current()->debug_regs(tmp_regs);
+        Arch::current()->debug_regs(tmp_regs);
 
         Arch::current()->free_regs(tmp_regs);
 
