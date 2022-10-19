@@ -39,8 +39,8 @@ add_chopstix_library(core
     path.cpp
     search.cpp
     location.cpp
-    tracer/preamble.cpp
-    tracer/prologue.cpp
+    tracer/prolog.cpp
+    tracer/epilog.cpp
     tracer/regionofinterest.cpp
     tracer/state.cpp
     tracer/tracer.cpp
