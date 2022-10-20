@@ -515,7 +515,7 @@ void Memory::unprotect_region(mem_region *reg) {
 }
 
 mem_region *Memory::find_region(unsigned long page_addr) {
-    log::verbose("Memory::find_region: Region for address %x", page_addr);
+    log::debug("Memory::find_region: Region for address %x", page_addr);
     for (auto reg = begin(); reg != end(); ++reg) {
         //log::debug("Memory::find_region: Check region %x-%x %s %s",
         //    reg->addr[0], reg->addr[1], reg->perm, reg->path);
@@ -569,8 +569,6 @@ void Memory::unprotect_page_for_read(mem_region *reg, unsigned long page_addr) {
     log::debug("Memory::unprotect_page_for read: unprotected %d bytes at %x", pagesize_,
                page_addr);
 }
-
-
 
 void Memory::debug_all() {
     for (auto reg = begin(); reg != end(); ++reg) {
