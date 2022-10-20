@@ -129,11 +129,11 @@ if [ "$end_sym" = "MPT2ELF_ENDLESS" ]; then
     end_addr=$(chop-marks "$bin" "$end_sym" 2> /dev/null | grep begin | sed "s/begin /end=0x/g")
 fi
 
-if [ "$end_sym" = "MPT2ELF_ENDLESS" ] && [ "$end_addr" == "" ]; then
+if [ "$end_sym" = "MPT2ELF_ENDLESS" ] && [ "$end_addr" = "" ]; then
     end_addr="-end=0x$(objdump -d "$bin" | grep "<$end_sym>:" | cut -d " " -f 1)"
 fi
 
-if [ "$start_sym" = "START_TEST" ] && [ "$start_addr" == "" ]; then
+if [ "$start_sym" = "START_TEST" ] && [ "$start_addr" = "" ]; then
     start_addr="-begin=0x$(objdump -d "$bin" | grep "<$start_sym>:" | cut -d " " -f 1)"
 fi
 
