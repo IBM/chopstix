@@ -23,6 +23,7 @@
 typedef struct {
     unsigned long long address;
     unsigned long long originalData;
+    unsigned int init;
 } Breakpoint;
 
 void setBreakpoint(unsigned long pid, unsigned long long address,
@@ -34,3 +35,4 @@ void compute_base_address(unsigned long pid, char* module, char* mainmodule);
 #define NT_PRSTATUS 1
 void displace_pc(long pid, long displ);
 #endif
+long get_current_pc(long pid);

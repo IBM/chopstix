@@ -69,6 +69,7 @@ set(sql_sources
     group_samples
     count_insts_pre
     count_insts
+    count_insts_debug
     count_blocks
     count_funcs
     count_func_size

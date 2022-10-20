@@ -48,6 +48,7 @@ namespace chopstix {
 System &sys_ = System::instance();
 
 bool hide_calls = true;
+bool init = false;
 
 System::System() {
     log::Logger::instance();
@@ -138,16 +139,42 @@ void System::sigsegv_handler(int sig, siginfo_t *si, void *ptr) {
 void System::register_handlers() {
     log::debug("System::register_handlers start");
     struct sigaction sa;
+    struct sigaction sa_old;
     sa.sa_flags = SA_SIGINFO | SA_ONSTACK;
     sigemptyset(&sa.sa_mask);
     sa.sa_sigaction = &System::sigsegv_handler;
-    sigaction(SIGSEGV, &sa, NULL);
+    sigaction(SIGSEGV, &sa, &sa_old);
+    if (sa_old.sa_sigaction != NULL)
+    {
+        if(sa_old.sa_sigaction != sa.sa_sigaction)
+        {
+            log::info("WARNING");
+            log::info("WARNING: Process already had a SIGSEGV signal handler. Overriding it");
+            log::info("WARNING: This might change application behavior.");
+            log::info("WARNING");
+        }
+    }
+
     log::debug("System::register_handlers end");
+}
+
+void System::update_ttys() {
+    tty_count = 0;
+    for (int fd = 0; fd < MAX_FDS; fd ++)
+    {
+        tty_fds[tty_count] = -1;
+        int ret = isatty(fd);
+        if (ret == 0) continue;
+        tty_fds[tty_count] = fd;
+        log::verbose("%d is tty", fd);
+        tty_count++;
+    }
+    chopstix::init = true;
 }
 
 void System::record_segv(unsigned long addr, unsigned long pc_addr) {
     log::debug("System::record_segv start");
-    log::verbose("System::record_segv: segv at %x", addr);
+    log::debug("System::record_segv: segv at %x", addr);
 
     unsigned long page_addr = Memory::instance().page_addr(addr);
     auto reg = Memory::instance().find_region(page_addr);
@@ -321,6 +348,12 @@ void System::start_trace(bool isNewInvocation) {
     previous_addr = 0;
     previous_pc_addr = 0;
 
+    // Check the right handler is set
+    register_handlers();
+
+    // Update TTYs to avoid operations on them (minimize the system calls)
+    update_ttys();
+
     // Protect pages at the end
     Memory::instance().protect_all();
 }
@@ -403,7 +436,6 @@ void chopstix_stop_trace() {
     // raise(SIGTRAP);
 }
 
-
 //
 // Disable printf system calls during tracing
 //
@@ -462,6 +494,44 @@ int puts(const char *s) {
     return ret;
 }
 
+// TODO: This is work in progress. Goal is to mask system calls related to
+// TODO: write to tty file descriptors, which should not affect application
+// TODO: behavior. Preliminary implementation not enabled, needs further testing
+//
+#if 0
+
+ssize_t pwrite(int fildes, const void *buf, size_t nbyte, off_t offset) {
+
+    int istty = 0;
+    for (int i=0; i<chopstix::sys_.tty_count; i++)
+    {
+        if (fildes == chopstix::sys_.tty_fds[chopstix::sys_.tty_count]) { istty = 1; break; }
+    }
+
+    if (chopstix::hide_calls && chopstix::sys_.tracing && istty) return nbyte;
+
+	static ssize_t (*real_pwrite)(int fildes, const void *buf, size_t nbyte, off_t offset) = nullptr;
+    if (!real_pwrite) real_pwrite = (ssize_t (*)(int, const void *, size_t, off_t)) dlsym(RTLD_NEXT, "pwrite");
+    return real_pwrite(fildes, buf, nbyte, offset);
+
+}
+
+ssize_t write(int fildes, const void *buf, size_t nbyte) {
+
+	static ssize_t (*real_write)(int fildes, const void *buf, size_t nbyte) = nullptr;
+    if (!real_write) real_write = (ssize_t (*)(int, const void *, size_t)) dlsym(RTLD_NEXT, "write");
+    if (chopstix::init == false) return real_write(fildes, buf, nbyte);
+    if (!chopstix::hide_calls || !chopstix::sys_.tracing) return real_write(fildes, buf, nbyte);
+
+    for (int i=0; i<chopstix::sys_.tty_count; i++)
+    {
+        if (fildes == chopstix::sys_.tty_fds[chopstix::sys_.tty_count]) { return nbyte; }
+    }
+    return real_write(fildes, buf, nbyte);
+}
+#endif
+
+// TODO: Disabled, is this required?
 #if 0
 int printf(const char* format) {
     if (chopstix::hide_calls && chopstix::sys_.tracing) return 0;

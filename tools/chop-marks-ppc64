@@ -41,11 +41,29 @@ sym="$2"
 displ=0
 bdispl=0
 
+if [ "$cache" -eq 1 ]; then
+    tmp="$obj.S"
+    tmp2="$obj.S.$sym"
+
+    if [ ! -f "$tmp" ]; then
+        objdump -d "$obj" > "$tmp"
+    fi
+else
+    tmp=$(mktemp)
+    tmp2=$(mktemp)
+    objdump -d "$obj" > "$tmp"
+
+    cleanup() {
+        rm -f "$tmp" "$tmp2"
+    }
+    trap cleanup EXIT
+fi
+
 set +e
 chop-marks-dyn-addr "$obj" "$sym" > /dev/null 2> /dev/null
 error=$?
 set -e
-if [ "$error" -eq 0 ]; then
+if [ "$error" -eq 0 ] && [ "$(grep -c "<$sym>:" < "$tmp")" -ne 0 ]; then
     displ=$(chop-marks-dyn-addr "$obj" "$sym" 2> /dev/null)
 elif [ "$sym" != "_start" ]; then
     static_start_sym=$(readelf -s "$obj" | grep -v UND | grep FUNC | grep GLOBAL | grep " _start$" | tr -s " " | cut -d ' ' -f 3 | sort | uniq)
@@ -65,29 +83,6 @@ else
     die "$(basename "$0"): Unable to find address for $sym in $obj"
 fi
 
-if [ "$cache" -eq 1 ]; then
-    tmp="$obj.S"
-    tmp2="$obj.S.$sym"
-
-    if [ -f "$tmp2" ]; then
-        cat "$tmp2"
-        exit 0
-    fi
-
-    if [ ! -f "$tmp" ]; then
-        objdump -d "$obj" > "$tmp"
-    fi
-else
-    tmp=$(mktemp)
-    tmp2=$(mktemp)
-    objdump -d "$obj" > "$tmp"
-
-    cleanup() {
-        rm -f "$tmp" "$tmp2"
-    }
-    trap cleanup EXIT
-fi
-
 found=1
 if [ "$(grep -c "<$sym>:" < "$tmp")" -eq 0 ]; then
     found=0
@@ -103,9 +98,9 @@ if [ "$(grep -c "<$sym>:" < "$tmp")" -eq 0 ]; then
         # shellcheck disable=SC2004
         bdispl=$(($addr))
         bdispl=0
-        # shellcheck disable=SC2039
-        echo "-module $(basename "$lib")"
         obj=$lib
+        # shellcheck disable=SC2039
+        echo "-module $(basename "$(readlink -m "$lib")")"
         break
     done;
 fi
@@ -144,7 +139,23 @@ flag && $6 ~ "bc?lr" {
     printf("-end %x\n",strtonum("0x"$1) + displ + base);
 }
 /^$/ { flag=0; }
-' "$tmp" | tee "$tmp2"
+' "$tmp" > "$tmp2"
+
+# shellcheck disable=SC2013
+for elem in $(grep ^subcall: < "$tmp2" | grep -v "subcall: $sym" | cut -d ' ' -f 2); do
+    "$0" "$1" "$elem" | grep -v "^-begin" | sort -n | uniq >> "$tmp2"
+done;
+
+
+if [ "$(grep -v ^subcall:  < "$tmp2" | sort -n | uniq | grep -c end)" -eq 0 ]; then
+    die "No -end points found"
+fi
+
+if [ "$(grep -v ^subcall:  < "$tmp2" | sort -n | uniq | grep -c begin)" -eq 0 ]; then
+    die "No -begin points found"
+fi
+
+grep -v ^subcall: < "$tmp2" | sort -n | uniq
 
 if [ $cache -eq 0 ]; then
     rm -f "$tmp" "$tmp2"

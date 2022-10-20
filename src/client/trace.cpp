@@ -23,8 +23,8 @@
 #include "usage.h"
 
 #include "core/tracer/tracer.h"
-#include "core/tracer/preamble.h"
-#include "core/tracer/prologue.h"
+#include "core/tracer/epilog.h"
+#include "core/tracer/prolog.h"
 #include "core/tracer/regionofinterest.h"
 #include "support/check.h"
 #include "support/filesystem.h"
@@ -94,29 +94,29 @@ int run_trace(int argc, char **argv) {
         tracer = new Tracer(module, trace_path, notrace, trace_options);
     }
 
-    TracerState *preamble, *roi, *prologue;
+    TracerState *prolog, *roi, *epilog;
     if (with_region && tsample) {
         log::info("Tracing for executiong time when reaching the specified region");
-        preamble = new TracerRangedTimedPreambleState(tracer, addr_begin, tsample);
+        prolog = new TracerRangedTimedPrologState(tracer, addr_begin, tsample);
         roi = new TracerTimedRegionOfInterestState(tracer, tsample);
-        prologue = new TracerPrologueState(tracer);
+        epilog = new TracerEpilogState(tracer);
     } else if (with_region) {
         log::info("Tracing specified region of interest");
-        preamble = new TracerRangedPreambleState(tracer, addr_begin, addr_end);
+        prolog = new TracerRangedPrologState(tracer, addr_begin, addr_end);
         roi = new TracerRangedRegionOfInterestState(tracer, addr_end);
-        prologue = new TracerPrologueState(tracer);
+        epilog = new TracerEpilogState(tracer);
     } else {
         log::info("Tracing specified execution time interval");
-        preamble = new TracerTimedPreambleState(tracer, tidle);
+        prolog = new TracerTimedPrologState(tracer, tidle);
         roi = new TracerTimedRegionOfInterestState(tracer, tsample);
-        prologue = new TracerPrologueState(tracer);
+        epilog = new TracerEpilogState(tracer);
     }
 
-    preamble->set_next_state(roi);
-    roi->set_next_state(prologue);
-    prologue->set_next_state(preamble);
+    prolog->set_next_state(roi);
+    roi->set_next_state(epilog);
+    epilog->set_next_state(prolog);
 
-    tracer->start(preamble, argc, argv);
+    tracer->start(prolog, argc, argv);
 
     if (getopt("gzip").as_bool()) {
         log::info("run_trace:: compressing trace directory");

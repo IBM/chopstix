@@ -33,7 +33,7 @@ namespace chopstix {
 struct ArchZ : public Arch {
     std::string name() const { return "SystemZ"; }
     std::vector<std::string> prefix() const { return {"s390", "s360"}; }
-    Endianess get_endianess() const {return Endianess::LITTLE;}
+    Endianess get_endianess() const {return Endianess::BIG;}
 
     void parse_inst(Instruction &) const;
 
@@ -52,6 +52,10 @@ struct ArchZ : public Arch {
     long parse_syscall(regbuf_type regs) const;
     long parse_ret(regbuf_type regs) const;
     void parse_args(regbuf_type regs, regbuf_type args) const;
+protected:
+    BreakpointSize get_breakpoint_size() const {
+        return BreakpointSize::HALF_WORD;
+    }
 };
 
 }  // namespace chopstix

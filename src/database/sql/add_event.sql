@@ -1,1 +1,1 @@
-ALTER TABLE sample ADD [{}] INTEGER;
+ALTER TABLE sample ADD [{}] BIGINT;

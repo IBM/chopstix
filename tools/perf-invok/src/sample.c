@@ -21,7 +21,7 @@
 */
 
 #include "sample.h"
-#include "debug.h"
+#include "config.h"
 #include "errno.h"
 #include <stdlib.h>
 

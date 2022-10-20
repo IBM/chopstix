@@ -29,6 +29,7 @@
 #include "membuffer.h"
 
 #define MAX_BREAKPOINTS 1024
+#define MAX_FDS 124
 
 namespace chopstix {
 
@@ -48,6 +49,9 @@ struct System {
     void stop_trace();
     volatile bool tracing = false;
 
+    int tty_fds[MAX_FDS];
+    int tty_count = 0;
+
     System(const System &) = delete;
     System &operator=(const System &) = delete;
 
@@ -61,6 +65,7 @@ struct System {
     char trace_path[PATH_MAX];
 
     void register_handlers();
+    void update_ttys();
     void record_segv(unsigned long addr, unsigned long pc_addr);
     void save_page(unsigned long page_addr);
 
