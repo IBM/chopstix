@@ -123,10 +123,18 @@ echo ""
 echo "Computing addresses"
 echo ""
 
-start_addr=$(chop-marks "$bin" "$start_sym" | grep begin | sed "s/n /n=0x/g")        
-end_addr=$(chop-marks "$bin" "$end_sym" | grep end | sed "s/d /d=0x/g")
+start_addr=$(chop-marks "$bin" "$start_sym" 2> /dev/null | grep begin | sed "s/n /n=0x/g")        
+end_addr=$(chop-marks "$bin" "$end_sym" 2> /dev/null | grep end | sed "s/d /d=0x/g")
 if [ "$end_sym" = "MPT2ELF_ENDLESS" ]; then
-    end_addr=$(chop-marks "$bin" "$end_sym" | grep begin | sed "s/begin /end=0x/g")
+    end_addr=$(chop-marks "$bin" "$end_sym" 2> /dev/null | grep begin | sed "s/begin /end=0x/g")
+fi
+
+if [ "$end_sym" = "MPT2ELF_ENDLESS" ] && [ "$end_addr" == "" ]; then
+    end_addr="-end=0x$(objdump -d "$bin" | grep "<$end_sym>:" | cut -d " " -f 1)"
+fi
+
+if [ "$start_sym" = "START_TEST" ] && [ "$start_addr" == "" ]; then
+    start_addr="-begin=0x$(objdump -d "$bin" | grep "<$start_sym>:" | cut -d " " -f 1)"
 fi
 
 [ "$start_addr" != "" ] || die "$0: error: Unable to compute start addresses"
@@ -147,6 +155,7 @@ echo "Tracing"
 echo ""
 echo "  Tracing command: "
 echo "    chop-valgrind --tool=chopstix $start_addr $end_addr -indices=$index $cmd"
+
 # shellcheck disable=SC2086
 chop-valgrind --tool=chopstix $start_addr $end_addr -indices=$index $cmd 2> "$tmp" > "$tmp" 
 
