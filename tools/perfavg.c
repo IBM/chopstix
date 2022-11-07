@@ -14,7 +14,7 @@ void average(unsigned int count, FILE **files, FILE *means, FILE *deviations) {
     char *line = NULL;
 
     // Skip headers
-    for (unsigned int i = 0; i < count; i++) getline(&line, &len, files[i]);
+    for (unsigned int i = 0; i < count; i++) assert(getline(&line, &len, files[i]) > 0);
 
     while (true) {
         bool finished = false;

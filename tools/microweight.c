@@ -23,7 +23,8 @@ void readClusterfile(const char *path) {
     fseek(f, 0, SEEK_SET);  /* same as rewind(f); */
 
     char *contents = malloc(fsize);
-    fread(contents, fsize, 1, f);
+    size_t readSize = fread(contents, fsize, 1, f);
+    fprintf(stderr, "Read size: %ld", readSize);
     fclose(f);
 
     fprintf(stderr, "\tParsing JSON...\n");
