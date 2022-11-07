@@ -23,8 +23,8 @@
 #include "usage.h"
 
 #include "core/tracer/tracer.h"
-#include "core/tracer/preamble.h"
-#include "core/tracer/prologue.h"
+#include "core/tracer/epilog.h"
+#include "core/tracer/prolog.h"
 #include "core/tracer/regionofinterest.h"
 #include "support/check.h"
 #include "support/filesystem.h"
@@ -59,6 +59,7 @@ int run_trace(int argc, char **argv) {
     trace_options.dump_info = getopt("info").as_bool();
     trace_options.max_traces = getopt("max-traces").as_int();
     std::string trace_path = getopt("trace-dir").as_string();
+    std::string module = getopt("module").as_string();
     double sample_freq = getopt("prob").as_float();
     bool notrace = !getopt("trace").as_bool();
     double tidle = getopt("interval").as_time();
@@ -73,44 +74,49 @@ int run_trace(int argc, char **argv) {
     checkx(!fs::exists(trace_path), "Output trace directory path '%s' already exists!", trace_path);
     fs::mkdir(trace_path);
 
+    if (module == "") {
+        module = "main";
+    }
+    log::info("Tracing module: %s", module);
+
     Tracer *tracer;
     if (getopt("prob").is_set()) {
         log::info("Performing randomized tracing");
-        tracer = new RandomizedTracer(trace_path, notrace, trace_options,
+        tracer = new RandomizedTracer(module, trace_path, notrace, trace_options,
                                       sample_freq);
     } else if(getopt("indices").is_set()) {
         log::info("Performing index tracing");
         std::vector<unsigned int> vec(begin(indices), end(indices));
         std::sort(vec.begin(), vec.end());
-        tracer = new IndexedTracer(trace_path, notrace, trace_options, vec);
+        tracer = new IndexedTracer(module, trace_path, notrace, trace_options, vec);
     } else {
         log::info("Tracing all invocations");
-        tracer = new Tracer(trace_path, notrace, trace_options);
+        tracer = new Tracer(module, trace_path, notrace, trace_options);
     }
 
-    TracerState *preamble, *roi, *prologue;
+    TracerState *prolog, *roi, *epilog;
     if (with_region && tsample) {
         log::info("Tracing for executiong time when reaching the specified region");
-        preamble = new TracerRangedTimedPreambleState(tracer, addr_begin, tsample);
+        prolog = new TracerRangedTimedPrologState(tracer, addr_begin, tsample);
         roi = new TracerTimedRegionOfInterestState(tracer, tsample);
-        prologue = new TracerPrologueState(tracer);
+        epilog = new TracerEpilogState(tracer);
     } else if (with_region) {
         log::info("Tracing specified region of interest");
-        preamble = new TracerRangedPreambleState(tracer, addr_begin, addr_end);
+        prolog = new TracerRangedPrologState(tracer, addr_begin, addr_end);
         roi = new TracerRangedRegionOfInterestState(tracer, addr_end);
-        prologue = new TracerPrologueState(tracer);
+        epilog = new TracerEpilogState(tracer);
     } else {
         log::info("Tracing specified execution time interval");
-        preamble = new TracerTimedPreambleState(tracer, tidle);
+        prolog = new TracerTimedPrologState(tracer, tidle);
         roi = new TracerTimedRegionOfInterestState(tracer, tsample);
-        prologue = new TracerPrologueState(tracer);
+        epilog = new TracerEpilogState(tracer);
     }
 
-    preamble->set_next_state(roi);
-    roi->set_next_state(prologue);
-    prologue->set_next_state(preamble);
+    prolog->set_next_state(roi);
+    roi->set_next_state(epilog);
+    epilog->set_next_state(prolog);
 
-    tracer->start(preamble, argc, argv);
+    tracer->start(prolog, argc, argv);
 
     if (getopt("gzip").as_bool()) {
         log::info("run_trace:: compressing trace directory");

@@ -18,7 +18,7 @@
 #
 # ----------------------------------------------------------------------------
 #
-# 
+#
 # ChopStiX CI support scripts
 #
 # Author: Ramon Bertran Monfort <rbertra@us.ibm.com>
@@ -58,19 +58,19 @@ fi
 
 tmp="$dir/src_build/"
 mkdir -p "$tmp"
-cd "$tmp" 
+cd "$tmp"
 
-ZLIB_VERSION=1.2.12
+ZLIB_VERSION=1.2.13
 rm -f zlib-${ZLIB_VERSION}.tar.gz
 wget https://www.zlib.net/zlib-${ZLIB_VERSION}.tar.gz
 tar xvf zlib-${ZLIB_VERSION}.tar.gz
 
-cd zlib-${ZLIB_VERSION} 
+cd zlib-${ZLIB_VERSION}
 
 ./configure --prefix "$dir"
 cat configure.log
 
-make -j 
+make -j
 make install
 
 cd - || exit 1

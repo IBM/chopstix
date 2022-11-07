@@ -38,7 +38,7 @@ add_subdirectory (database)
 add_subdirectory (core)
 
 # Architecture specific files
-# - 
+# -
 add_subdirectory (arch)
 
 

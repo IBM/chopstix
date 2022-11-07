@@ -69,6 +69,7 @@ set(sql_sources
     group_samples
     count_insts_pre
     count_insts
+    count_insts_debug
     count_blocks
     count_funcs
     count_func_size
@@ -84,7 +85,7 @@ set(sql_dir ${CMAKE_BINARY_DIR}/sql)
 set(queries ${CMAKE_BINARY_DIR}/queries.h)
 
 string(REGEX REPLACE "([^;]+)" "${sql_dir}/\\1.h"
-    sql_parsed "${sql_sources}") 
+    sql_parsed "${sql_sources}")
 
 foreach (sql_file ${sql_sources})
     add_custom_command(

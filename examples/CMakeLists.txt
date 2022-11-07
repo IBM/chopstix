@@ -18,4 +18,13 @@
 # ----------------------------------------------------------------------------
 #
 set(EXAMPLES "share/chopstix/examples")
-add_subdirectory(daxpy)
+add_subdirectory(sampling)
+add_subdirectory(snippet)
+add_subdirectory(clustering)
+add_subdirectory(tracing)
+
+install (
+    PROGRAMS README
+    DESTINATION ${EXAMPLES}
+)
+

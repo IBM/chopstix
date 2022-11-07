@@ -120,6 +120,12 @@ Other options:
 
   -no-save               Disable data page content dumping.
   -no-code               Disable code page content dumping.
+  -unprotect-syms        Disable the protection of reserved symbols.
+  -memory-access-trace   Generate 'memory_trace.bin' file in -trace-dir path.
+                         The binary file contains detailed information of every
+                         memory access. It can be processed with
+                         'chop-detrace-mem' helper tool. This flag incurs in
+                         a significant overhead during tracing.
   -no-registers          Disable register content dumping.
   -no-maps               Disable memory map dumping.
   -no-info               Disable additional information dumping.
@@ -133,4 +139,4 @@ Other options:
 
   -group <num>           Group <num> region into one trace (default: 1) (experimental)
   -module <name>         Name of module to trace. This is always mandatory if
-                         the module to trace is not the main module (experimental)
+                         the module to trace is not the main module. 

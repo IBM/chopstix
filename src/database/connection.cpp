@@ -40,7 +40,10 @@ using namespace chopstix;
 
 namespace fs = filesystem;
 
-Connection::Connection(const std::string &filename) { open(filename); }
+Connection::Connection(const std::string &filename) {
+    //printf("Database connection: %s\n", filename.c_str());
+    open(filename);
+}
 Connection::~Connection() { close(); }
 
 Connection::Connection(Connection &&con) : h_(con.h_) { con.h_ = nullptr; }
@@ -77,7 +80,7 @@ Query Connection::query(const std::string &q) {
 
 void Connection::exec(const std::string &q) {
     int ret = _exec(q, false);
-    checkx(ret == SQLITE_OK, "Error executing query: %s\n", errmsg());
+    checkx(ret == SQLITE_OK, "Error executing query: %s\n\n   This is probably related to new database format.\n   Regenerate the DB from scratch and retry.\n   If problem persist, contact developers.\n", errmsg());
 }
 
 std::string Connection::exec_safe(const std::string &q) {

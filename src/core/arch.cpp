@@ -109,7 +109,8 @@ Popen Arch::objdump(const std::string &filename) const {
         }
     }
 
-    std::string run = fmt::format("{} -j .text -d {}", cmd, filename);
+    // std::string run = fmt::format("{} -j .text -d {}", cmd, filename);
+    std::string run = fmt::format("{} -d {}", cmd, filename);
     return Popen(run);
 }
 

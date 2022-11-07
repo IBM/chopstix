@@ -48,6 +48,7 @@ namespace chopstix {
 System &sys_ = System::instance();
 
 bool hide_calls = true;
+bool init = false;
 
 System::System() {
     log::Logger::instance();
@@ -60,6 +61,7 @@ System::System() {
     max_pages = getopt("max-pages").as_int();
     max_traces = getopt("max-traces").as_int();
     group_iter = getopt("group").as_int(1);
+    mem_trace = getopt("memory-access-trace").as_bool();
 
     filesystem::mkdir(trace_path);
 
@@ -70,6 +72,7 @@ System::System() {
     Memory::instance();
 
     if (drytrace) buf_.setup(trace_path);
+    if (mem_trace) membuf_.setup(trace_path);
 
     sigaltstack(Memory::instance().alt_stack(), NULL);
 
@@ -93,8 +96,7 @@ System::System() {
     Memory::instance().restrict_map(res_fd);
     syscall(SYS_close, res_fd);
 
-
-    hide_calls = getenv("CHOPSTIX_OPT_HIDE_CALLS") != NULL;
+    //hide_calls = getenv("CHOPSTIX_OPT_HIDE_CALLS") != NULL;
 
     log::verbose("System:: End preload library initialization");
 }
@@ -103,33 +105,76 @@ System::~System() {}
 
 void System::sigsegv_handler(int sig, siginfo_t *si, void *ptr) {
     log::debug("System::sigsegv_handler start");
+    unsigned long pc_addr;
     ucontext_t *ctx = (ucontext_t *)ptr;
 #if defined(CHOPSTIX_POWER_SUPPORT)
 #define POWER_R1 1
 #define POWER_NIP 32
-    log::debug("System::sigsegv_handler: R1  = %x", ctx->uc_mcontext.gp_regs[POWER_R1]);
-    log::debug("System::sigsegv_handler: NIP = %x", ctx->uc_mcontext.gp_regs[POWER_NIP]);
+    log::debug("System::sigsegv_handler: R1  = 0x%x", ctx->uc_mcontext.gp_regs[POWER_R1]);
+    log::debug("System::sigsegv_handler: NIP = 0x%x", ctx->uc_mcontext.gp_regs[POWER_NIP]);
+    pc_addr = (unsigned long) ctx->uc_mcontext.gp_regs[POWER_NIP];
+#elif defined(CHOPSTIX_POWERLE_SUPPORT)
+#define POWER_R1 1
+#define POWER_NIP 32
+    log::debug("System::sigsegv_handler: R1  = 0x%x", ctx->uc_mcontext.gp_regs[POWER_R1]);
+    log::debug("System::sigsegv_handler: NIP = 0x%x", ctx->uc_mcontext.gp_regs[POWER_NIP]);
+    pc_addr = (unsigned long) ctx->uc_mcontext.gp_regs[POWER_NIP];
 #elif defined(CHOPSTIX_SYSZ_SUPPORT)
-    log::debug("System::sigsegv_handler: PSWM = %x", ctx->uc_mcontext.psw.mask);
-    log::debug("System::sigsegv_handler: PSWA = %x", ctx->uc_mcontext.psw.addr);
+    log::debug("System::sigsegv_handler: PSWM = 0x%x", ctx->uc_mcontext.psw.mask);
+    log::debug("System::sigsegv_handler: PSWA = 0x%x", ctx->uc_mcontext.psw.addr);
+    pc_addr = (unsigned long) ctx->uc_mcontext.psw.addr;
+#elif defined(CHOPSTIX_RISCV_SUPPORT)
+#define REG_PC 0
+    log::debug("System::sigsegv_handler: PC  = 0x%x", ctx->uc_mcontext.__gregs[REG_PC]);
+    pc_addr = (unsigned long) ctx->uc_mcontext.__gregs[REG_PC];
+#elif defined(CHOPSTIX_X86_SUPPORT)
+    log::debug("System::sigsegv_handler: RIP = 0x%x", ctx->uc_mcontext.gregs[REG_RIP]);
+    pc_addr = (unsigned long) ctx->uc_mcontext.gregs[REG_RIP];
 #endif
-    sys_.record_segv((unsigned long)si->si_addr);
-    log::debug("System::sigsegv_handler end");
+    log::debug("System::sigsegv_handler: PC Address = 0x%x", pc_addr);
+    log::debug("System::sigsegv_handler: From Address = 0x%x", (unsigned long)si->si_addr);
+    sys_.record_segv((unsigned long)si->si_addr, pc_addr);
 }
 
 void System::register_handlers() {
     log::debug("System::register_handlers start");
     struct sigaction sa;
+    struct sigaction sa_old;
     sa.sa_flags = SA_SIGINFO | SA_ONSTACK;
     sigemptyset(&sa.sa_mask);
     sa.sa_sigaction = &System::sigsegv_handler;
-    sigaction(SIGSEGV, &sa, NULL);
+    sigaction(SIGSEGV, &sa, &sa_old);
+    if (sa_old.sa_sigaction != NULL)
+    {
+        if(sa_old.sa_sigaction != sa.sa_sigaction)
+        {
+            log::info("WARNING");
+            log::info("WARNING: Process already had a SIGSEGV signal handler. Overriding it");
+            log::info("WARNING: This might change application behavior.");
+            log::info("WARNING");
+        }
+    }
+
     log::debug("System::register_handlers end");
 }
 
-void System::record_segv(unsigned long addr) {
+void System::update_ttys() {
+    tty_count = 0;
+    for (int fd = 0; fd < MAX_FDS; fd ++)
+    {
+        tty_fds[tty_count] = -1;
+        int ret = isatty(fd);
+        if (ret == 0) continue;
+        tty_fds[tty_count] = fd;
+        log::verbose("%d is tty", fd);
+        tty_count++;
+    }
+    chopstix::init = true;
+}
+
+void System::record_segv(unsigned long addr, unsigned long pc_addr) {
     log::debug("System::record_segv start");
-    log::verbose("System::record_segv: segv at %x", addr);
+    log::debug("System::record_segv: segv at %x", addr);
 
     unsigned long page_addr = Memory::instance().page_addr(addr);
     auto reg = Memory::instance().find_region(page_addr);
@@ -137,7 +182,39 @@ void System::record_segv(unsigned long addr) {
     log::debug(
         "System::record_segv: access at addr:%x page:%x region:%s perm:%s",
         addr, page_addr, reg->path, reg->perm);
-    Memory::instance().unprotect_page(reg, page_addr);
+
+    //log::debug(
+    //    "System::record_segv: prev addr: %x prev pc: %x",
+    //    previous_addr, previous_pc_addr
+    //);
+
+    if (mem_trace) {
+        if ((previous_addr == addr) && (previous_pc_addr == pc_addr)) {
+            Memory::instance().unprotect_page(reg, page_addr);
+            // Write from pc_addr to addr
+            previous_addr = 0;
+            previous_pc_addr = 0;
+            // We already dumped and did all the bookeeping
+            if (reg->perm[2] == 'x') {
+                membuf_.save_code_write(pc_addr, addr);
+            } else {
+                membuf_.save_mem_write(pc_addr, addr);
+            }
+            return;
+        } else {
+            Memory::instance().unprotect_page_for_read(reg, page_addr);
+            // Read from pc_addr to addr
+            previous_addr = addr;
+            previous_pc_addr = pc_addr;
+            if (reg->perm[2] == 'x') {
+                membuf_.save_code_write(pc_addr, addr);
+            } else {
+                membuf_.save_mem_read(pc_addr, addr);
+            }
+        }
+    } else {
+        Memory::instance().unprotect_page(reg, page_addr);
+    }
 
     if (!tracing) {
         log::debug("System::record_segv: not tracing");
@@ -169,7 +246,6 @@ void System::record_segv(unsigned long addr) {
     if (drytrace) {
         buf_.save_page(page_addr);
     }
-    log::debug("System::record_segv end");
 }
 
 void System::save_page(unsigned long page_addr) {
@@ -220,11 +296,18 @@ void System::save_page(unsigned long page_addr) {
 
 void System::start_trace(bool isNewInvocation) {
 
-    // Flust I/O streams before doing anything
-    fflush(stdout);
-    fflush(stderr);
-    fsync(fileno(stdout));
-    fsync(fileno(stderr));
+    // Do not flush I/O streams before doing anything
+    //
+    // fflush(stdout);
+    // fflush(stderr);
+    // fsync(fileno(stdout));
+    // fsync(fileno(stderr));
+    //
+    // If sharing the same IO buffer, any flushing during the start/end
+    // dynamic calls can have side effect. Need to avoid sharing the same
+    // IO buffers or not create IO to such buffers. Typically the only
+    // shared buffer can be stdout and stderr.
+    //
 
     log::debug("System: start_trace start (trace %d)", trace_id);
     check(tracing == false, "System: start_trace: Tracing already started");
@@ -258,18 +341,39 @@ void System::start_trace(bool isNewInvocation) {
     log::debug("Tracing: %d", true);
     log::debug("Systen: start_trace end (trace %d)", trace_id);
 
-    // Protect pages at the end
     Memory::instance().update();
     log::debug("System: start_Trace: map updated");
-    Memory::instance().protect_all();
-
     tracing = true;
     pagecount = 0;
+    previous_addr = 0;
+    previous_pc_addr = 0;
 
+    // Check the right handler is set
+    register_handlers();
+
+    // Update TTYs to avoid operations on them (minimize the system calls)
+    update_ttys();
+
+    // Protect pages at the end
+    Memory::instance().protect_all();
 }
 
 void System::stop_trace() {
     Memory::instance().unprotect_all();
+
+    // Do not flush I/O streams before doing anything
+    //
+    // fflush(stdout);
+    // fflush(stderr);
+    // fsync(fileno(stdout));
+    // fsync(fileno(stderr));
+    //
+    // If sharing the same IO buffer, any flushing during the start/end
+    // dynamic calls can have side effect. Need to avoid sharing the same
+    // IO buffers or not create IO to such buffers. Typically the only
+    // shared buffer can be stdout and stderr.
+    //
+
     log::debug("System:: stop_trace start");
     log::debug("Tracing: %d", tracing);
     check(tracing == true, "System:: stop_trace: Tracing already stopped");
@@ -318,7 +422,6 @@ void System::stop_trace() {
 
 void chopstix_start_trace(unsigned long isNewInvocation) {
     chopstix::sys_.start_trace(isNewInvocation);
-
     // Generate a SIGILL event, without using system routines like 'raise'
     // to avoid more page faults that needed (note that all pages have been
     // protected.
@@ -333,18 +436,45 @@ void chopstix_stop_trace() {
     // raise(SIGTRAP);
 }
 
-
 //
 // Disable printf system calls during tracing
 //
+// TODO: Do the same for other common/typical functions that do not have
+// side effects
+//
+
+extern "C" {
+
+int vprintf(const char* format, va_list ap) {
+    if (chopstix::hide_calls && chopstix::sys_.tracing) return 0;
+
+    static int (*real_vprintf)(const char* format, va_list ap) = nullptr;
+    if (!real_vprintf) real_vprintf = (int (*)(const char*, va_list ap)) dlsym(RTLD_NEXT, "vprintf");
+
+    int ret = real_vprintf(format, ap);
+
+    return ret;
+}
+
 int printf(const char* format, ...) {
     if (chopstix::hide_calls && chopstix::sys_.tracing) return 0;
-	static int (*real_printf)(const char* format, ...) = nullptr;
-	va_list argptr;
+
+    va_list argptr;
     va_start(argptr, format);
-    if (!real_printf) real_printf = (int (*)(const char*, ...)) dlsym(RTLD_NEXT, "printf");
-	int ret = real_printf(format, argptr);
-	va_end(argptr);
+    int ret = vprintf(format, argptr);
+    va_end(argptr);
+
+    return ret;
+}
+
+int __printf_chk (int __flag, const char *format, ...) {
+    if (chopstix::hide_calls && chopstix::sys_.tracing) return 0;
+
+    va_list argptr;
+    va_start(argptr, format);
+    int ret = vprintf(format, argptr);
+    va_end(argptr);
+
     return ret;
 }
 
@@ -364,10 +494,52 @@ int puts(const char *s) {
     return ret;
 }
 
+// TODO: This is work in progress. Goal is to mask system calls related to
+// TODO: write to tty file descriptors, which should not affect application
+// TODO: behavior. Preliminary implementation not enabled, needs further testing
+//
+#if 0
+
+ssize_t pwrite(int fildes, const void *buf, size_t nbyte, off_t offset) {
+
+    int istty = 0;
+    for (int i=0; i<chopstix::sys_.tty_count; i++)
+    {
+        if (fildes == chopstix::sys_.tty_fds[chopstix::sys_.tty_count]) { istty = 1; break; }
+    }
+
+    if (chopstix::hide_calls && chopstix::sys_.tracing && istty) return nbyte;
+
+	static ssize_t (*real_pwrite)(int fildes, const void *buf, size_t nbyte, off_t offset) = nullptr;
+    if (!real_pwrite) real_pwrite = (ssize_t (*)(int, const void *, size_t, off_t)) dlsym(RTLD_NEXT, "pwrite");
+    return real_pwrite(fildes, buf, nbyte, offset);
+
+}
+
+ssize_t write(int fildes, const void *buf, size_t nbyte) {
+
+	static ssize_t (*real_write)(int fildes, const void *buf, size_t nbyte) = nullptr;
+    if (!real_write) real_write = (ssize_t (*)(int, const void *, size_t)) dlsym(RTLD_NEXT, "write");
+    if (chopstix::init == false) return real_write(fildes, buf, nbyte);
+    if (!chopstix::hide_calls || !chopstix::sys_.tracing) return real_write(fildes, buf, nbyte);
+
+    for (int i=0; i<chopstix::sys_.tty_count; i++)
+    {
+        if (fildes == chopstix::sys_.tty_fds[chopstix::sys_.tty_count]) { return nbyte; }
+    }
+    return real_write(fildes, buf, nbyte);
+}
+#endif
+
+// TODO: Disabled, is this required?
+#if 0
 int printf(const char* format) {
     if (chopstix::hide_calls && chopstix::sys_.tracing) return 0;
 	static int (*real_printf)(const char* format) = nullptr;
     if (!real_printf) real_printf = (int (*)(const char*)) dlsym(RTLD_NEXT, "printf");
 	int ret = real_printf(format);
     return ret;
+}
+#endif
+
 }

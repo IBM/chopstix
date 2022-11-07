@@ -27,21 +27,20 @@
 
 #define log(p, ...)                       \
     do {                                  \
-        if (getenv("CX_VERBOSE")) {       \
             fprintf(stderr, "=%s= ", p);  \
             fprintf(stderr, __VA_ARGS__); \
             fprintf(stderr, "\n");        \
             fflush(stderr);               \
-        }                                 \
     } while (0)
 
 #define logt(...) log("t", __VA_ARGS__)
 
 double daxpy(double *x, double *y, int n, double a) {
-    for (int i = 0; i < n; ++i) {
-        y[i] = a * x[i] + y[i];
+    for (int i = 1; i < n; ++i) {
+        y[i] = a * x[i] + y[i-1];
+        x[i] = a * x[i] + y[i-1];
     }
-    return y[0];
+    return y[n-1];
 }
 
 double rand_next() { return (rand() + 0.0) / RAND_MAX; }
@@ -53,7 +52,7 @@ int main(int argc, char **argv) {
     logt("allocating memory (size: %d)", n);
     double *x = malloc(sizeof(double) * n);
     double *y = malloc(sizeof(double) * n);
-    logt("x: %p   y: %p", x, y);
+    logt("x: %p   y: %p", (void *)x, (void *)y);
     srand(19940617);
     for (int i = 0; i < n; ++i) {
         x[i] = rand_next();

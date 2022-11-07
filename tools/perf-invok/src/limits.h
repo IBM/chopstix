@@ -1,3 +1,0 @@
-
-#define MAX_SAMPLES 8192
-#define MAX_BREAKPOINTS 256

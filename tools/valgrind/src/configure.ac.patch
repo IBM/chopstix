@@ -1,0 +1,11 @@
+--- valgrind-3.19.0/configure.ac	2022-04-11 10:27:12.000000000 -0400
++++ valgrind-3.19.0_updated/configure.ac	2022-06-10 12:12:39.366934350 -0400
+@@ -5319,6 +5319,8 @@
+    dhat/tests/Makefile
+    lackey/Makefile
+    lackey/tests/Makefile
++   chopstix/Makefile
++   chopstix/tests/Makefile
+    none/Makefile
+    none/tests/Makefile
+    none/tests/scripts/Makefile

@@ -1,6 +1,7 @@
 #include "regionofinterest.h"
 #include "config.h"
 
+#include "string.h"
 #include "../process.h"
 #include "../../support/log.h"
 #include "tracer.h"
@@ -29,7 +30,7 @@ void TracerRegionOfInterestState::execute(Process &child) {
         throw std::runtime_error("Exit during region of interest");
     } else if (child.signaled()) {
         log::verbose("TracerRegionOfInterestState:: child term signaled during region of interest");
-        log::verbose("TracerRegionOfInterestState:: term signaled: %d", child.term_sig());
+        log::verbose("TracerRegionOfInterestState:: term signaled: %s", strsignal(child.term_sig()));
         throw std::runtime_error("Termination signal during region of interest");
     } else {
         throw std::runtime_error("Child did not stop!");
@@ -144,7 +145,13 @@ void TracerRangedRegionOfInterestState::handle_signal(Process &child,
 
     log::debug("TracerRangedRegionOfInterestState:: handle signal start");
     if (signal == SIGILL) {
-        change_state();
+        if (tracer->check_breakpoint(end)) {
+            change_state();
+        } else {
+            // Restore contents and continue executing
+            tracer->fix_breakpoint(end);
+            child.syscall(0);
+        }
     } else {
         TracerRegionOfInterestState::handle_signal(child, signal);
     }

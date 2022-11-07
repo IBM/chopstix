@@ -1,0 +1,203 @@
+#!/usr/bin/env sh
+#
+# ----------------------------------------------------------------------------
+#
+# Copyright 2019 IBM Corporation
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+# ----------------------------------------------------------------------------
+#
+
+set -eu
+
+die() { echo "$*" >&2; exit 1; }
+
+usage() {
+
+    echo ""
+    echo "Usage: "
+    echo "$0 [-h] [-output name] [-base-mpt mptfile] [-output-mpt mptfile] [-begin sym] [-end sym] [-indices iters] -- command"
+    echo ""
+    echo " This script generates a memory access trace of the " 
+    echo " first execution of a Microprobe generated ELF binary "
+    echo " created from an MPT generated using 'chop trace'. If "
+	echo " a base MPT is provided, a modified MPT, with the memory "
+	echo " access trace definition will be generated automatically."
+    echo ""
+    echo " -output name             Output base name (.memtrace.gz appended automatically) [default: output]"
+	echo " -base-mpt mptfile        Base MPT file to modify"
+    echo " -output-mpt mptfile      Output MPT fiel to generate (will contain base mpt plus the memory access trace definition)"
+	echo ""
+	echo " Other less common options:"
+    echo " -begin symbol            Begin symbol of the region of interest in hex format [default: START_TEST]" 
+    echo " -end symbol              End symbol of the region of interest in hex format [default: MPT2ELF_ENDLESS]"
+    echo " -indices num1,num2,num3  Comma separated list of the invocations to be executed [default: 0]"
+    echo " -h                       Output this help"
+    echo ""
+
+}
+
+if [ $# -eq 0 ]; then usage; exit 1; fi;
+
+start_sym=START_TEST
+end_sym=MPT2ELF_ENDLESS
+index=0
+output=output
+
+bin=__none__
+base_mpt=__none__
+output_mpt=__none__
+
+while [ $# -gt 1 ]; do
+    case $1 in
+        (-h)
+            usage
+            exit 0
+            ;;
+        (-output)
+            output="$2"
+    		shift; shift ;;
+        (-base-mpt)
+            base_mpt="$2"
+    		shift; shift ;;
+        (-output-mpt)
+            output_mpt="$2"
+    		shift; shift ;;
+        (-begin)
+            start_sym="$2"
+    		shift; shift ;;
+        (-end)
+            end_sym="$2"
+    		shift; shift ;;
+        (-indices)
+            index="$2"
+    		shift; shift ;;
+        (--)
+            bin="$2"
+    		shift; 
+			cmd=$*
+			break;;
+        (*)
+            die "$0: error: Unknown parameter: $1"
+            ;;
+    esac;
+	if [ $# -eq 0 ]; then break; fi;
+done
+
+output=${output}.memtrace.gz
+
+[ "$bin" != "__none__" ] || die "$0: error: Binary not provided"
+
+echo "chop-trace-mem start"
+echo ""
+echo "Configuration:"
+echo ""
+echo "  Binary: $bin"
+echo "  Command: $cmd"
+echo "  Start symbol: $start_sym"
+echo "  End symbol: $end_sym"
+echo "  Execution indices: $index"
+echo "  Output trace: $output"
+echo "  Base MPT: $base_mpt"
+echo "  Output MPT: $output_mpt"
+echo ""
+
+[ -x "$bin" ] || die "$0: error: Binary '$bin' not executable"
+[ ! -r "$output" ] || die "$0: error: Output trace '$output' already exists"
+[ "$base_mpt" = "__none__" ] || [ -r "$base_mpt" ] || die "$0: error: Base mpt '$base_mpt' not readable"
+[ "$output_mpt" = "__none__" ] || [ "$base_mpt" != "__none__" ] || die "$0: error: Output MPT provided without base MPT"
+[ "$base_mpt" = "__none__" ] || [ "$output_mpt" != "__none__" ] || die "$0: error: Base MPT provided without output MPT"
+[ "$output_mpt" = "__none__" ] || [ ! -r "$output_mpt" ] || die "$0: error: Output mpt '$output_mpt' already exists"
+
+echo "Computing addresses"
+echo ""
+
+start_addr=$(chop-marks "$bin" "$start_sym" 2> /dev/null | grep begin | sed "s/n /n=0x/g")
+end_addr=$(chop-marks "$bin" "$end_sym" 2> /dev/null | grep end | sed "s/d /d=0x/g")
+if [ "$end_sym" = "MPT2ELF_ENDLESS" ]; then
+    end_addr=$(chop-marks "$bin" "$end_sym" 2> /dev/null | grep begin | sed "s/begin /end=0x/g")
+fi
+
+if [ "$end_sym" = "MPT2ELF_ENDLESS" ] && [ "$end_addr" = "" ]; then
+    end_addr="-end=0x$(objdump -d "$bin" | grep "<$end_sym>:" | cut -d " " -f 1)"
+fi
+
+if [ "$start_sym" = "START_TEST" ] && [ "$start_addr" = "" ]; then
+    start_addr="-begin=0x$(objdump -d "$bin" | grep "<$start_sym>:" | cut -d " " -f 1)"
+fi
+
+[ "$start_addr" != "" ] || die "$0: error: Unable to compute start addresses"
+[ "$end_addr" != "" ] || die "$0: error: Unable to compute end addresses"
+
+echo "  Start addresses: $start_addr"
+echo "  End addresses: $end_addr"
+echo ""
+
+tmp=$(mktemp)
+tmp2=$(mktemp)
+cleanup() {
+    rm -f "$tmp" "$tmp2" 
+}
+trap cleanup EXIT
+
+echo "Tracing"
+echo ""
+echo "  Tracing command: "
+echo "    chop-valgrind --tool=chopstix $start_addr $end_addr -indices=$index $cmd"
+
+# shellcheck disable=SC2086
+chop-valgrind --tool=chopstix $start_addr $end_addr -indices=$index $cmd 2> "$tmp" > "$tmp" 
+
+echo "  Processing trace ($output)"
+grep "^[DI] [RW] 0x" < "$tmp" | head -n -1 > "${tmp2}"
+[ "$(wc -l < "$tmp2")" -gt 0 ] || die "$0: error: not memory accesses traced. Check command or addresses and try manual generation" 
+gzip -c < "$tmp2" > "$output"
+echo ""
+
+rm -f "$tmp"
+if [ "$base_mpt" != "__none__" ]; then
+
+	echo "Patching base MPT ($base_mpt)"
+	echo ""
+    set +e
+	compress=$(file "$base_mpt"  | grep -c gzip)
+    set -e
+	if [ "$compress" -eq 1 ]; then
+		zcat "$base_mpt" > "$output_mpt"
+	else
+		cat "$base_mpt" > "$output_mpt"
+	fi
+
+    # shellcheck disable=SC2129
+	echo "" >> "$output_mpt"
+    # shellcheck disable=SC2129
+	echo "[TRACE]" >> "$output_mpt" 
+    # shellcheck disable=SC2129
+	echo "roi_memory_access_trace = $(basename "$output")" >> "$output_mpt"
+
+	if [ "$compress" -eq 1 ]; then
+		gzip -f9 "$output_mpt"
+		output_mpt="${output_mpt}.gz"
+        if [ "$(echo "$output_mpt" | grep -c "gz.gz$")" -ne 0 ]; then
+            output_mpt=$(echo "${output_mpt}" | sed "s/.gz$//")
+            mv "${output_mpt}.gz" "$output_mpt"
+        fi
+	fi
+
+	echo "  New patched MPT generated ($output_mpt)"
+	echo ""
+fi
+
+echo "chop-trace-mem end"
+exit 0

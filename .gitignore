@@ -7,3 +7,5 @@ build*/
 *.swp
 __pycache__
 .cache/
+examples/*/daxpy
+examples/*/chop.db

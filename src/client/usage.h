@@ -35,7 +35,7 @@
         if (!(C)) {                                                      \
             fmt::print(stderr, "Error: {}\n", fmt::format(__VA_ARGS__)); \
             fmt::print(stderr, help_##Cmd);                              \
-            exit(1);                                                     \
+            exit(EXIT_FAILURE);                                          \
         }                                                                \
     } while (0)
 
@@ -50,6 +50,6 @@
         } catch (const std::exception &e) {                            \
             fmt::print(stderr, "Error: {}\n", e.what());               \
             fmt::print(stderr, help_##Cmd);                            \
-            exit(1);                                                   \
+            exit(EXIT_FAILURE);                                        \
         }                                                              \
     } while (0)

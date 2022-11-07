@@ -76,7 +76,7 @@ void print_info(int num_elems, double *x, double *y, int num_iter) {
     long pagesize = sysconf(_SC_PAGESIZE);
 
     pid_t mypid = getpid();
-    printf("# %c\n", '\0'); 
+    printf("# %c\n", '\0');
     printf("# pid %d\n", mypid);
     printf("# vec_x %" PRIx64 "\n", (uint64_t) & x[0]);
     printf("# vec_y %" PRIx64 "\n", (uint64_t) & y[0]);
@@ -113,7 +113,7 @@ int main(int argc, char **argv) {
     init_test(num_elems, &gx, &gy, &ga);
 
 #if 0
-    int fd = open("/proc/self/maps", O_RDONLY); 
+    int fd = open("/proc/self/maps", O_RDONLY);
     char ch[1];
     size_t nbytes;
     ssize_t bytes_read;

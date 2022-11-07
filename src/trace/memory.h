@@ -62,6 +62,7 @@ struct Memory {
     mem_region *find_region(unsigned long page_addr);
     void protect_page(mem_region *reg, unsigned long page_addr);
     void unprotect_page(mem_region *reg, unsigned long page_addr);
+    void unprotect_page_for_read(mem_region *reg, unsigned long page_addr);
 
     using iterator = mem_region *;
     using stack_type = stack_t;

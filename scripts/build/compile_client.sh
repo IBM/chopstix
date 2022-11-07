@@ -31,7 +31,7 @@
 out=$1 ; shift
 cmds="$*"
 outdir=$(dirname "$out")
-mkdir -p "$outdir" 
+mkdir -p "$outdir"
 
 {
 cat << EndOfMessage

@@ -12,12 +12,12 @@ This will start running `my_app` and sample performance counters,
 which are then written into a session.
 
 This creates a new sampling session. We can then list all collected samples.
-    
+
     chop list sessions
     chop list samples
 
-To continue, we need the static Control Flow Graph (CFG) of the application. 
-Each application consists of modules. These correspond to object files and 
+To continue, we need the static Control Flow Graph (CFG) of the application.
+Each application consists of modules. These correspond to object files and
 executables. We will create the static CFG for our `my_app` program.
 
     chop disasm my_app
@@ -76,15 +76,20 @@ invocation. To do so:
 
     chop trace $(chop-marks myapp func1) -gzip myapp -max-traces 10 -trace-dir output_dir
 
-The command above will generate 10 traces and will store the contents in 
-output_dir. Then, the output directory can be postprocessed to generate the 
-corresponding mpts with the following command:
+The command above will generate 10 traces and will store the contents in
+`output_dir`. Then, the output directory can be post-processed to generate the
+corresponding MPTs with the following command:
 
     chop-trace2mpt -o mynewmpt --trace-dir output_dir --gzip
 
-The mpts generated can then be processed by Microprobe to generate microbenchmarks
-in different formats. 
+The MPTs generated can then be processed by Microprobe to generate microbenchmarks
+in different formats.
 
-The _chop-marks_ command is a help script to automatically detect the
-addresses of the entry and exit poings of the function to be traced. Otherwise,
-that input have to be provided manually. 
+The _chop-marks_ command is a helper script to automatically detect the
+addresses of the entry and exit points of the function to be traced. Otherwise,
+that input have to be provided manually.
+
+In the `./examples/tracing/` directory, you can find a more detailed tracing
+example, including a script to perform all the necessary steps to trace
+a particular function and convert the extracted trace into a self-runnable
+binary.

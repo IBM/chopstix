@@ -1034,7 +1034,7 @@ def brute_force_2d_density(
                 xidx = xidx + 1
             else:
                 xidx = xidx - 1
-            if 0 <= xidx < len(xranges):
+            if 0 <= xidx < len(xranges) and len(ipcs) > 1:
                 assert xranges[xidx][0] <= instr[sample] < xranges[xidx][1]
 
         if yidx >= cbins or yidx < 0:
@@ -1048,7 +1048,12 @@ def brute_force_2d_density(
             if 0 <= yidx < len(yranges):
                 assert yranges[yidx][0] <= ipcs[sample] < yranges[yidx][1]
 
-        labels.append(labeldict.get((xidx, yidx), -1))
+        if len(ipcs) == 1:
+            # single label
+            labels.append(0)
+        else:
+            labels.append(labeldict.get((xidx, yidx), -1))
+
         if labels[-1] == -1:
             noise_invocations.append(sample)
         else:

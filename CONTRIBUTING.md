@@ -28,23 +28,23 @@ For more information on specific questions see the documentation in `docs`.
     examples   Examples to show ChopStiX use cases
     docs       Extra documentation and related documents
     tools      Utilities that are installed with ChopStiX
-    
+
 ## Source code contributions
 
-All pull requests submitted must have their commits signed. You can 
-have git do this automatically with `git commit -s`. Alternatively, 
+All pull requests submitted must have their commits signed. You can
+have git do this automatically with `git commit -s`. Alternatively,
 add a line like the following to the end of your commit:
 
 ```
 Signed-off-by: Your Name <your.name@your.email>
 ```
 
-When submitting patches/pull requests, you agree to the following 
+When submitting patches/pull requests, you agree to the following
 Developer Certificate of Origin, i.e., items (a--d):
 
 ```
 Developer Certificate of Origin
-Version 1.1 
+Version 1.1
 
 Copyright (C) 2004, 2006 The Linux Foundation and its contributors.
 1 Letterman Drive
@@ -54,7 +54,7 @@ San Francisco, CA, 94129
 Everyone is permitted to copy and distribute verbatim copies of this
 license document, but changing it is not allowed.
 
-Developer's Certificate of Origin 1.1 
+Developer's Certificate of Origin 1.1
 
 By making a contribution to this project, I certify that:
 
@@ -72,10 +72,10 @@ By making a contribution to this project, I certify that:
 
 (c) The contribution was provided directly to me by some other
     person who certified (a), (b) or (c) and I have not modified
-    it. 
+    it.
 
 (d) I understand and agree that this project and the contribution
-    are public and that a record of the contribution (including all 
+    are public and that a record of the contribution (including all
     personal information I submit with it, including my sign-off) is
     maintained indefinitely and may be redistributed consistent with
     this project or the open source license(s) involved.

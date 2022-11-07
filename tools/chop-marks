@@ -29,6 +29,8 @@ elif [ "$machine" = "ppc64le" ]; then
     marks_cmd=chop-marks-ppc64
 elif [ "$machine" = "s390x" ]; then
     marks_cmd=chop-marks-sysz
+elif [ "$machine" = "x86_64" ]; then
+    marks_cmd=chop-marks-x86_64
 else
     echo "Unsupported architecture: $machine"
     exit 0

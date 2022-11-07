@@ -74,9 +74,30 @@ Process &Process::operator=(Process &&other) {
 
 void Process::exec(char **argv, int argc) {
     log::debug("Process:: exec start");
+	char mainpath[1024];
+
+    errno = 0;
+
+    ssize_t nbytes = readlink(argv[0], mainpath, 1024);
+    if ((nbytes == -1) || (nbytes == 1024)) {
+         if(nbytes == -1) {
+            log::debug("Process:: exec_wait: path is not a symlink");
+            mainmodule_ = basename(argv[0]);
+         } else {
+             fprintf(stderr, "Process:: exec_wait: Error: Main module name truncated\n");
+             abandon();
+             exit(EXIT_FAILURE);
+        }
+    } else {
+        log::debug("Process:: exec_wait: path is a symlink");
+        mainpath[nbytes] = '\0';
+        mainmodule_ = basename(mainpath);
+    }
+
     pid_ = fork();
     check(pid_ != -1, "Process:: exec: Unable to spawn process");
     if (pid_ != 0) {
+        ptrace(PTRACE_SETOPTIONS, pid_, 0, PTRACE_O_EXITKILL);
         log::debug("Process:: exec end");
         return;
     }
@@ -91,24 +112,22 @@ void Process::exec(char **argv, int argc) {
         abandon();
         exit(EXIT_FAILURE);
     }
+
     persona = persona | ADDR_NO_RANDOMIZE;
-    if (persona & ADDR_NO_RANDOMIZE)
-    {
-        log::debug("Process:: exec: ASLR already disabled");
-    } else {
-          persona = personality(persona | ADDR_NO_RANDOMIZE);
-        if (persona == -1) {
-            fprintf(stderr, "Process:: exec: Unable to set ASLR info: %s\n", strerror(errno));
-            abandon();
-            exit(EXIT_FAILURE);
-        }
-        if (!(personality (0xffffffff) & ADDR_NO_RANDOMIZE))
-        {
-            fprintf(stderr, "Process:: exec: Unable to disable ASLR");
-            abandon();
-            exit(EXIT_FAILURE);
-        }
+    log::debug("Process:: exec: Disabling ASLR ...");
+    persona = personality(persona | ADDR_NO_RANDOMIZE);
+    if (persona == -1) {
+        fprintf(stderr, "Process:: exec: Unable to set ASLR info: %s\n", strerror(errno));
+        abandon();
+        exit(EXIT_FAILURE);
     }
+    if (!(personality (0xffffffff) & ADDR_NO_RANDOMIZE))
+    {
+        fprintf(stderr, "Process:: exec: Unable to disable ASLR");
+        abandon();
+        exit(EXIT_FAILURE);
+    }
+    log::debug("Process:: exec: ASLR disabled");
 
     int ret = execvp(*argv, argv);
     if (ret <  0) {
@@ -121,15 +140,34 @@ void Process::exec(char **argv, int argc) {
 
 void Process::exec_wait(char **argv, int argc) {
     log::debug("Process:: exec_wait start");
+	char mainpath[1024];
+    errno = 0;
+    ssize_t nbytes = readlink(argv[0], mainpath, 1024);
+    if ((nbytes == -1) || (nbytes == 1024)) {
+         if(nbytes == -1) {
+            log::debug("Process:: exec_wait: path is not a symlink");
+            mainmodule_ = basename(argv[0]);
+         } else {
+             fprintf(stderr, "Process:: exec_wait: Error: Main module name truncated\n");
+             abandon();
+             exit(EXIT_FAILURE);
+        }
+    } else {
+        log::debug("Process:: exec_wait: path is a symlink");
+        mainpath[nbytes] = '\0';
+        mainmodule_ = basename(mainpath);
+    }
+
     pid_ = fork();
     check(pid_ != -1, "Process:: exec_wait: Unable to spawn process");
     if (pid_ != 0) {
+        ptrace(PTRACE_SETOPTIONS, pid_, 0, PTRACE_O_EXITKILL);
         log::debug("Process:: exec_wait: wait for child");
         waitpid(pid_, &status_, WNOHANG);
         log::debug("Process:: exec_wait: wait for child done");
         return;
     }
-    log::debug("Process:: exec_wait child");
+    log::debug("Process:: exec_wait child created %d", pid_);
     ptrace(PTRACE_TRACEME, 0, NULL, NULL);
 
     int persona = personality(0xffffffff);
@@ -168,9 +206,11 @@ void Process::exec_wait(char **argv, int argc) {
 }
 
 void Process::ready() {
+    log::debug("Process:: ready: start");
     wait(0);
     checkx(stopped(), "Process:: ready: The provided command failed");
     checkx(stop_sig() == SIGTRAP, "Process:: ready: The provided command failed");
+    log::debug("Process:: ready: end");
 }
 
 void Process::abandon() {
@@ -300,7 +340,7 @@ long Process::peek(long addr) {
                 check(false, "Process:: poke: ptrace_poke failed: EPERM: %s", strerror(errno));
             case ESRCH:
                 check(false, "Process:: poke: ptrace_poke failed: ESRCH: %s", strerror(errno));
-            default: 
+            default:
                 check(false, "Process:: poke: ptrace_poke failed: %s", strerror(errno));
         }
     }
@@ -325,7 +365,7 @@ void Process::poke(long addr, long data) {
                 check(false, "Process:: poke: ptrace_poke failed: EPERM: %s", strerror(errno));
             case ESRCH:
                 check(false, "Process:: poke: ptrace_poke failed: ESRCH: %s", strerror(errno));
-            default: 
+            default:
                 check(false, "Process:: poke: ptrace_poke failed: %s", strerror(errno));
         }
     }
@@ -341,6 +381,38 @@ void Process::step(int sig) {
     check(ret != -1, "Process: step: ptrace_singlestep failed");
 }
 
+void Process::step_to_main_module() {
+    log::debug("Process:: step to main module: start");
+
+    long main_module_start = 0xdeadbeef;
+    long main_module_end = 0xdeadbeef;
+    const char* cmodule;
+
+    auto maps = parse_maps(pid());
+    for (auto &entry : maps) {
+        if(entry.perm[2] != 'x') continue;
+        cmodule = basename(entry.path.c_str());
+        if(strncmp(mainmodule_, cmodule, strlen(mainmodule_)) != 0) continue;
+        main_module_start = entry.addr[0];
+        main_module_end = entry.addr[1];
+    }
+
+    if(main_module_start == 0xdeadbeef) {
+        send(SIGKILL);
+        errno = 0;
+        check(false, "Process:: step_to_main_module : unable to compute address");
+    }
+
+    while(1) {
+        long pc = Arch::current()->get_pc(pid());
+        log::debug("Step: PC = 0x%x", pc);
+        if ((pc >= main_module_start) && (pc < main_module_end)) break;
+        Process::step(0);
+        wait(0);
+    }
+    log::debug("Process:: step to main module: end");
+}
+
 void Process::set_break(long addr) {
     log::debug("Process:: set break: address %x", addr);
     auto it = breaks_.find(addr);
@@ -349,6 +421,29 @@ void Process::set_break(long addr) {
     long mask = Arch::current()->get_breakpoint_mask();
     addr_content &= mask;
     log::debug("Process:: set break: break contents are %x", addr_content);
+    poke(addr, addr_content);
+}
+
+void Process::set_break_size(long addr, long size) {
+    log::debug("Process:: set break size: address %x size %d", addr, size);
+    auto it = breaks_.find(addr);
+    long addr_content = peek(addr);
+    if (it == breaks_.end()) breaks_[addr] = addr_content;
+    long mask;
+	switch(Arch::current()->get_breakpoint_size()) {
+        case BreakpointSize::HALF_WORD:
+            mask = (((long)1 << ((2 - size)*8)) - 1);
+            break;
+        case BreakpointSize::WORD:
+            mask = (((long)1 << ((4 - size)*8)) - 1);
+            break;
+        default:
+        case BreakpointSize::DOUBLE_WORD:
+            mask = (((long)1 << ((8 - size)*8)) - 1);
+            break;
+    }
+    addr_content &= mask;
+    log::debug("Process:: set break size: break contents are %x", addr_content);
     poke(addr, addr_content);
 }
 
@@ -373,6 +468,7 @@ void Process::dyn_call(long addr, Arch::regbuf_type &regs, long sp, std::vector<
     log::debug("Process::dyn_call: Dynamic call from PC = 0x%x", cur_pc);
 
     Arch::current()->read_regs(pid(), regs);
+
     Arch::current()->set_pc(pid(), addr);
     Arch::current()->set_sp(pid(), sp);
     Arch::current()->set_args(pid(), args);
@@ -398,16 +494,18 @@ void Process::dyn_call(long addr, Arch::regbuf_type &regs, long sp, std::vector<
             log::debug(
                 "Process::dyn_call: Ignoring segmentation fault during dynamic "
                 "call");
+
             cont(SIGSEGV);
             wait(0);
 
         } else if (sig != SIGILL) {
             log::debug(
                 "Process::dyn_call: Expected segmentation fault, found %s",
-                strsignal(sig));
+                strsignal(sig)
+            );
             cont(SIGTERM);
             wait(0);
-            exit(1);
+            exit(EXIT_FAILURE);
 
         } else {
             break;
@@ -418,7 +516,7 @@ void Process::dyn_call(long addr, Arch::regbuf_type &regs, long sp, std::vector<
         if (exited()) {
             log::debug("Process:: dyn_call: Process exited with status: %d",
                        exit_status());
-            exit(1);
+            exit(EXIT_FAILURE);
         } else if (signaled()) {
             log::debug("Process:: dyn_call: Process signaled with signal: %d",
                        term_sig());
@@ -435,6 +533,7 @@ void Process::dyn_call(long addr, Arch::regbuf_type &regs, long sp, std::vector<
     Arch::current()->write_regs(pid(), regs);
 
     cur_pc = Arch::current()->get_pc(pid());
+
     log::debug("Process::dyn_call: Restarting from PC = 0x%x", cur_pc);
 
     log::debug("Process::dyn_call: End");

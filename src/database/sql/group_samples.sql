@@ -19,16 +19,35 @@ UPDATE _module_map
 SET offset = 0
 WHERE addr_begin BETWEEN map_begin AND map_end
 AND   addr_end   BETWEEN map_begin AND map_end;
+
 -- Group and weigh samples by PC
+-- DROP TABLE IF EXISTS _sample_grouped;
+-- CREATE TEMP TABLE _sample_grouped AS
+-- SELECT sample.pid         AS pid,
+--        module_id          AS module_id,
+--       sample.ip - offset AS addr,
+--        COUNT(*)           AS count
+-- FROM _module_map INNER JOIN sample
+-- ON _module_map.pid = sample.pid
+-- AND sample.ip BETWEEN map_begin AND map_end
+-- GROUP BY sample.pid, module_id, sample.ip;
+
 DROP TABLE IF EXISTS _sample_grouped;
 CREATE TEMP TABLE _sample_grouped AS
 SELECT sample.pid         AS pid,
        module_id          AS module_id,
        sample.ip - offset AS addr,
+	   sample.ip          AS raw_addr,
+	   _module_map.name   AS module_name,
+--	   _module_map.addr_begin AS abegin,
+--	   _module_map.addr_end AS aend,
+--	   _module_map.map_begin AS mb,
+--	   _modulpe_map.map_end AS me,
+	   _module_map.offset AS mo,
        COUNT(*)           AS count
 FROM _module_map INNER JOIN sample
 ON _module_map.pid = sample.pid
-AND sample.ip BETWEEN map_begin AND map_end
+AND sample.ip BETWEEN _module_map.map_begin AND _module_map.map_end
 GROUP BY sample.pid, module_id, sample.ip;
 
 CREATE INDEX IF NOT EXISTS _sample_grouped_pid_index ON _sample_grouped(pid);
@@ -38,4 +57,3 @@ CREATE INDEX IF NOT EXISTS _sample_grouped_addr_index ON _sample_grouped(addr AS
 -- DROP TABLE IF EXISTS _sample_grouped_all_info;
 -- CREATE TEMP TABLE _sample_grouped_all_info AS
 -- SELECT smp.pid, smp.module_id, smp.addr
-

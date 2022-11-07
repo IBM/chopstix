@@ -18,13 +18,13 @@ Change `<prefix>` for the location where you want to install ChopStiX.
     make
     make install
 
-If you need to change the default compiler and/or compilation flags, 
+If you need to change the default compiler and/or compilation flags,
 you can preset custom settings as following:
 
     CXX=<your_compiler> CXXFLAGS=<cxxflags> CFLAGS=<cflags> LDFLAGS=<ldflags> cmake -DCMAKE_INSTALL_PREFIX=<prefix> ..
 
-Use "make VERBOSE=1", if you need extra output from the compilation
-process. More details on other options, such as the ones that control the 
+Use `make VERBOSE=1`, if you need extra output from the compilation
+process. More details on other options, such as the ones that control the
 target architecture to support (RISCV, PowerPC, PowerPC LE, Z or x86) follow.
 
 ## Build options
@@ -55,6 +55,17 @@ If you are planning on modifying the source code, it is recommended
 that you generate test targets.
 
 - `CHOPSTIX_BUILD_TESTS=[ON|OFF]`
+
+## External tools
+
+In order to have a complete ChopStiX functionality the following extra
+tools/dependencies are fetched and installed during the installation
+process:
+
+- [Microprobe](https://github.com/IBM/microprobe) to be able to convert
+  the generated Microprobe Test files (MPTs) to other formats after tracing.
+- [Valgrind](https://valgrind.org/) to be able to complete the generated
+  MPTs with detailed memory access trace information.
 
 ### Useful CMake options
 

@@ -4,26 +4,31 @@
 #include <stdlib.h>
 #include <time.h>
 
-#include "limits.h"
 #include "tool.h"
+#include "config.h"
 
 void measureInvocationPerformance(unsigned long long *addrStart,
                                   unsigned int startPointCount,
                                   unsigned long long *addrEnd,
                                   unsigned int endPointCount) {
 
+    debug_print("Setting start points...\n");
     for(int i=0; i<startPointCount; i++) perfInvokSetBreakpoint(addrStart[i]);
 
     // Loop indefinitely, when the program ends, perf-invok will exit
     // automatically
     while (1) {
 
+        // TODO: Port recursivity code from Ramon
+
         // Continue until the program hits the start breakpoint
 
         perfInvokContinue();
         perfInvokWait();
 
+        debug_print("Restoring start points...\n");
         for(int i=0; i<startPointCount; i++) perfInvokResetBreakpoint(addrStart[i]);
+        debug_print("Setting end points...\n");
         for(int i=0; i<endPointCount; i++) perfInvokSetBreakpoint(addrEnd[i]);
 
         perfInvokBeginSample();
@@ -34,7 +39,9 @@ void measureInvocationPerformance(unsigned long long *addrStart,
 
         perfInvokEndSample();
 
+        debug_print("Restoring end points...\n");
         for(int i=0; i<endPointCount; i++) perfInvokResetBreakpoint(addrEnd[i]);
+        debug_print("Setting start points...\n");
         for(int i=0; i<startPointCount; i++) perfInvokSetBreakpoint(addrStart[i]);
     }
 }
@@ -43,7 +50,8 @@ timer_t timeoutTimer, rateTimer;
 
 // Function that will be called once the timeout expires
 static void timeoutHandler(union sigval data) {
-    perfInvokExit(EXIT_SUCCESS);
+    fprintf(stderr, "WARNING: Process timeout reached!\n");
+    perfInvokExit(EXIT_SUCCESS, 0);
 }
 
 // Function that will be called at the user-specified rate

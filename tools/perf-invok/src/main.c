@@ -23,13 +23,20 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
+#include <sys/wait.h>
+#include <sys/ptrace.h>
+#include <sys/personality.h>
+#include <sys/time.h>
+#include <unistd.h>
+#include <sched.h>
+#include <signal.h>
 #include <limits.h>
 #include <assert.h>
 #include <errno.h>
 
-#include "debug.h"
+#include "config.h"
 #include "tool.h"
-#include "limits.h"
 #include "modes.h"
 
 void help(FILE *fd);
@@ -44,14 +51,17 @@ static unsigned int timeout = 0;
 static unsigned int cpu = 0;
 static unsigned int endPointCount = 0;
 static unsigned int startPointCount = 0;
+static unsigned int level = 0;
 static float rate = 0.0;
 static char *output = NULL;
+static char *module = "main";
+static char *mainmodule = "main";
 
 int main(int argc, char **argv) {
 
     parseArguments(argc, argv);
 
-    perfInvokInit(output, cpu, maxSamples, argc - programStart, &argv[programStart]);
+    perfInvokInit(output, cpu, maxSamples, argc - programStart, &argv[programStart], module, mainmodule);
 
     if (addrStart[0] > 0 && addrEnd[0] > 0 && endPointCount > 0 && startPointCount > 0) {
         fprintf(stderr, "Measuring performance counters from ");
@@ -65,7 +75,7 @@ int main(int argc, char **argv) {
         measureGlobalPerformance(timeout, rate);
     }
 
-    perfInvokExit(EXIT_SUCCESS);
+    perfInvokExit(EXIT_SUCCESS, 0);
 
     return -1; // Unreachable
 }
@@ -76,16 +86,18 @@ void help(FILE *fd) {
     fprintf(fd, "\n");
     fprintf(fd, "Usage:\n");
     fprintf(fd, "\n");
-    fprintf(fd, "chop-perf-invok -o output [-begin addr] [-begin addr] ...] [-end addr [-end addr ...]] [-timeout seconds] [-max samples] [-cpu cpu] [-rate rate] [-h] -- command-to-execute\n");
+    fprintf(fd, "chop-perf-invok -o output [-begin addr] [-begin addr] ...] [-end addr [-end addr ...]] [-timeout seconds] [-max samples] [-module] [-level level] [-cpu cpu] [-rate rate] [-h] -- command-to-execute\n");
     fprintf(fd, "\n");
     fprintf(fd, "-o name          output file name\n");
-    fprintf(fd, "-begin addr      start address of the region to measure\n");
-    fprintf(fd, "-end addr        address of the region to measure (can be specified multiple times)\n");
+    fprintf(fd, "-begin addr      start address of the region to measure (can be specified multiple times)\n");
+    fprintf(fd, "-end addr        end address of the region to measure (can be specified multiple times)\n");
+    fprintf(fd, "-module name     module to be traced (if different than main)\n");
     fprintf(fd, "-timeout seconds stop measuring after the specified number of seconds (default: no timeout)\n");
     fprintf(fd, "-max samples     stop measuring after the specified number of measurements(default: no limit)\n");
     fprintf(fd, "-cpu cpu         pin process to the specified CPU (default: 0)\n");
     fprintf(fd, "-rate rate       Poll the performance counters at the specified rate in Hertz (default: no rate, measure once from start to end\n");
-    fprintf(fd, "-h:              print this help message\n");
+    fprintf(fd, "-level level     call level to trace, in case of recursion (default: 0, tot level)\n");
+    fprintf(fd, "-h               print this help message\n");
     fprintf(fd, "\n");
 
     exit(fd == stderr ? EXIT_FAILURE : EXIT_SUCCESS);
@@ -97,7 +109,7 @@ void parseArguments(int argc, char **argv) {
     enum {
         EXPECTING_OPT, EXPECTING_ADDR_START, EXPECTING_ADDR_END,
         EXPECTING_MAX_SAMPLES, EXPECTING_PROGRAM, EXPECTING_OUTPUT,
-        EXPECTING_TIMEOUT, EXPECTING_CPU, EXPECTING_RATE
+        EXPECTING_TIMEOUT, EXPECTING_CPU, EXPECTING_RATE, EXPECTING_MODULE, EXPECTING_LEVEL
     } state = EXPECTING_OPT;
 
     for (int i = 1; i < argc; i++) {
@@ -111,6 +123,8 @@ void parseArguments(int argc, char **argv) {
                 else if (strcmp(arg, "-timeout") == 0) state = EXPECTING_TIMEOUT;
                 else if (strcmp(arg, "-cpu") == 0) state = EXPECTING_CPU;
                 else if (strcmp(arg, "-rate") == 0) state = EXPECTING_RATE;
+                else if (strcmp(arg, "-module") == 0) state = EXPECTING_MODULE;
+                else if (strcmp(arg, "-level") == 0) state = EXPECTING_LEVEL;
                 else if (strcmp(arg, "-h") == 0) help(stdout);
                 else if (strcmp(arg, "--") == 0) {
                     state = EXPECTING_PROGRAM;
@@ -142,11 +156,17 @@ void parseArguments(int argc, char **argv) {
                 state = EXPECTING_OPT;
                 break;
             case EXPECTING_TIMEOUT:
-                timeout = atoi(argv[i]);
+                errno = 0;
+                timeout = strtod(argv[i], NULL);
+                if (errno !=0) perror("Wrong format in timeout");
                 state = EXPECTING_OPT;
                 break;
             case EXPECTING_CPU:
                 cpu = atoi(argv[i]);
+                state = EXPECTING_OPT;
+                break;
+            case EXPECTING_LEVEL:
+                level = atoi(argv[i]);
                 state = EXPECTING_OPT;
                 break;
             case EXPECTING_OUTPUT:
@@ -155,6 +175,10 @@ void parseArguments(int argc, char **argv) {
                 break;
             case EXPECTING_RATE:
                 rate = strtof(argv[i], NULL);
+                state = EXPECTING_OPT;
+                break;
+            case EXPECTING_MODULE:
+                module = argv[i];
                 state = EXPECTING_OPT;
                 break;
             case EXPECTING_PROGRAM:

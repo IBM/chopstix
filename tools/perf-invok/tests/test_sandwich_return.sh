@@ -98,7 +98,7 @@ else
         # Because there is no breakpoint, the instruction appears in the binary dump
         echo "Unexpected binary contents in the test program. Did something from the test bench break?"
         echo "Expected: deadbeef$return_instr"
-        echo "Actual  : $(echo "${output}" | cut -c $string_offset-$((string_offset+string_length)))" 
+        echo "Actual  : $(echo "${output}" | cut -c $string_offset-$((string_offset+string_length)))"
         cleanup
         exit 1
     fi

@@ -231,21 +231,25 @@ Memory::Memory() {
                (unsigned long)alt_stack_.ss_sp,
                (unsigned long)alt_stack_.ss_sp + alt_stack_.ss_size);
 
-    for (int i = 0; i < libc_count; ++i) {
-        libc_addrs[i] = libc_addrs[i] / pagesize_ * pagesize_;
-        log::debug(
-            "Memory::Memory init: registering libc page for protected "
-            "function: %x (%s)",
-            (unsigned long)libc_addrs[i], libc_names[i]);
-    }
-    std::sort(libc_addrs, libc_addrs + libc_count);
-    auto it = std::unique(libc_addrs, libc_addrs + libc_count);
-    libc_count = it - libc_addrs;
-    for (int i = 0; i < it - libc_addrs; ++i) {
-        log::verbose(
-            "Memory::Memory init: registering libc page for protected function "
-            "(sorted/uniq): %x",
-            (unsigned long)libc_addrs[i]);
+    if (!getopt("unprotect-syms").as_bool()) {
+        for (int i = 0; i < libc_count; ++i) {
+            libc_addrs[i] = libc_addrs[i] / pagesize_ * pagesize_;
+            log::debug(
+                "Memory::Memory init: registering libc page for protected "
+                "function: %x (%s)",
+                (unsigned long)libc_addrs[i], libc_names[i]);
+        }
+        std::sort(libc_addrs, libc_addrs + libc_count);
+        auto it = std::unique(libc_addrs, libc_addrs + libc_count);
+        libc_count = it - libc_addrs;
+        for (int i = 0; i < it - libc_addrs; ++i) {
+            log::verbose(
+                "Memory::Memory init: registering libc page for protected function "
+                "(sorted/uniq): %x",
+                (unsigned long)libc_addrs[i]);
+        }
+    } else {
+        libc_count = 0;
     }
     libc_addrs[libc_count] = 0;
 
@@ -286,8 +290,8 @@ void Memory::update() {
     while (readline(fd, line, sizeof(line))) {
         checkx(n < REGIONS_MAX, "Too many memory regions");
         parse_region(line, map_ + n);
-        //log::debug("Memory::update: raw parsed line: %x-%x %s %s",
-        //           map_[n].addr[0], map_[n].addr[1], map_[n].perm,
+        //log::verbose("Memory::update: raw parsed line: %x-%x %s %s",
+        //          map_[n].addr[0], map_[n].addr[1], map_[n].perm,
         //           map_[n].path);
 
         if (filter_region(map_ + n, perm_, (unsigned long)alt_stack_.ss_sp)) {
@@ -543,7 +547,7 @@ void Memory::protect_page(mem_region *reg, unsigned long page_addr) {
 }
 
 void Memory::unprotect_page(mem_region *reg, unsigned long page_addr) {
-    log::debug("Memory::unprotect_page: %x in region %x-%x %s %s (bits: %d)",
+    log::debug("Memory::unprotect_page: %x in region %x-%x perm %s %s (bits: %d)",
                page_addr, reg->addr[0], reg->addr[1], reg->perm, reg->path,
                decode_perm(reg->perm));
     int err = syscall(SYS_mprotect, (void *)page_addr, pagesize_,
@@ -551,6 +555,21 @@ void Memory::unprotect_page(mem_region *reg, unsigned long page_addr) {
     check(!err, "Unable to unprotect page %x in region %x-%x %s %s", page_addr,
           reg->addr[0], reg->addr[1], reg->perm, reg->path);
     log::debug("Memory::unprotect_page: unprotected %d bytes at %x", pagesize_,
+               page_addr);
+}
+
+void Memory::unprotect_page_for_read(mem_region *reg, unsigned long page_addr) {
+    char perm[5];
+    for (int i=0; i<5;++i) perm[i] = reg->perm[i];
+    perm[1] = '-';
+    log::debug("Memory::unprotect_page_for_read: %x in region %x-%x perm %s %s (bits: %d)",
+               page_addr, reg->addr[0], reg->addr[1], perm, reg->path,
+               decode_perm(perm));
+    int err = syscall(SYS_mprotect, (void *)page_addr, pagesize_,
+                      decode_perm(perm));
+    check(!err, "Unable to unprotect page %x for read in region %x-%x %s %s", page_addr,
+          reg->addr[0], reg->addr[1], perm, reg->path);
+    log::debug("Memory::unprotect_page_for read: unprotected %d bytes at %x", pagesize_,
                page_addr);
 }
 

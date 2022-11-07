@@ -83,11 +83,13 @@ class Process {
     void detach(int sig = 0);
     void step(int sig = 0);
     void steps(long steps);
+    void step_to_main_module();
 
     long peek(long addr);
     void poke(long addr, long data);
 
     void set_break(long addr);
+    void set_break_size(long addr, long size);
     void remove_break(long addr);
 
     void timeout(double time);
@@ -120,5 +122,6 @@ class Process {
     int status_;
 
     breakpoint_cache breaks_;
+    char* mainmodule_;
 };
 }  // namespace chopstix

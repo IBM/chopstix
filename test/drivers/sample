@@ -30,27 +30,27 @@ chop=$(printenv chop)
 testbin=$(printenv testbin)
 testdir=$(printenv testdir)
 
-event=
 test_event() {
+    event=
     ! perf stat -e "$1" ls >/dev/null 2>&1 || event="$1"
 }
     
 export event
 export period=1000000
 
-echo "using $event@$period"
-
 test_sample() {
     for event in cycles cpu-clock task-clock; do
         rm -rf chop.db
+        echo "> Testing $event"
         test_event $event
+        if [ -z "$event" ]; then echo "> skip $event"; continue; fi
 
-        if [ -n "$event" ]; then continue; fi
+        echo "using $event@$period"
 
         set +e
         echo "> chop sample -events $event -period $period $testbin $*"
         # shellcheck disable=SC2068
-        "$chop" sample -events "$event" -period "$period" "$testbin" $@
+        "$chop" sample -events "$event" -period "$period" "$testbin" $@ > /dev/null
         error=$?
         set -e
 
@@ -70,7 +70,7 @@ test_sample() {
                 expected_samples=$(echo "1000 * $exec_time" | bc -l) ;;
         esac
         
-        margin=0.1
+        margin=0.2
         min_samples=$(echo "$expected_samples $margin" \
             | awk '{printf("%d", $1 * (1-$2))}')
         max_samples=$(echo "$expected_samples $margin" \

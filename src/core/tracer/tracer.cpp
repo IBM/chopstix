@@ -36,19 +36,25 @@ static std::string library_path() {
 }
 
 static void preload(std::string path) {
+    log::debug("Tracer:: preload: start");
+    std::string env;
     char *env_preload = getenv("LD_PRELOAD");
     if (env_preload != NULL) {
-        path += ':' + env_preload;
+        path += ':';
+        env = env_preload;
+        path += env;
     }
     setenv("LD_PRELOAD", path.c_str(), 1);
+    log::debug("Tracer:: preload: end");
 }
 
 namespace chopstix {
 
-Tracer::Tracer(std::string trace_path, bool dryrun, TraceOptions trace_options) {
+Tracer::Tracer(std::string module, std::string trace_path, bool dryrun, TraceOptions trace_options) {
     log::debug("Tracer:: contructor start");
     regs = Arch::current()->create_regs();
     this->trace_path = trace_path;
+    this->module = module;
     tracing_enabled = !dryrun;
     this->trace_options = trace_options;
     log::debug("Tracer:: contructor end");
@@ -71,6 +77,11 @@ void Tracer::start(TracerState *initial_state, int argc, char **argv) {
     while(running) {
         log::debug("Tracer:: start: running, calling execute on state");
         current_state->execute(child);
+    }
+
+    if (child.active()) {
+        child.send(SIGKILL);
+        child.abandon();
     }
 
     log::info("Tracer captured %d traces", trace_id);
@@ -141,6 +152,23 @@ struct mmap_call {
     unsigned long length;
     unsigned long prot;
 };
+
+void Tracer::compute_module_offset() {
+    log::verbose("Tracer:: compute_module_offset start");
+    auto maps = parse_maps(child.pid());
+    std::string bname;
+    for (auto &entry : maps) {
+        bname = entry.path.substr(entry.path.find_last_of("/") + 1);
+        if ((bname.rfind(module,0) == 0) && (entry.perm[2] == 'x'))
+        {
+            log::verbose("Tracer:: compute_module_offset: %s == %s", bname, module);
+            module_offset = Location::Address(entry.addr[0]);
+            log::verbose("Tracer:: compute_module_offset: 0x%x", module_offset);
+            break;
+        }
+    }
+    log::verbose("Tracer:: compute_module_offset end");
+}
 
 void Tracer::track_mmap() {
     log::debug("Tracer:: track_mmap start");
@@ -224,17 +252,20 @@ void Tracer::init(int argc, char **argv) {
     //preload();
     // TODO: Fix this platform-specific hardcoded path
     preload("/lib/riscv64-linux-gnu/libdl.so.2:" + library_path());
+    log::debug("Tracer:: preload set");
     child.exec(argv, argc);
     child.ready();
     unsetenv("LD_PRELOAD");
+
     log::debug("Tracer:: Spawned child process %d", child.pid());
-
-    // TODO: why this sleep is needed?
-    sleep(2);
-
     track_mmap();
 
+    child.step_to_main_module();
+
+    if (module != "main") compute_module_offset();
+
     alt_stack = read_alt_stack();
+
     log::debug("Tracer:: init end");
 }
 
@@ -371,6 +402,48 @@ void Tracer::set_breakpoint(std::vector<long> address, bool state) {
         }
     }
     log::debug("Tracer:: set_breakpoint end");
+}
+
+bool Tracer::check_breakpoint(std::vector<long> address) {
+    log::debug("Tracer:: check_breakpoint start");
+    long cur_pc = Arch::current()->get_pc(child.pid());
+    for (auto addr : address) {
+        auto baddr = addr + module_offset.addr();
+        log::debug("Tracer:: check_breakpoint: check_break at 0x%x (0x%x)", addr, baddr);
+        if (baddr == cur_pc) return true;
+    }
+    log::debug("Tracer:: check_breakpoint end");
+    return false;
+}
+
+void Tracer::fix_breakpoint(std::vector<long> address) {
+    log::debug("Tracer:: fix_breakpoint start");
+    long cur_pc = Arch::current()->get_pc(child.pid());
+    long mask_size;
+
+	switch(Arch::current()->get_breakpoint_size()) {
+        case BreakpointSize::HALF_WORD:
+            mask_size = 2;
+            break;
+        case BreakpointSize::WORD:
+            mask_size = 4;
+            break;
+        default:
+        case BreakpointSize::DOUBLE_WORD:
+            mask_size = 8;
+            break;
+    }
+
+    for (auto addr : address) {
+        auto baddr = addr + module_offset.addr();
+        log::debug("Tracer:: fix_breakpoint: fix_break at 0x%x (0x%x)", addr, baddr);
+        if ((baddr <= cur_pc) && (cur_pc <= (baddr + mask_size))) {
+            child.remove_break(baddr);
+            child.set_break_size(baddr, cur_pc-baddr);
+            break;
+        }
+    }
+    log::debug("Tracer:: fix_breakpoint end");
 }
 
 bool RandomizedTracer::should_trace() {

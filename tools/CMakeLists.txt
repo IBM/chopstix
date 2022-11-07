@@ -22,6 +22,12 @@ add_executable(chop-detrace
     detrace.c
 )
 
+add_executable(chop-detrace-mem
+    detrace-mem.c
+)
+
+add_library(chop-marks-dyn-addr-lib SHARED chop-marks-dyn-addr-lib.c)
+target_link_libraries(chop-marks-dyn-addr-lib dl)
 
 # Custom zlib
 if (EXISTS "${CHOPSTIX_ZLIB_PREFIX}")
@@ -57,20 +63,32 @@ add_executable(chop-perf-avg perfavg.c)
 target_link_libraries(chop-perf-avg m)
 
 install(PROGRAMS
+    chop-marks-dyn-addr
+    chop-marks-x86_64
     chop-marks-ppc64
     chop-marks-sysz
     chop-marks-riscv
     chop-marks
     chop-score-table
+    chop-trace-mem
     DESTINATION bin)
 
 install (TARGETS
     chop-detrace
+    chop-detrace-mem
     chop-trace2mpt
     chop-weight
     chop-perf-avg
     DESTINATION bin
 )
 
+install (TARGETS
+    chop-marks-dyn-addr-lib
+    DESTINATION lib
+)
+
 add_subdirectory (clustering)
 add_subdirectory (perf-invok)
+add_subdirectory (valgrind)
+add_subdirectory (bp-checker)
+# add_subdirectory (loader)

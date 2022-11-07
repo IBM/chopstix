@@ -60,7 +60,9 @@ if [ "$error" -eq 2 ]; then
     echo "Warning: Microprobe commands not found in current PATH."
     echo "Warning: Setup Microprobe first if you want to convert the MPTs generated"
     echo "Warning: to actual benchmarks. Refer to the url below for installation instructions:"
-    echo "Warning: https://github.ibm.com/MicroProbe/microprobe_private"
+    echo "Warning: https://ibm.github.io/microprobe/"
+    echo "Warning: IBM users can refer to the following extended documentation:"
+    echo "Warning: https://pages.github.ibm.com/MicroProbe/microprobe_private/"
     echo ""
     WARNING=1
 else

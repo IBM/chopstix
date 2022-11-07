@@ -1,4 +1,4 @@
-# perf-invok
+# chop-perf-invok
 `perf`-like tool to measure the performance on a per-invocation basis
 (aside from the performance of the overall, complete, execution).
 Note, however, that although its intent is to measure performance on an
@@ -14,18 +14,19 @@ which, in turn, supports Linux's `perf` subsystem.
 ### Profiling a code region or a function
 
 ```
-perf-invok -begin <start_address> -end <end_address> [-o <output_file>] [-max <count>] COMMAND
+chop-perf-invok -begin <start_address> -end <end_address> [-o <output_file>] [-max <count>] [-level level] COMMAND
 ```
 
 - `-begin`: begin address of the code region or function to profile, in hexadecimal and without `0x`
 - `-end`: end address of the code region or function to profile, in hexadecimal and without `0x`
 - `-o`: output the csv data into this file
 - `-max`: profile, at most, `count` executions of the profiled region
+- `-level` : recursion level to profile
 
 ### Profiling the overall execution of a program
 
 ```
-perf-invok [-o <output_file>] [-timeout <time>] COMMAND
+chop-perf-invok [-o <output_file>] [-timeout <time>] COMMAND
 ```
 
 - `-o`: output the csv data into this file

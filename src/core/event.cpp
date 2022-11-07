@@ -308,13 +308,18 @@ void Event::stop_buffering() {
 }
 
 bool Event::poll(int timeout) {
+
+    // log::debug("Event poll");
     if (!is_buffering()) {
+        // log::debug("Event poll : not buffered");
         return false;
     }
     int ret = ::poll(&pfd_, 1, timeout);
     if (ret < 0 && errno == EINTR) {
+        // log::debug("Event poll : < 0 or EINTR %d", timeout);
         return false;
     }
+    // log::debug("Event poll : OK %d", timeout);
     return true;
 }
 

@@ -93,7 +93,6 @@ struct Arch {
     virtual long parse_ret(regbuf_type regs) const = 0;
     virtual void parse_args(regbuf_type regs, regbuf_type args) const = 0;
 
-protected:
     virtual BreakpointSize get_breakpoint_size() const {
         return BreakpointSize::DOUBLE_WORD;
     }
