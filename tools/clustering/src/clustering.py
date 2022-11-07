@@ -168,10 +168,10 @@ class ClusteringInformation:
                 inv = random.choice(self._invocation_sets[invocation_set])
             return inv
 
-        for index in range(0, len(self._invocation_sets[cluster])):
-            inv = self._invocation_sets[cluster][index]
-            if inv not in ignore:
-                return inv
+        for is_index in self._clusters[cluster]:
+            for inv in self._invocation_sets[is_index]:
+                if inv not in ignore:
+                    return inv
 
     def get_noise_invocation_set_count(self):
         return len(self._noise_invocations)
