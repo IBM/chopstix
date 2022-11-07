@@ -221,7 +221,9 @@ void Tracer::track_mmap() {
 void Tracer::init(int argc, char **argv) {
     log::debug("Tracer:: init start");
     setenv("LD_BIND_NOW", "1", 1);
-    preload(library_path());
+    //preload();
+    // TODO: Fix this platform-specific hardcoded path
+    preload("/lib/riscv64-linux-gnu/libdl.so.2:" + library_path());
     child.exec(argv, argc);
     child.ready();
     unsetenv("LD_PRELOAD");
