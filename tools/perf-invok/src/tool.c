@@ -140,14 +140,14 @@ void perfInvokExit(int exitCode, int signum) {
         exit(EXIT_FAILURE);
     }
 
-    if ((sampleCount < 1000) && !full) {
+   /* if ((sampleCount < 1000) && !full) {
         if (outputFile != stderr) {
             int ret = fclose(outputFile);
             if (ret != 0) { perror("ERROR closing file"); kill(pid, SIGKILL); exit(EXIT_FAILURE);};
         }
         fprintf(stderr, "ERROR: Process timeout with less than 1000 samples\n");
         exit(EXIT_FAILURE);
-    }
+    }*/
 
     // Print the samples that haven't been flushed yet
     printSamples(outputFile, sampleCount - flushedSampleCount, samples, printHeaders);
