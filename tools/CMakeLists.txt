@@ -89,6 +89,8 @@ install (TARGETS
 
 add_subdirectory (clustering)
 add_subdirectory (perf-invok)
-add_subdirectory (valgrind)
+if (CHOPSTIX_VALGRIND)
+    add_subdirectory (valgrind)
+endif ()
 add_subdirectory (bp-checker)
 # add_subdirectory (loader)
