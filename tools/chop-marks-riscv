@@ -40,6 +40,7 @@ fi
 # shellcheck disable=SC2039
 printf -- "-begin %s" "$BEGIN"
 
+# shellcheck disable=SC3060
 for addr in ${END//,/ }; do
     printf -- " -end %s" "$addr"
 done
