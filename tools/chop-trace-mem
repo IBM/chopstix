@@ -147,6 +147,7 @@ echo ""
 tmp=$(mktemp)
 tmp2=$(mktemp)
 cleanup() {
+    # shellcheck disable=SC2317
     rm -f "$tmp" "$tmp2" 
 }
 trap cleanup EXIT

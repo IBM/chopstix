@@ -57,6 +57,7 @@ std::unique_ptr<TextFormat> get_format() {
         return format(new MptFormat(arch->get_endianess()));
     }
     CHECK_USAGE(text, 0, "Unknown format '{}'", opt);
+    exit(1); // Tell compiler to shut up
 }
 
 std::unique_ptr<std::ostream> get_output() {

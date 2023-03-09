@@ -21,3 +21,6 @@ set_env (CHOPSTIX_SQLITE_PREFIX "" CACHE PATH "Path to sqlite3 installation.")
 set_env (CHOPSTIX_PERFMON_PREFIX "" CACHE PATH "Path to Perfmon2 installation.")
 
 set_env (CHOPSTIX_PROFILE_CPU OFF CACHE BOOL "Enable profiling of CPU performance.")
+
+set_env (CHOPSTIX_PIP_INSTALL ON CACHE BOOL "Enable the installation of python dependencies via pip.")
+set_env (CHOPSTIX_VALGRIND ON CACHE BOOL "Enable Valgrind support.")

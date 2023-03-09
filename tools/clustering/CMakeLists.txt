@@ -20,8 +20,6 @@
 
 find_program(PYTHON "python3" REQUIRED)
 message (STATUS "Python3 program found: ${PYTHON}")
-find_program(VIRTUALENV "virtualenv" REQUIRED)
-message (STATUS "Virtualenv program found: ${VIRTUALENV}")
 
 set(SETUP_PY "${CMAKE_CURRENT_SOURCE_DIR}/setup.py")
 set(DEPS     "${CMAKE_CURRENT_SOURCE_DIR}/*.py" "${CMAKE_CURRENT_SOURCE_DIR}/src/*.py" "${CMAKE_CURRENT_SOURCE_DIR}/*.txt" "${CMAKE_CURRENT_SOURCE_DIR}/*.md")
@@ -35,8 +33,10 @@ add_custom_command(OUTPUT ${OUTPUT}/clustering_package
 
 add_custom_target(clustering ALL DEPENDS ${OUTPUT}/clustering_package ${DEPS})
 
-install(CODE "execute_process(COMMAND ${PYTHON} -m virtualenv -p ${PYTHON} --prompt=\\(chopstix\\) ${CMAKE_INSTALL_PREFIX})")
-install(CODE "execute_process(COMMAND sh -c \"wget http://yktgsa.ibm.com/gsa/yktgsa/projects/m/microprobe/pip.conf.devel.http -O ${CMAKE_INSTALL_PREFIX}/pip.conf || rm -f ~/chopstix-install/pip.conf\")")
-install(CODE "execute_process(COMMAND sh -c \". ${CMAKE_INSTALL_PREFIX}/bin/activate && pip3 install --trusted-host yktgsa.ibm.com -U -r ${CMAKE_CURRENT_SOURCE_DIR}/requirements.txt\")")
-install(CODE "execute_process(COMMAND sh -c \". ${CMAKE_INSTALL_PREFIX}/bin/activate && test -f ${CMAKE_INSTALL_PREFIX}/pip.conf && pip3 install --trusted-host yktgsa.ibm.com -U microprobe_target_z microprobe_target_private microprobe_target_power_priv\")")
-install(CODE "execute_process(COMMAND sh -c \". ${CMAKE_INSTALL_PREFIX}/bin/activate && pip3 install --trusted-host yktgsa.ibm.com --no-deps --prefix ${CMAKE_INSTALL_PREFIX} ${CMAKE_CURRENT_BINARY_DIR}\" WORKING_DIRECTORY ${OUTPUT})")
+if (CHOPSTIX_PIP_INSTALL)
+    install(CODE "execute_process(COMMAND ${PYTHON} -m virtualenv -p ${PYTHON} --prompt=\\(chopstix\\) ${CMAKE_INSTALL_PREFIX})")
+    install(CODE "execute_process(COMMAND sh -c \"wget http://yktgsa.ibm.com/gsa/yktgsa/projects/m/microprobe/pip.conf.devel.http -O ${CMAKE_INSTALL_PREFIX}/pip.conf || rm -f ~/chopstix-install/pip.conf\")")
+    install(CODE "execute_process(COMMAND sh -c \". ${CMAKE_INSTALL_PREFIX}/bin/activate && pip3 install --trusted-host yktgsa.ibm.com -U -r ${CMAKE_CURRENT_SOURCE_DIR}/requirements.txt\")")
+    install(CODE "execute_process(COMMAND sh -c \". ${CMAKE_INSTALL_PREFIX}/bin/activate && test -f ${CMAKE_INSTALL_PREFIX}/pip.conf && pip3 install --trusted-host yktgsa.ibm.com -U microprobe_target_z microprobe_target_private microprobe_target_power_priv\")")
+    install(CODE "execute_process(COMMAND sh -c \". ${CMAKE_INSTALL_PREFIX}/bin/activate && pip3 install --trusted-host yktgsa.ibm.com --no-deps --prefix ${CMAKE_INSTALL_PREFIX} ${CMAKE_CURRENT_BINARY_DIR}\" WORKING_DIRECTORY ${OUTPUT})")
+endif ()

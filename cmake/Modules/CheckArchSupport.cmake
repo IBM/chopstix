@@ -26,7 +26,7 @@ if (NOT(CHOPSTIX_POWER_SUPPORT OR CHOPSTIX_POWERLE_SUPPORT
     elseif (${CMAKE_HOST_SYSTEM_PROCESSOR} STREQUAL "x86_64")
         SET(CHOPSTIX_X86_SUPPORT ON)
         message (STATUS "Current architecture is x86_64")
-    elseif (${CMAKE_HOST_SYSTEM_PROCESSOR STREQUAL "riscv64")
+    elseif (${CMAKE_HOST_SYSTEM_PROCESSOR} STREQUAL "riscv64")
         SET(CHOPSTIX_RISCV_SUPPORT ON)
         message (STATUS "Current architecture is riscv64")
     else()

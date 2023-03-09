@@ -49,7 +49,21 @@ else ()
     )
 endif ()
 
+# find_package(cJSON REQUIRED)
+
 target_link_libraries(chop-trace2mpt ${ZLIB_LIBRARIES})
+
+add_executable(chop-weight microweight.c)
+
+set (CJSON_LIBRARIES "${CMAKE_CURRENT_BINARY_DIR}/../external/cjson/libcjson.so")
+
+add_dependencies(chop-weight cjson)
+target_link_libraries(chop-weight ${CJSON_LIBRARIES})
+target_include_directories(chop-weight PUBLIC ${CJSON_INCLUDE_DIRS} ${EXTERNAL_INCLUDE_DIRS})
+
+add_executable(chop-perf-avg perfavg.c)
+
+target_link_libraries(chop-perf-avg m)
 
 install(PROGRAMS
     chop-marks-dyn-addr
@@ -66,6 +80,8 @@ install (TARGETS
     chop-detrace
     chop-detrace-mem
     chop-trace2mpt
+    chop-weight
+    chop-perf-avg
     DESTINATION bin
 )
 
@@ -76,6 +92,8 @@ install (TARGETS
 
 add_subdirectory (clustering)
 add_subdirectory (perf-invok)
-add_subdirectory (valgrind)
+if (CHOPSTIX_VALGRIND)
+    add_subdirectory (valgrind)
+endif ()
 add_subdirectory (bp-checker)
 # add_subdirectory (loader)

@@ -140,6 +140,7 @@ formatter get_format() {
     FMT_CASE(compact)
     FMT_CASE(detail)
     CHECK_USAGE(view, 0, "Unknown format '{}'", fmt);
+    exit(1); // Tell compiler to shut up
 }
 
 void view_function() {

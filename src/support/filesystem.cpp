@@ -180,7 +180,7 @@ void copy(const std::string &from, const std::string &to) {
         ofs.write(buf, ifs.gcount());
     }
 
-    delete buf;
+    delete[] buf;
 }
 
 std::vector<std::string> list(const std::string &path) {

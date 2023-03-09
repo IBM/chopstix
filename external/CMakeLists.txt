@@ -50,13 +50,14 @@ else ()
     find_package(Perfmon2 REQUIRED)
 endif ()
 
-
-
 # {fmt} https://github.com/fmtlib/fmt
 add_subdirectory (fmt)
+add_subdirectory (cjson)
+set (CJSON_INCLUDE_DIRS "${EXTERNAL_DIR}" PARENT_SCOPE)
 
 set (EXTERNAL_INCLUDE_DIRS
     ${EXTERNAL_DIR}/fmt
+    ${EXTERNAL_DIR}/cjson
     ${PERFMON2_INCLUDE_DIRS}
     ${SQLITE3_INCLUDE_DIRS}
     PARENT_SCOPE

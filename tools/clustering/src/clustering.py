@@ -118,7 +118,10 @@ class ClusteringInformation:
     def get_invocation_count(self, cluster=None):
 
         if cluster is not None:
-            return len(self._invocation_sets[cluster])
+            count = 0
+            for clusterid in self._clusters[cluster]:
+                count += len(self._invocation_sets[clusterid])
+            return count
 
         count = 0
 
@@ -165,25 +168,18 @@ class ClusteringInformation:
                 inv = random.choice(self._invocation_sets[invocation_set])
             return inv
 
-        for index in range(0, len(self._invocation_sets[cluster])):
-            inv = self._invocation_sets[cluster][index]
-            if inv not in ignore:
-                return inv
+        for is_index in self._clusters[cluster]:
+            for inv in self._invocation_sets[is_index]:
+                if inv not in ignore:
+                    return inv
 
     def get_noise_invocation_set_count(self):
-        if len(self._noise_invocations) == 0:
-            return 0
-        if isinstance(self._noise_invocations[0], int):
-            return 1
-        else:
-            return len(self._noise_invocations)
+        return len(self._noise_invocations)
 
     def get_noise_invocation_count(self):
 
         if len(self._noise_invocations) == 0:
             return 0
-        if isinstance(self._noise_invocations[0], int):
-            return len(self._noise_invocations)
 
         count = 0
         for invocation_set in self._noise_invocations:
@@ -194,14 +190,6 @@ class ClusteringInformation:
     # Returns a random invocation from each of the invocation sets which
     # are considered to be a noise point (i.e. don't belong to any cluster)
     def get_noise_invocations(self, ignore=[]):
-
-        if len(self._noise_invocations) == 0:
-            return None
-        if isinstance(self._noise_invocations[0], int):
-            inv = random.choice(self._noise_invocations)
-            while inv in ignore:
-                inv = random.choice(self._noise_invocations)
-            return [inv]
 
         invocations = []
 

@@ -140,7 +140,7 @@ row_count=$(wc -l "$csv_file" | cut -d' ' -f 1)
 if [ "$row_count" -ne 2 ]; then
     echo "Output file contains unexpected number of rows (Expected 2, got $row_count)"
     echo "Logs:"
-    echo "$log_stderr_file"
+    cat "$log_stderr_file"
     cleanup
     exit 1
 fi

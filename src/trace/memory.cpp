@@ -164,15 +164,18 @@ static int filter_region(mem_region *reg, const char *perm,
     if (streq(reg->path, "")) return 1;
     if (streq(reg->path, "[stack]")) return 1;
     if (streq(reg->path, "[heap]")) return 1;
+    if (strstr(reg->path, "/libcxtrace.so")) return 0;
     if (strstr(reg->path, "/libc-") && strstr(reg->perm, "r--p")) return 1;
     if (strstr(reg->path, "/libc-") && strstr(reg->perm, "rw-p")) return 1;
     if (strstr(reg->path, "/libc-") != NULL) return 1;
+    if (strstr(reg->path, "/libc.") && strstr(reg->perm, "r--p")) return 1;
+    if (strstr(reg->path, "/libc.") && strstr(reg->perm, "rw-p")) return 1;
+    if (strstr(reg->path, "/libc.") != NULL) return 1;
     if (strstr(reg->path, "/libpthread-") != NULL) return 1;
     if (strstr(reg->path, "/libgfortran") != NULL) return 1;
     if (strstr(reg->path, "/libm-") != NULL) return 1;
     if (strstr(reg->path, "/libgcc") != NULL) return 1;
     if (strstr(reg->path, "/libstdc++") != NULL) return 1;
-    if (strstr(reg->path, "/libcxtrace.so")) return 0;
     if (strstr(reg->path, "/ld-") != NULL) return 0;
     if (strstr(reg->path, "[v")) return 0;
     return 1;
@@ -329,7 +332,7 @@ void Memory::update() {
             if (streq(map_[n - 1].path, "[stack]")) {
                 ++stack_cnt;
             }
-            if ((strstr(map_[n - 1].path, "/libc-") ||
+            if ((strstr(map_[n - 1].path, "/libc.") || strstr(map_[n - 1].path, "/libc-") ||
                  strstr(map_[n - 1].path, "/libpthread-")) &&
                 map_[n - 1].perm[2] == 'x') {
                 //log::debug(
