@@ -49,14 +49,17 @@ else ()
     )
 endif ()
 
-find_package(cJSON REQUIRED)
+# find_package(cJSON REQUIRED)
 
 target_link_libraries(chop-trace2mpt ${ZLIB_LIBRARIES})
 
 add_executable(chop-weight microweight.c)
 
+set (CJSON_LIBRARIES "${CMAKE_CURRENT_BINARY_DIR}/../external/cjson/libcjson.so")
+
+add_dependencies(chop-weight cjson)
 target_link_libraries(chop-weight ${CJSON_LIBRARIES})
-target_include_directories(chop-weight PUBLIC ${CJSON_INCLUDE_DIRS})
+target_include_directories(chop-weight PUBLIC ${CJSON_INCLUDE_DIRS} ${EXTERNAL_INCLUDE_DIRS})
 
 add_executable(chop-perf-avg perfavg.c)
 
